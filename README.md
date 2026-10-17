@@ -26,8 +26,9 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-Press **W** to run off the launch into the wind, **A/D** to brake left/right, **T** for an air
-start, **L** for the lift map. **Shift + A/D** is a deep brake (hold it for a spiral dive);
+You start in the air above the launch, facing into the wind (so does switching launch with **N**).
+**A/D** brake left/right, **T** air-starts again, **R** puts you on the ground at the launch, where
+**W** runs off it into the wind. **L** shows the lift map. **Shift + A/D** is a deep brake (hold it for a spiral dive);
 **A/D with Q/E** in rhythm with the swing builds wingovers. A gamepad works too (triggers = brakes). The weather panel on the
 right changes wind, inversion and thermals live.
 

@@ -110,7 +110,7 @@ async function boot(): Promise<void> {
   function setLaunch(id: string): void {
     launch = site.launches.find((l) => l.spec.id === id) ?? site.launches[0];
     settings.launch = launch.spec.id;
-    reset();
+    reset(true);
   }
 
   function refreshWeather(): void {
@@ -198,7 +198,7 @@ async function boot(): Promise<void> {
     });
   }
 
-  reset();
+  reset(true);
   hud.ready();
 
   let last = performance.now();
