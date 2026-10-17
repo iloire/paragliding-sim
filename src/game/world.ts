@@ -1,0 +1,113 @@
+// Scene dressing: the terrain mesh draped with the orthophoto, the sea, the sky,
+// the sun, and the lift overlay. Sim frame (x east, y north, z up) maps to
+// three.js as X = x − e/2, Y = z, Z = e/2 − y, so the site is centred on the origin.
+
+import * as THREE from 'three';
+import { Sky } from 'three/examples/jsm/objects/Sky.js';
+import type { Heightmap } from '../sim/terrain';
+import type { WindField } from '../sim/wind';
+
+const MESH_SEGMENTS = 1023;
+/** Land within this distance of the bbox edge slopes into the sea instead of ending in a wall. */
+const EDGE_FADE_M = 700;
+const SUN_ELEVATION = 48;
+const SUN_AZIMUTH = 215;
+/** Lift map hides anything weaker than this (m/s) — gentle slopes would paint the whole island. */
+const LIFT_MAP_MIN = 0.5;
+
+export function toScene(extent: number, x: number, y: number, z: number, out = new THREE.Vector3()): THREE.Vector3 {
+  return out.set(x - extent / 2, z, extent / 2 - y);
+}
+
+export function createTerrain(terrain: Heightmap, ortho: THREE.Texture): THREE.Mesh {
+  const e = terrain.extent;
+  const geometry = new THREE.PlaneGeometry(e, e, MESH_SEGMENTS, MESH_SEGMENTS);
+  geometry.rotateX(-Math.PI / 2);
+  const pos = geometry.attributes.position as THREE.BufferAttribute;
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i) + e / 2;
+    const y = e / 2 - pos.getZ(i);
+    const edge = Math.min(x, y, e - x, e - y);
+    const fade = Math.min(Math.max(edge / EDGE_FADE_M, 0), 1);
+    const h = terrain.heightAt(x, y);
+    pos.setY(i, h > 0 ? h * fade + -15 * (1 - fade) : h);
+  }
+  geometry.computeVertexNormals();
+  ortho.colorSpace = THREE.SRGBColorSpace;
+  ortho.anisotropy = 8;
+  const material = new THREE.MeshStandardMaterial({ map: ortho, roughness: 0.95, metalness: 0 });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+export function createSea(): THREE.Mesh {
+  const geometry = new THREE.PlaneGeometry(400000, 400000);
+  geometry.rotateX(-Math.PI / 2);
+  const material = new THREE.MeshStandardMaterial({ color: 0x0a2a3d, roughness: 0.32, metalness: 0 });
+  const sea = new THREE.Mesh(geometry, material);
+  sea.position.y = 0;
+  return sea;
+}
+
+export function createSkyAndLight(scene: THREE.Scene, renderer: THREE.WebGLRenderer): THREE.DirectionalLight {
+  const sky = new Sky();
+  sky.scale.setScalar(450000);
+  const u = sky.material.uniforms;
+  u.turbidity.value = 5;
+  u.rayleigh.value = 1.4;
+  u.mieCoefficient.value = 0.004;
+  u.mieDirectionalG.value = 0.8;
+  const sun = new THREE.Vector3().setFromSphericalCoords(
+    1,
+    THREE.MathUtils.degToRad(90 - SUN_ELEVATION),
+    THREE.MathUtils.degToRad(180 - SUN_AZIMUTH),
+  );
+  u.sunPosition.value.copy(sun);
+  scene.add(sky);
+
+  // Reflections and ambient light come from the same sky.
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const envScene = new THREE.Scene();
+  envScene.add(sky.clone());
+  scene.environment = pmrem.fromScene(envScene).texture;
+  scene.environmentIntensity = 0.3;
+
+  const light = new THREE.DirectionalLight(0xfff1dc, 3.2);
+  light.position.copy(sun).multiplyScalar(20000);
+  scene.add(light);
+  scene.fog = new THREE.FogExp2(0xbfd3e0, 0.000032);
+  return light;
+}
+
+/** Translucent drape showing ridge lift at ridge-top height: green up, red down. */
+export function createLiftOverlay(terrainMesh: THREE.Mesh, wind: WindField): { mesh: THREE.Mesh; refresh(): void } {
+  const g = wind.grid;
+  const data = new Uint8Array(g * g * 4);
+  const texture = new THREE.DataTexture(data, g, g);
+  texture.magFilter = THREE.LinearFilter;
+  const material = new THREE.MeshBasicMaterial({
+    map: texture, transparent: true, depthWrite: false,
+    polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4,
+  });
+  const mesh = new THREE.Mesh(terrainMesh.geometry, material);
+  mesh.visible = false;
+
+  function refresh(): void {
+    const U = wind.speed;
+    for (let j = 0; j < g; j++) {
+      for (let i = 0; i < g; i++) {
+        const k = j * g + i;
+        const x = (i + 0.5) * wind.cell, y = (j + 0.5) * wind.cell;
+        const w = wind.ridgeLift(x, y, wind.ridgeTop[k]);
+        const a = Math.min((Math.abs(w) - LIFT_MAP_MIN) / 2.5, 1);
+        data[k * 4] = w < 0 ? 240 : 60;
+        data[k * 4 + 1] = w > 0 ? 235 : 70;
+        data[k * 4 + 2] = w > 0 ? 90 : 60;
+        data[k * 4 + 3] = U > 0 && Math.abs(w) > LIFT_MAP_MIN ? Math.round(45 + a * 120) : 0;
+      }
+    }
+    texture.needsUpdate = true;
+  }
+  return { mesh, refresh };
+}

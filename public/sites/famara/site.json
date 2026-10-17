@@ -1,0 +1,20 @@
+{
+  "name": "Famara, Lanzarote",
+  "proj4": "+proj=utm +zone=28 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs",
+  "crs": "EPSG:4083",
+  "bbox": [630000, 3211000, 654000, 3235000],
+  "heightmap": { "file": "height.bin", "size": 2048 },
+  "ortho": { "file": "ortho.jpg", "size": 4096 },
+  "launches": [
+    { "id": "famara", "name": "Famara", "lat": 29.08, "lon": -13.558 },
+    { "id": "mala", "name": "Mala", "lat": 29.113, "lon": -13.4794 },
+    { "id": "mirador", "name": "Mirador del Río", "lat": 29.22, "lon": -13.4728 }
+  ],
+  "weather": {
+    "windSpeedKmh": 24,
+    "windFromDeg": 345,
+    "inversionM": 900,
+    "thermalStrength": 1.5,
+    "turbulence": 0.3
+  }
+}

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Famara Glide</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <canvas id="view"></canvas>
+
+    <div id="loading">
+      <div class="brand">FAMARA <span>GLIDE</span></div>
+      <div class="loading-line">Loading Risco de Famara terrain…</div>
+    </div>
+
+    <section id="instrument" aria-label="Flight instrument">
+      <div class="vario">
+        <div class="vario-value" id="vario">+0.0</div>
+        <div class="vario-unit">m/s</div>
+        <div class="vario-bar"><div id="vario-fill"></div></div>
+      </div>
+      <dl class="readouts">
+        <div><dt>ALT</dt><dd id="alt">0</dd><span>m</span></div>
+        <div><dt>AGL</dt><dd id="agl">0</dd><span>m</span></div>
+        <div><dt>AIR</dt><dd id="airspeed">0</dd><span>km/h</span></div>
+        <div><dt>GND</dt><dd id="groundspeed">0</dd><span>km/h</span></div>
+        <div><dt>L/D</dt><dd id="glide">–</dd><span></span></div>
+        <div><dt>TIME</dt><dd id="flighttime">0:00</dd><span></span></div>
+      </dl>
+      <div class="wind">
+        <div class="wind-rose"><div id="wind-arrow">▲</div></div>
+        <div class="wind-text"><span id="wind-speed">0</span> km/h<br /><small>WIND</small></div>
+      </div>
+    </section>
+
+    <div id="message" role="status"></div>
+
+    <aside id="help">
+      <h2>Controls</h2>
+      <table>
+        <tr><td>W / ↑</td><td>Run (ground) · speed bar (air)</td></tr>
+        <tr><td>A D / ← →</td><td>Left / right brake</td></tr>
+        <tr><td>S / ↓</td><td>Both brakes</td></tr>
+        <tr><td>Space</td><td>Full brakes — flare</td></tr>
+        <tr><td>Q E</td><td>Weight shift</td></tr>
+        <tr><td>T</td><td>Air start above launch</td></tr>
+        <tr><td>R · N</td><td>Reset · next launch</td></tr>
+        <tr><td>C · L</td><td>Camera · lift map</td></tr>
+        <tr><td>V · P · H</td><td>Mute · pause · help</td></tr>
+      </table>
+      <p>Gamepad: triggers = brakes, stick = weight shift, A = run / bar, Y = camera.</p>
+    </aside>
+
+    <footer id="credits">
+      Terrain MDT05 &amp; PNOA © <a href="https://www.ign.es" target="_blank" rel="noopener">Instituto Geográfico Nacional</a> (CC BY 4.0)
+      <span id="sha"></span>
+    </footer>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
