@@ -605,7 +605,8 @@ and worth revisiting for the Unreal build:
   dynamics. There's no line tension, no canopy inertia, and no separate pilot swing in the
   physics. The swinging canopy in `wing.ts` is cosmetic. The visible cost is the wingover: the
   top of the swing stays at 2–3 G instead of going light, and "too far over the wing" is a bank
-  threshold (`OVER_WING`) instead of lines going slack.
+  threshold (`OVER_WING`) instead of lines going slack. The fix is planned in
+  [plan-two-body-flight-model.md](plan-two-body-flight-model.md).
 - **No yaw dynamics.** Heading follows the bank exactly (a coordinated turn), so there's no
   sideslip, no adverse yaw, and no yaw-roll coupling such as a twist.
 - **Collapses and stalls are states, not shapes.** The aerodynamics don't know what the canopy
