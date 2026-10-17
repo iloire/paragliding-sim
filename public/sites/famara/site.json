@@ -1,15 +1,19 @@
 {
-  "name": "Famara, Lanzarote",
+  "name": "Lanzarote",
   "proj4": "+proj=utm +zone=28 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs",
   "crs": "EPSG:4083",
-  "bbox": [630000, 3211000, 654000, 3235000],
+  "bbox": [616000, 3193000, 658000, 3235000],
   "heightmap": { "file": "height.bin", "size": 2048 },
   "ortho": { "file": "ortho.jpg", "size": 4096 },
   "detail": { "dir": "detail", "tileM": 3000, "orthoSize": 2048, "radiusM": 5000 },
   "launches": [
     { "id": "famara", "name": "Famara", "lat": 29.08, "lon": -13.558 },
     { "id": "mala", "name": "Mala", "lat": 29.113, "lon": -13.4794 },
-    { "id": "mirador", "name": "Mirador del Río", "lat": 29.22, "lon": -13.4728 }
+    { "id": "mirador", "name": "Mirador del Río", "lat": 29.22, "lon": -13.4728 },
+    { "id": "tenesar", "name": "Tenesar", "lat": 29.0786, "lon": -13.712 },
+    { "id": "cuchillo", "name": "El Cuchillo", "lat": 29.0872, "lon": -13.6585 },
+    { "id": "macher", "name": "Macher", "lat": 28.9506, "lon": -13.7103 },
+    { "id": "playa-quemada", "name": "Playa Quemada", "lat": 28.9025, "lon": -13.7413 }
   ],
   "weather": {
     "windSpeedKmh": 24,

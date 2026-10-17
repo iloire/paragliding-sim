@@ -7,7 +7,8 @@ browser. It is for pilots who know the site and want the air to behave like it d
 that depends on the wind angle against the Risco de Famara, a soaring band that tops out, an
 inversion that kills it, thermals that mark themselves with cumulus. The wing is a force-based
 model, so spirals, wingovers, flares and gust-induced collapses come out of the physics. The
-terrain and aerial photo are the real IGN data.
+terrain and aerial photo are the real IGN data. The map covers the island's flyable sites: Famara,
+Mala, Mirador del Río, Tenesar, El Cuchillo, Macher and Playa Quemada (**N** cycles through them).
 
 This is the **browser prototype** of a planned Unreal Engine game — it proves the flight feel and
 the lift model cheaply first. The plan lives in the notes vault (`Projects/paragliding-simulator/plan.md`).

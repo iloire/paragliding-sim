@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-17 22:15 UTC — Tenesar, El Cuchillo, Macher and Playa Quemada
+
+- Four new launches (coordinates from ParaglidingEarth): Tenesar, El Cuchillo, Macher, Playa Quemada.
+- Site bbox grown from 24 km to 42 km (616–658 km E, 3193–3235 km N) so the whole flyable island fits; the site is now named "Lanzarote". Base heightmap ~20.5 m (was ~11.7 m), lift grid ~82 m.
+- Detail tiles regenerated on the new grid: 54 tiles (~65 MB) around all seven launches.
+
 ## 2026-10-17 22:03 UTC — Terrain detail near the launches
 
 - 25 detail tiles (3 km) around Famara, Mala and Mirador: native 5 m heights and 1.5 m/px PNOA photo, fetched by `npm run fetch-terrain -- famara --detail`.

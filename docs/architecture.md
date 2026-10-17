@@ -87,7 +87,7 @@ into turns relative to the pilot.
 
 ## Air model (`src/sim/wind.ts`, `thermals.ts`)
 
-Built on a 512² grid over the site (~47 m cells), rebuilt only when the wind direction changes:
+Built on a 512² grid over the site (~82 m cells over the 42 km island bbox), rebuilt only when the wind direction changes:
 
 1. Blur the terrain (σ 120 m), take its gradient, cap the steepness at 0.75 and project it on the
    wind direction. Lift per m/s of wind is that slope — so a 45° cross wind keeps cos 45° ≈ 70 %.
@@ -109,14 +109,14 @@ These rules come from the notes vault's *coastal-soaring-lift-factors* note; the
 
 `npm run fetch-terrain -- famara` reads `public/sites/famara/site.json` and downloads:
 
-- **Height**: IGN WCS `Elevacion4083_5` (MDT05, 5 m, REGCAN95 / UTM 28N) resampled to 2048² (~11.7 m),
+- **Height**: IGN WCS `Elevacion4083_5` (MDT05, 5 m, REGCAN95 / UTM 28N) resampled to 2048² (~20.5 m over the 42 km bbox that covers the whole flyable island),
   3×3 smoothed to hide 1 m terracing, written as Int16 decimetres. Sea (nodata or ≤ 0 m) becomes −15 m.
 - **Orthophoto**: IGN WMS `pnoa-ma`, 4096² JPEG over the same bbox.
 - **Detail tiles** (`detail` in `site.json`): the bbox cut into `tileM` squares; a tile is fetched
   if it has ≥ 1 % land and its centre is within `radiusM` (per axis) of a launch. Each gets the DEM
   at native 5 m (600², fetched with a one-pixel margin so the smoothing matches across tile edges)
   and a `orthoSize`² photo, as `detail/<col>_<row>.bin|.jpg` (col from the west, row from the
-  south), listed in `detail/tiles.json`. Famara: 25 tiles, ~31 MB. IGN's WCS offers nothing finer
+  south), listed in `detail/tiles.json`. Lanzarote (7 launches): 54 tiles, ~65 MB. IGN's WCS offers nothing finer
   than 5 m; the 2 m MDT02 is download-only.
 
 Both are © Instituto Geográfico Nacional, CC BY 4.0 — the attribution is on screen.
