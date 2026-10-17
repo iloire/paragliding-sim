@@ -507,8 +507,8 @@ to it.
 - **Cells:** three spanwise vertices per cell. The top surface puffs out between ribs, the
   trailing edge scallops in mid-cell, and the intakes under the nose are dark gaps between
   the ribs.
-- **Colours:** an orange nose for the first 24 % of the chord, navy tips past 77 % of the
-  semispan, slightly darker seams on every rib, shaded underside. A `MeshPhysicalMaterial` with
+- **Colours:** red, with two white chevrons per side swept back from the nose and a darker
+  trailing edge, slightly darker seams on every rib, shaded underside. A `MeshPhysicalMaterial` with
   sheen gives the fabric its soft highlight.
 
 ### Lines and risers
@@ -534,9 +534,10 @@ canopy every frame, so they follow a collapse or a brake pull.
 
 ### The pilot
 
-The pilot is built from primitives: a cylinder torso, sphere joints, cylinder limbs, a helmet
-with a visor, and a **pod harness**. The pod is a lathe (a rotated teardrop profile) from the
-rounded back protector to the pointed foot, with orange piping and a flight deck on top.
+The pilot is built from primitives: a cylinder torso, sphere joints, cylinder limbs, a head
+(face, wraparound glasses, a red open-shell helmet that sits lower at the nape, camera mount
+on top), and a **pod harness**. The pod is a lathe (a rotated teardrop profile) from the
+rounded back protector behind the pilot to the pointed foot out front, with orange piping and a flight deck on top.
 
 Two key poses blend with a filter of about 0.4 s:
 

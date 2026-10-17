@@ -15,6 +15,7 @@ export class CameraRig {
   private readonly look = new THREE.Vector3();
   private readonly lastTarget = new THREE.Vector3();
   private roll = 0;
+  private lastHeading = 0;
 
   constructor(readonly camera: THREE.PerspectiveCamera, dom: HTMLElement) {
     this.orbit = new OrbitControls(camera, dom);
@@ -27,6 +28,14 @@ export class CameraRig {
     this.mode = MODES[(MODES.indexOf(this.mode) + 1) % MODES.length];
     this.orbit.enabled = this.mode === 'orbit';
     this.camera.up.set(0, 1, 0);
+    if (this.mode === 'orbit') {
+      // Start off the pilot's right shoulder, behind and above, rather than inside the helmet.
+      const fx = Math.sin(this.lastHeading), fz = -Math.cos(this.lastHeading);
+      const p = this.lastTarget;
+      this.camera.position.set(p.x - fz * 7 - fx * 9, p.y + 3, p.z + fx * 7 - fz * 9);
+      this.orbit.target.copy(p);
+      this.orbit.update();
+    }
     return this.mode;
   }
 
@@ -66,5 +75,6 @@ export class CameraRig {
       cam.rotation.set(-0.12, -s.heading, -this.roll);
     }
     this.lastTarget.copy(pilot);
+    this.lastHeading = s.heading;
   }
 }

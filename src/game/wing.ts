@@ -29,9 +29,9 @@ const CANOPY_TOP = CARABINER_Y + 7.4;
 const PILLOW = 0.035;
 
 const COLOURS = {
-  top: new THREE.Color(0xf3efe6),
-  lead: new THREE.Color(0xff5b1e),
-  tip: new THREE.Color(0x1d2f5c),
+  top: new THREE.Color(0xd21f2b),
+  stripe: new THREE.Color(0xf6f3ee),
+  trailing: new THREE.Color(0x8e121b),
   seam: 0.86,
   bottomShade: 0.72,
   intake: new THREE.Color(0x15161a),
@@ -114,7 +114,6 @@ export function createGlider(): GliderModel {
     const nx = Math.sin(st.angle), ny = Math.cos(st.angle);
     const cx = ARC_RADIUS * nx;
     const cy = CANOPY_TOP - CARABINER_Y - ARC_RADIUS * (1 - ny);
-    const tipness = THREE.MathUtils.smoothstep(Math.abs(st.t), 0.74, 0.8);
     for (let side = 0; side < 2; side++) {
       for (let k = 0; k < CHORD_SAMPLES; k++) {
         const u = chordSample(k);
@@ -128,8 +127,10 @@ export function createGlider(): GliderModel {
         base[idx + 1] = cy + ny * offset;
         base[idx + 2] = z;
 
-        colour.copy(u < 0.24 ? COLOURS.lead : COLOURS.top).lerp(COLOURS.tip, tipness);
-        if (u > 0.9 && tipness < 0.5) colour.lerp(COLOURS.tip, 0.85);
+        // Red, with two white chevrons per side swept back from the nose, darker trailing edge.
+        const band = (Math.abs(st.t) * 2.2 + u * 0.9) % 1;
+        colour.copy(Math.abs(st.t) > 0.15 && band < 0.14 ? COLOURS.stripe : COLOURS.top);
+        if (u > 0.92) colour.lerp(COLOURS.trailing, 0.8);
         if (side === 1) colour.multiplyScalar(COLOURS.bottomShade);
         if (si % SUB === 0) colour.multiplyScalar(COLOURS.seam);
         // Open intakes just under the nose, between the ribs.
@@ -240,7 +241,7 @@ export function createGlider(): GliderModel {
   const harnessMat = new THREE.MeshStandardMaterial({ color: 0x23262c, roughness: 0.7 });
   const accent = new THREE.MeshStandardMaterial({ color: 0xff5b1e, roughness: 0.5 });
   const glove = new THREE.MeshStandardMaterial({ color: 0x15161a, roughness: 0.6 });
-  const helmetMat = new THREE.MeshStandardMaterial({ color: 0xf4f1ea, roughness: 0.3, metalness: 0.1 });
+  const skin = new THREE.MeshStandardMaterial({ color: 0xd9a07a, roughness: 0.8 });
   const visorMat = new THREE.MeshStandardMaterial({ color: 0x0c0d10, roughness: 0.15, metalness: 0.6 });
 
   const limb = (r: number, mat: THREE.Material) => {
@@ -264,10 +265,38 @@ export function createGlider(): GliderModel {
     pilot.add(t);
     return t;
   });
-  const helmet = joint(0.155, helmetMat);
-  helmet.scale.set(1, 0.95, 1.12);
-  const visor = new THREE.Mesh(new THREE.SphereGeometry(0.157, 16, 8, Math.PI * 0.6, Math.PI * 0.8, Math.PI * 0.35, Math.PI * 0.3), visorMat);
-  helmet.add(visor);
+  // Head: a face with wraparound glasses under an open shell helmet that sits lower at
+  // the back, painted red with a white centre stripe and a dark nape, camera mount on top.
+  const helmet = new THREE.Group();
+  pilot.add(helmet);
+  const face = new THREE.Mesh(new THREE.SphereGeometry(0.1, 20, 14), skin);
+  face.scale.set(0.85, 1.05, 0.95);
+  face.position.set(0, -0.035, -0.015);
+  helmet.add(face);
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 6), skin);
+  nose.position.set(0, -0.045, -0.11);
+  helmet.add(nose);
+  // Sphere segment centred on −Z (phi = 1.5π), a band just above the face's equator.
+  const glasses = new THREE.Mesh(new THREE.SphereGeometry(0.104, 20, 4, Math.PI * 1.17, Math.PI * 0.66, Math.PI * 0.4, Math.PI * 0.11), visorMat);
+  face.add(glasses);
+  const shellGeo = new THREE.SphereGeometry(0.135, 28, 16, 0, Math.PI * 2, 0, Math.PI * 0.58);
+  const shellCol: number[] = [];
+  const sp = shellGeo.attributes.position as THREE.BufferAttribute;
+  for (let i = 0; i < sp.count; i++) {
+    const x = sp.getX(i), y = sp.getY(i), z = sp.getZ(i);
+    const hex = Math.abs(x) < 0.022 && y > 0 ? 0xf6f3ee : z > 0.09 ? 0x23262c : 0xd21f2b;
+    const c = new THREE.Color(hex);
+    shellCol.push(c.r, c.g, c.b);
+  }
+  shellGeo.setAttribute('color', new THREE.Float32BufferAttribute(shellCol, 3));
+  const shell = new THREE.Mesh(shellGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.3, metalness: 0.1, side: THREE.DoubleSide }));
+  shell.scale.set(1, 1, 1.12);
+  shell.position.set(0, 0.01, 0.01);
+  shell.rotation.x = 0.35; // lifts the brow, drops the rim over the nape
+  helmet.add(shell);
+  const mount = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.035, 0.05), glove);
+  mount.position.set(0, 0.145, -0.01);
+  helmet.add(mount);
   const upperArms = [limb(0.05, suit), limb(0.05, suit)];
   const foreArms = [limb(0.045, suit), limb(0.045, suit)];
   const elbows = [joint(0.05, suit), joint(0.05, suit)];
@@ -285,7 +314,7 @@ export function createGlider(): GliderModel {
     [0.25, -0.7], [0.17, -0.95], [0.08, -1.08], [0, -1.12],
   ].map(([r, z]) => new THREE.Vector2(r, z));
   const podGeo = new THREE.LatheGeometry(podProfile, 32);
-  podGeo.rotateX(-Math.PI / 2); // lathe axis Y → along Z, nose (feet) forward at −Z
+  podGeo.rotateX(Math.PI / 2); // lathe axis Y → along Z, nose (feet) forward at −Z
   podGeo.scale(1, 0.9, 1);
   const podCol: number[] = [];
   const pp = podGeo.attributes.position as THREE.BufferAttribute;

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-17 23:12 UTC — Red wing, pod the right way round, a real head
+
+- The pod harness pointed backwards: its pointed foot now sits out front under the instrument deck, with the rounded back protector behind the pilot.
+- The pilot has a head: a face with wraparound glasses under a red open-shell helmet with a white centre stripe and a camera mount.
+- The wing is red with two white chevrons per side and a darker trailing edge.
+- Switching to the orbit camera starts off the pilot's right shoulder instead of inside the helmet.
+
 ## 2026-10-17 23:03 UTC — Wing planform the right way round
 
 - The canopy's trailing edge is now nearly straight and the leading edge sweeps back about 2 m to the tips, like a real paraglider. Before, the front was flat and the back curved, which is backwards. The physics doc and wing diagram are updated to match.

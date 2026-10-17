@@ -64,7 +64,7 @@
 <text x="20" y="290" class="note">48 cells, 12.1 m flat span, root chord 2.75 m, tip 0.45 m:</text>
 <text x="20" y="306" class="note">chord = tip + (root − tip)·√(1 − t²), an ellipse. The trailing</text>
 <text x="20" y="322" class="note">edge stays near straight, so the leading edge sweeps back</text>
-<text x="20" y="338" class="note">~2 m to the tips. Orange nose, navy tips, seams on every rib.</text>
+<text x="20" y="338" class="note">~2 m to the tips. Seams on every rib.</text>
 <text x="400" y="86" class="h">Arc and lines (front view)</text>
 <line x1="567.4" y1="115.2" x2="562.0" y2="185.7" stroke="#9c3a30" stroke-width="0.8" stroke-opacity="0.8"/>
 <line x1="563.5" y1="115.3" x2="562.0" y2="185.7" stroke="#9c3a30" stroke-width="0.8" stroke-opacity="0.8"/>
