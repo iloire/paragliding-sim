@@ -1,6 +1,13 @@
 # Changelog
 
-## 2026-10-17 22:15 UTC — Acro physics and new wing/pilot models
+## 2026-10-17 22:03 UTC — Terrain detail near the launches
+
+- 25 detail tiles (3 km) around Famara, Mala and Mirador: native 5 m heights and 1.5 m/px PNOA photo, fetched by `npm run fetch-terrain -- famara --detail`.
+- Terrain rendered as chunks with distance LOD (23 m → 10 m → 5 m mesh), built and freed on demand, with skirts hiding the seams.
+- Close-up grain and bump in the terrain shader; the lift map is now drawn by the terrain shader instead of a second mesh.
+- Physics (ground contact, launch heights, camera clamp) uses the 5 m data where it exists.
+
+## 2026-10-17 20:15 UTC — Acro physics and new wing/pilot models
 
 - Flight model rewritten as a lift/drag/gravity point mass in wind axes: energy trades on its own, so flares, surges, wingovers and spiral dives come out of the physics.
 - Roll pendulum with speed-dependent authority, deep-brake bite, a pendulum wall and per-wing spiral tendency (EN-B spiral ≈ 78°, 3 G, −10 m/s; EN-C locks harder).
@@ -8,7 +15,7 @@
 - New procedural canopy (planform, arc, airfoil, inflated cells, intakes, seams), cascaded A/B/C and brake lines, pod-harness pilot with standing/running/seated poses and arm IK on the brake toggles.
 - HUD shows G and bank; Shift + A/D is a deep brake.
 
-## 2026-10-17 21:55 UTC — Browser prototype
+## 2026-10-17 19:55 UTC — Browser prototype
 
 - Famara terrain from IGN open data (MDT05 height model + PNOA orthophoto), fetched by `npm run fetch-terrain`.
 - Flight model: speed polar per wing class (EN-A/B/C), pitch and roll pendulums, stall, takeoff run, launch grace, landing/crash/water.

@@ -1,15 +1,11 @@
-// Scene dressing: the terrain mesh draped with the orthophoto, the sea, the sky,
-// the sun, and the lift overlay. Sim frame (x east, y north, z up) maps to
+// Scene dressing: the sea, the sky, the sun, and the lift map the terrain paints
+// (the terrain itself is in terrain-view.ts). Sim frame (x east, y north, z up) maps to
 // three.js as X = x − e/2, Y = z, Z = e/2 − y, so the site is centred on the origin.
 
 import * as THREE from 'three';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
-import type { Heightmap } from '../sim/terrain';
 import type { WindField } from '../sim/wind';
 
-const MESH_SEGMENTS = 1023;
-/** Land within this distance of the bbox edge slopes into the sea instead of ending in a wall. */
-const EDGE_FADE_M = 700;
 const SUN_ELEVATION = 48;
 const SUN_AZIMUTH = 215;
 /** Lift map hides anything weaker than this (m/s) — gentle slopes would paint the whole island. */
@@ -17,28 +13,6 @@ const LIFT_MAP_MIN = 0.5;
 
 export function toScene(extent: number, x: number, y: number, z: number, out = new THREE.Vector3()): THREE.Vector3 {
   return out.set(x - extent / 2, z, extent / 2 - y);
-}
-
-export function createTerrain(terrain: Heightmap, ortho: THREE.Texture): THREE.Mesh {
-  const e = terrain.extent;
-  const geometry = new THREE.PlaneGeometry(e, e, MESH_SEGMENTS, MESH_SEGMENTS);
-  geometry.rotateX(-Math.PI / 2);
-  const pos = geometry.attributes.position as THREE.BufferAttribute;
-  for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i) + e / 2;
-    const y = e / 2 - pos.getZ(i);
-    const edge = Math.min(x, y, e - x, e - y);
-    const fade = Math.min(Math.max(edge / EDGE_FADE_M, 0), 1);
-    const h = terrain.heightAt(x, y);
-    pos.setY(i, h > 0 ? h * fade + -15 * (1 - fade) : h);
-  }
-  geometry.computeVertexNormals();
-  ortho.colorSpace = THREE.SRGBColorSpace;
-  ortho.anisotropy = 8;
-  const material = new THREE.MeshStandardMaterial({ map: ortho, roughness: 0.95, metalness: 0 });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.receiveShadow = true;
-  return mesh;
 }
 
 export function createSea(): THREE.Mesh {
@@ -80,19 +54,12 @@ export function createSkyAndLight(scene: THREE.Scene, renderer: THREE.WebGLRende
   return light;
 }
 
-/** Translucent drape showing ridge lift at ridge-top height: green up, red down. */
-export function createLiftOverlay(terrainMesh: THREE.Mesh, wind: WindField): { mesh: THREE.Mesh; refresh(): void } {
+/** Ridge lift at ridge-top height as an RGBA map over the site: green up, red down. */
+export function createLiftMap(wind: WindField): { texture: THREE.DataTexture; refresh(): void } {
   const g = wind.grid;
   const data = new Uint8Array(g * g * 4);
   const texture = new THREE.DataTexture(data, g, g);
   texture.magFilter = THREE.LinearFilter;
-  const material = new THREE.MeshBasicMaterial({
-    map: texture, transparent: true, depthWrite: false,
-    polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4,
-  });
-  const mesh = new THREE.Mesh(terrainMesh.geometry, material);
-  mesh.visible = false;
-
   function refresh(): void {
     const U = wind.speed;
     for (let j = 0; j < g; j++) {
@@ -109,5 +76,5 @@ export function createLiftOverlay(terrainMesh: THREE.Mesh, wind: WindField): { m
     }
     texture.needsUpdate = true;
   }
-  return { mesh, refresh };
+  return { texture, refresh };
 }

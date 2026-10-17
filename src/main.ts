@@ -8,7 +8,8 @@ import { Hud } from './game/hud';
 import { Input, type Action } from './game/input';
 import { loadSite, type Launch } from './game/site';
 import { createGlider as createGliderModel } from './game/wing';
-import { createLiftOverlay, createSea, createSkyAndLight, createTerrain, toScene } from './game/world';
+import { TerrainView } from './game/terrain-view';
+import { createLiftMap, createSea, createSkyAndLight, toScene } from './game/world';
 import { createGlider, stepGlider, type Environment, type GliderState } from './sim/glider';
 import { buildIgc, type Fix } from './sim/igc';
 import { Polar, WINGS, type WingId } from './sim/polar';
@@ -49,13 +50,13 @@ async function boot(): Promise<void> {
   const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.3, 200000);
   createSkyAndLight(scene, renderer);
   const ortho = await new THREE.TextureLoader().loadAsync(site.orthoUrl);
-  const terrainMesh = createTerrain(terrain, ortho);
-  scene.add(terrainMesh, createSea());
 
   const weather: Weather = { ...site.spec.weather };
   const wind = new WindField(terrain, weather);
-  const overlay = createLiftOverlay(terrainMesh, wind);
-  scene.add(overlay.mesh);
+  const liftMap = createLiftMap(wind);
+  const terrainView = new TerrainView(terrain, ortho, site.detailTileM, site.detailTiles, liftMap.texture,
+    renderer.capabilities.getMaxAnisotropy());
+  scene.add(terrainView.group, createSea());
   const clouds = new CloudLayer(extent);
   scene.add(clouds.group);
 
@@ -114,7 +115,7 @@ async function boot(): Promise<void> {
 
   function refreshWeather(): void {
     wind.setWeather({ ...weather });
-    if (settings.liftMap) overlay.refresh();
+    if (settings.liftMap) liftMap.refresh();
   }
 
   function downloadIgc(): void {
@@ -147,8 +148,8 @@ async function boot(): Promise<void> {
 
   function toggleLiftMap(on: boolean): void {
     settings.liftMap = on;
-    if (on) overlay.refresh();
-    overlay.mesh.visible = on;
+    if (on) liftMap.refresh();
+    terrainView.setLift(on);
     gui.controllersRecursive().forEach((c) => c.updateDisplay());
   }
 
@@ -248,7 +249,9 @@ async function boot(): Promise<void> {
     clouds.update(wind.thermals.clouds(clock, ...windUV(), weather.inversionM));
 
     const ground = terrain.groundAt(state.x, state.y);
-    rig.update(dt, pilotPos, state, toScene(extent, 0, 0, terrain.groundAt(...camGround())).y);
+    const camGroundZ = terrain.groundAt(...camGround());
+    rig.update(dt, pilotPos, state, toScene(extent, 0, 0, camGroundZ).y);
+    terrainView.update(camera.position, camera.position.y - camGroundZ);
     audio.update(dt, climb, state.airspeed, state.phase === 'flying');
     const [dx, dy] = wind.direction;
     hud.update(dt, state, climb, state.z - ground, state.phase === 'flying' ? glideAvg : null, flightTime,

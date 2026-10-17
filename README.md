@@ -16,6 +16,8 @@ the lift model cheaply first. The plan lives in the notes vault (`Projects/parag
 
 ![Spiral dive: 77° bank, 3.2 G, −10 m/s](docs/screenshots/spiral-dive.png)
 
+![Above the Famara launch: native 5 m terrain and 1.5 m/px photo near the camera](docs/screenshots/terrain-detail.png)
+
 ## Run it
 
 ```bash
@@ -40,8 +42,9 @@ CI runs the same three on every push to `main` and every pull request.
 
 ## Terrain data
 
-The height map and orthophoto are committed under `public/sites/famara/`. To rebuild them, or
-to add a site, edit `site.json` and run `npm run fetch-terrain -- <site>`. See
+The height map and orthophoto are committed under `public/sites/famara/`, plus 3 km detail tiles
+(native 5 m heights, 1.5 m/px photo) around the launches in `detail/`. To rebuild them, or to add
+a site, edit `site.json` and run `npm run fetch-terrain -- <site>` (`--detail` redoes only the tiles). See
 [docs/architecture.md](docs/architecture.md) for the data pipeline, the flight model and the
 air model.
 

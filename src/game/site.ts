@@ -21,6 +21,8 @@ export interface SiteSpec {
   bbox: [number, number, number, number];
   heightmap: { file: string; size: number };
   ortho: { file: string; size: number };
+  /** Native-resolution tiles near the launches, written by scripts/fetch-terrain.ts. */
+  detail?: { dir: string; tileM: number; orthoSize: number; radiusM: number };
   launches: LaunchSpec[];
   weather: Weather;
 }
@@ -33,10 +35,19 @@ export interface Launch {
   heading: number;
 }
 
+export interface DetailTile {
+  col: number;
+  row: number;
+  orthoUrl: string;
+}
+
 export interface Site {
   spec: SiteSpec;
   terrain: Heightmap;
   orthoUrl: string;
+  /** Square tile size of the detail grid (m), 0 when the site has none. */
+  detailTileM: number;
+  detailTiles: DetailTile[];
   launches: Launch[];
   toLatLon(x: number, y: number): [number, number];
 }
@@ -47,6 +58,7 @@ export async function loadSite(id: string): Promise<Site> {
   const buffer = await (await fetch(`${base}${spec.heightmap.file}`)).arrayBuffer();
   const [x0, y0, x1] = spec.bbox;
   const terrain = Heightmap.fromInt16Dm(buffer, spec.heightmap.size, x1 - x0);
+  const detailTiles = spec.detail ? await loadDetail(terrain, `${base}${spec.detail.dir}/`, spec.detail.tileM) : [];
   const proj = proj4('EPSG:4326', spec.proj4);
 
   const launches = spec.launches.map((l): Launch => {
@@ -60,10 +72,22 @@ export async function loadSite(id: string): Promise<Site> {
     spec,
     terrain,
     orthoUrl: `${base}${spec.ortho.file}`,
+    detailTileM: spec.detail?.tileM ?? 0,
+    detailTiles,
     launches,
     toLatLon(x, y) {
       const [lon, lat] = proj.inverse([x + x0, y + y0]);
       return [lat, lon];
     },
   };
+}
+
+/** Fetches every detail heightmap up front (they are small) so physics always has them. */
+async function loadDetail(terrain: Heightmap, dir: string, tileM: number): Promise<DetailTile[]> {
+  const index = (await (await fetch(`${dir}tiles.json`)).json()) as { size: number; tiles: [number, number][] };
+  return Promise.all(index.tiles.map(async ([col, row]): Promise<DetailTile> => {
+    const buffer = await (await fetch(`${dir}${col}_${row}.bin`)).arrayBuffer();
+    terrain.addDetail(tileM, col, row, Heightmap.fromInt16Dm(buffer, index.size, tileM, col * tileM, row * tileM));
+    return { col, row, orthoUrl: `${dir}${col}_${row}.jpg` };
+  }));
 }

@@ -1,0 +1,36 @@
+import { describe, expect, it } from 'vitest';
+import { Heightmap } from './terrain';
+
+// A ramp z = x / 10 sampled coarsely over the site, with a bump only the fine tile sees.
+const ramp = (x: number) => x / 10;
+const bump = (x: number, y: number) => ramp(x) + (Math.hypot(x - 1500, y - 4500) < 100 ? 50 : 0);
+
+function siteWithDetail(): Heightmap {
+  const site = Heightmap.fromFunction(16, 6000, ramp);
+  site.addDetail(3000, 0, 1, Heightmap.fromFunction(300, 3000, bump, 0, 3000));
+  return site;
+}
+
+describe('Heightmap detail tiles', () => {
+  it('samples a tile in the site frame, using its own origin', () => {
+    const tile = Heightmap.fromFunction(300, 3000, ramp, 3000, 0);
+    expect(tile.heightAt(4500, 1500)).toBeCloseTo(450, 0);
+  });
+
+  it('prefers the detail tile where it exists', () => {
+    const site = siteWithDetail();
+    expect(site.heightAt(1500, 4500)).toBeGreaterThan(190); // the bump: 150 + 50
+    expect(site.detailAt(1500, 4500)).toBeDefined();
+  });
+
+  it('falls back to the coarse map outside the tiles', () => {
+    const site = siteWithDetail();
+    expect(site.detailAt(4500, 1500)).toBeUndefined();
+    expect(site.heightAt(4500, 1500)).toBeCloseTo(450, 0);
+  });
+
+  it('agrees with the coarse map away from detail-only features', () => {
+    const site = siteWithDetail();
+    expect(site.heightAt(2500, 3500)).toBeCloseTo(250, 0);
+  });
+});

@@ -5,6 +5,7 @@
   "bbox": [630000, 3211000, 654000, 3235000],
   "heightmap": { "file": "height.bin", "size": 2048 },
   "ortho": { "file": "ortho.jpg", "size": 4096 },
+  "detail": { "dir": "detail", "tileM": 3000, "orthoSize": 2048, "radiusM": 5000 },
   "launches": [
     { "id": "famara", "name": "Famara", "lat": 29.08, "lon": -13.558 },
     { "id": "mala", "name": "Mala", "lat": 29.113, "lon": -13.4794 },

@@ -7,7 +7,7 @@ unchanged in behaviour (translated to C++, same tests).
 src/sim/    pure TypeScript, no three.js, no DOM — unit-tested
 src/game/   three.js scene, input, HUD, audio — the throwaway rendering layer
 public/sites/<id>/   site.json + generated terrain data
-scripts/fetch-terrain.ts   IGN download → height.bin + ortho.jpg
+scripts/fetch-terrain.ts   IGN download → height.bin + ortho.jpg + detail tiles
 ```
 
 ## Frames
@@ -56,6 +56,26 @@ Tuning numbers and the expected envelope (EN-B): 0.7 brake turn ≈ 30° bank, 1
 deep brake ≈ 78° / 3.1 G / −10 m/s; pumped wingovers > 90°; flare zooms up at +2 m/s.
 `src/sim/glider.test.ts` pins each of these.
 
+## Terrain rendering (`src/game/terrain-view.ts`)
+
+The site is drawn as a grid of square chunks (one per detail tile, 3 km). Every chunk has a coarse
+mesh (128² segments, ~23 m) draped with the site-wide photo. A chunk with a detail tile switches,
+by camera distance (including height above the ground), to a 10 m mesh under 4.5 km and the
+native 5 m mesh under 1.5 km, each with the tile's own 2048² photo (~1.5 m/px). Meshes are built
+on demand, one per frame, nearest first, and freed (with the photo) when the camera moves away;
+a 20 % hysteresis stops tiles flickering between levels. Every chunk hangs 80 m skirts on its
+edges, so a seam between levels shows terrain-coloured wall instead of sky.
+
+The terrain material is a `MeshStandardMaterial` patched in `onBeforeCompile` to add:
+
+- **Grain**: value noise at 0.7, 2.6 and 11 m modulating the colour, and a finer bump in the
+  normal, fading out by 700 m / 250 m — the photo is too soft for the last few metres.
+- **Lift map**: ridge lift at ridge-top height (`createLiftMap` in `world.ts`), looked up by
+  world position and blended over the lit colour when toggled.
+
+Physics uses the same data: `Heightmap.addDetail` registers each tile, and `heightAt` prefers a
+tile where one exists, so you touch down on the ground you see.
+
 ## Wing and pilot model (`src/game/wing.ts`)
 
 Procedural, rebuilt per frame so brakes and collapses deform it: elliptical planform with swept
@@ -92,5 +112,11 @@ These rules come from the notes vault's *coastal-soaring-lift-factors* note; the
 - **Height**: IGN WCS `Elevacion4083_5` (MDT05, 5 m, REGCAN95 / UTM 28N) resampled to 2048² (~11.7 m),
   3×3 smoothed to hide 1 m terracing, written as Int16 decimetres. Sea (nodata or ≤ 0 m) becomes −15 m.
 - **Orthophoto**: IGN WMS `pnoa-ma`, 4096² JPEG over the same bbox.
+- **Detail tiles** (`detail` in `site.json`): the bbox cut into `tileM` squares; a tile is fetched
+  if it has ≥ 1 % land and its centre is within `radiusM` (per axis) of a launch. Each gets the DEM
+  at native 5 m (600², fetched with a one-pixel margin so the smoothing matches across tile edges)
+  and a `orthoSize`² photo, as `detail/<col>_<row>.bin|.jpg` (col from the west, row from the
+  south), listed in `detail/tiles.json`. Famara: 25 tiles, ~31 MB. IGN's WCS offers nothing finer
+  than 5 m; the 2 m MDT02 is download-only.
 
 Both are © Instituto Geográfico Nacional, CC BY 4.0 — the attribution is on screen.
