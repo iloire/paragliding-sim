@@ -9,7 +9,8 @@
     "test": "vitest run",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "fetch-terrain": "tsx scripts/fetch-terrain.ts"
+    "fetch-terrain": "tsx scripts/fetch-terrain.ts",
+    "physics-figures": "tsx scripts/physics-figures.ts"
   },
   "author": "",
   "license": "UNLICENSED",

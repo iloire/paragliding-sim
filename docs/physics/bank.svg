@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="440" viewBox="0 0 760 440" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Banking tilts the lift vector, rear view">
+  <style>
+    .title { font-size: 17px; font-weight: 600; fill: #0b0b0b; }
+    .sub { font-size: 13px; fill: #52514e; }
+    .lbl { font-size: 13px; fill: #0b0b0b; paint-order: stroke; stroke: #fcfcfb; stroke-width: 4px; }
+    .note { font-size: 12.5px; fill: #0b0b0b; }
+    .muted { fill: #52514e; }
+  </style>
+  <defs>
+    <marker id="ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#0b0b0b"/></marker>
+    <marker id="blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2a78d6"/></marker>
+    <marker id="aqua" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#1baf7a"/></marker>
+    <marker id="orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#eb6834"/></marker>
+  </defs>
+  <rect width="100%" height="100%" rx="10" fill="#fcfcfb"/>
+  <text x="20" y="30" class="title">Bank tilts the lift (rear view, turning right)</text>
+  <text x="20" y="52" class="sub">The wing rolls about the pilot; lift stays square to the span, so part of it now points into the turn.</text>
+
+  <!-- canopy, banked 35 degrees -->
+  <g transform="rotate(35 300 300)" opacity="0.6">
+    <line x1="212" y1="160" x2="300" y2="300" stroke="#9a9993"/>
+    <line x1="388" y1="160" x2="300" y2="300" stroke="#9a9993"/>
+    <line x1="262" y1="140" x2="300" y2="300" stroke="#9a9993"/>
+    <line x1="338" y1="140" x2="300" y2="300" stroke="#9a9993"/>
+    <path d="M 205 168 Q 300 100 395 168" fill="none" stroke="#c9c8c2" stroke-width="12" stroke-linecap="round"/>
+  </g>
+
+  <!-- level reference and mu -->
+  <line x1="300" y1="300" x2="300" y2="110" stroke="#9a9993" stroke-dasharray="4 4"/>
+  <path d="M 300 240 A 60 60 0 0 1 334.4 250.9" fill="none" stroke="#0b0b0b"/>
+  <text x="312" y="232" class="lbl">μ</text>
+
+  <!-- components -->
+  <line x1="409" y1="144" x2="300" y2="144" stroke="#9a9993" stroke-dasharray="3 3"/>
+  <line x1="409" y1="144" x2="409" y2="300" stroke="#9a9993" stroke-dasharray="3 3"/>
+  <line x1="300" y1="300" x2="300" y2="147" stroke="#1baf7a" stroke-width="3" marker-end="url(#aqua)"/>
+  <line x1="300" y1="300" x2="406" y2="300" stroke="#eb6834" stroke-width="3" marker-end="url(#orange)"/>
+  <line x1="300" y1="300" x2="409" y2="144" stroke="#2a78d6" stroke-width="3" marker-end="url(#blue)"/>
+  <line x1="300" y1="300" x2="300" y2="415" stroke="#0b0b0b" stroke-width="3" marker-end="url(#ink)"/>
+  <circle cx="300" cy="300" r="7" fill="#0b0b0b" stroke="#fcfcfb" stroke-width="2"/>
+
+  <text x="416" y="140" class="lbl">L</text>
+  <text x="290" y="170" class="lbl" text-anchor="end">L·cos μ holds you up</text>
+  <text x="312" y="326" class="lbl">L·sin μ → turn centre</text>
+  <text x="310" y="412" class="lbl">m·g</text>
+
+  <g transform="translate(486 150)">
+    <text class="note" y="0" font-weight="600">Why steep turns cost height</text>
+    <text class="note" y="22">Only L·cos μ fights gravity, so holding</text>
+    <text class="note" y="40">height needs L = m·g / cos μ. The pilot</text>
+    <text class="note" y="58">feels that as the load factor n = L / m·g.</text>
+    <text class="note muted" y="80">30° → 1.15 G   60° → 2 G   75° → 3.9 G</text>
+    <text class="note" y="104">CL is near its trim value, so the extra</text>
+    <text class="note" y="122">lift has to come from speed (L ∝ V²):</text>
+    <text class="note" y="140">the glider dives to find it. Hold that</text>
+    <text class="note" y="158">long enough and it is a spiral dive.</text>
+    <text class="note muted" y="182">Turn rate dψ/dt = L·sin μ / (V·cos γ)</text>
+  </g>
+</svg>

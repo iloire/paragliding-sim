@@ -47,7 +47,8 @@ The height map and orthophoto are committed under `public/sites/famara/`, plus 3
 (native 5 m heights, 1.5 m/px photo) around the launches in `detail/`. To rebuild them, or to add
 a site, edit `site.json` and run `npm run fetch-terrain -- <site>` (`--detail` redoes only the tiles). See
 [docs/architecture.md](docs/architecture.md) for the data pipeline, the flight model and the
-air model.
+air model, and [docs/physics.md](docs/physics.md) for how the physics works, with diagrams
+and charts generated from the model.
 
 ## Deploy
 

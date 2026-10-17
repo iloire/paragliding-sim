@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="460" viewBox="0 0 760 460" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="How ridge lift is built from the terrain">
+  <style>
+    .title { font-size: 17px; font-weight: 600; fill: #0b0b0b; }
+    .sub { font-size: 13px; fill: #52514e; }
+    .lbl { font-size: 12.5px; fill: #0b0b0b; paint-order: stroke; stroke: #fcfcfb; stroke-width: 4px; }
+    .in { font-size: 12.5px; fill: #0b0b0b; }
+  </style>
+  <defs>
+    <marker id="flow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#7d8fa6"/></marker>
+    <marker id="ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#0b0b0b"/></marker>
+    <marker id="red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#e34948"/></marker>
+    <linearGradient id="lift" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a78d6" stop-opacity="0"/>
+      <stop offset="0.4" stop-color="#2a78d6" stop-opacity="0.4"/>
+      <stop offset="1" stop-color="#2a78d6" stop-opacity="0.4"/>
+    </linearGradient>
+    <linearGradient id="reach" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fcfcfb" stop-opacity="1"/>
+      <stop offset="0.5" stop-color="#fcfcfb" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" rx="10" fill="#fcfcfb"/>
+  <text x="20" y="30" class="title">Ridge lift, built from the terrain and the wind</text>
+  <text x="20" y="52" class="sub">Wind blows from the sea onto the face; the air has to climb over the ridge and drops down its lee side.</text>
+
+  <g transform="translate(0 40)">
+    <!-- lift region: full up to the ridge top, fading to the band top, reaching upwind -->
+    <polygon points="140,340 300,340 430,180 480,180 480,68 210,68" fill="url(#lift)"/>
+    <polygon points="140,340 300,340 300,68 210,68" fill="url(#reach)"/>
+
+    <!-- inversion -->
+    <line x1="20" y1="56" x2="740" y2="56" stroke="#0b0b0b" stroke-width="1.2" stroke-dasharray="6 4"/>
+    <text x="740" y="48" class="lbl" text-anchor="end">inversion: lift fades out in the 80 m below it</text>
+
+    <!-- terrain -->
+    <rect x="20" y="340" width="290" height="40" fill="#9cc3e6"/>
+    <polygon points="300,380 300,340 430,180 620,180 700,290 740,290 740,380" fill="#d9d1c4" stroke="#b8ad9e"/>
+
+    <!-- lee sink -->
+    <polygon points="615,180 700,290 740,290 740,232 700,212 650,168" fill="#e34948" fill-opacity="0.25"/>
+    <line x1="676" y1="196" x2="688" y2="226" stroke="#e34948" stroke-width="2" marker-end="url(#red)"/>
+    <line x1="710" y1="226" x2="718" y2="254" stroke="#e34948" stroke-width="2" marker-end="url(#red)"/>
+
+    <!-- streamlines -->
+    <g fill="none" stroke="#7d8fa6" stroke-width="1.6" marker-end="url(#flow)">
+      <path d="M20,315 C220,315 300,290 360,230 S 440,160 520,158 S 640,175 700,250 L736,262"/>
+      <path d="M20,270 C230,270 320,220 400,160 S 480,138 560,138 S 670,160 736,198"/>
+      <path d="M20,215 C240,215 340,165 420,128 S 520,112 600,112 S 700,128 736,140"/>
+      <path d="M20,150 C260,150 380,110 460,98 S 600,92 736,96"/>
+    </g>
+    <text x="24" y="132" class="lbl">wind → (60 % at the surface, full by 40 m up)</text>
+
+    <!-- band bracket -->
+    <line x1="492" y1="180" x2="492" y2="68" stroke="#0b0b0b" marker-start="url(#ink)" marker-end="url(#ink)"/>
+    <text x="500" y="196" class="lbl">ridge top</text>
+    <text x="500" y="78" class="lbl">band top = ridge top + 0.7 × relief</text>
+    <text x="500" y="128" class="lbl">band: full lift up to the ridge top,</text>
+    <text x="500" y="144" class="lbl">fading to zero at the band top</text>
+
+    <!-- upwind reach -->
+    <line x1="140" y1="392" x2="300" y2="392" stroke="#0b0b0b" marker-start="url(#ink)" marker-end="url(#ink)"/>
+    <text x="220" y="410" class="lbl" text-anchor="middle">rises up to 600 m upwind (decay 250 m)</text>
+
+    <!-- face and lee notes -->
+    <text x="450" y="230" class="in">windward face:</text>
+    <text x="450" y="247" class="in">lift ≈ U · slope · cos(off-angle)</text>
+    <text x="450" y="264" class="in">slope capped at 0.75 (~37°)</text>
+    <text x="736" y="320" class="in" text-anchor="end">lee sink: downwind slopes, within</text>
+    <text x="736" y="337" class="in" text-anchor="end">400 m of the ground, plus turbulence</text>
+    <text x="40" y="366" class="in">sea</text>
+  </g>
+</svg>

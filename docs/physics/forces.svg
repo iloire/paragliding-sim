@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="420" viewBox="0 0 760 420" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" role="img" aria-label="Forces on the glider, side view">
+  <style>
+    .title { font-size: 17px; font-weight: 600; fill: #0b0b0b; }
+    .sub { font-size: 13px; fill: #52514e; }
+    .lbl { font-size: 13px; fill: #0b0b0b; paint-order: stroke; stroke: #fcfcfb; stroke-width: 4px; }
+    .note { font-size: 12.5px; fill: #0b0b0b; }
+    .muted { fill: #52514e; }
+  </style>
+  <defs>
+    <marker id="ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#0b0b0b"/></marker>
+    <marker id="blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2a78d6"/></marker>
+    <marker id="red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#e34948"/></marker>
+  </defs>
+  <rect width="100%" height="100%" rx="10" fill="#fcfcfb"/>
+  <text x="20" y="30" class="title">Forces on the glider (side view, gliding to the right)</text>
+  <text x="20" y="52" class="sub">One point mass. Lift is square to the airflow, drag is along it, weight is straight down.</text>
+
+  <!-- horizon and flight path -->
+  <line x1="90" y1="235" x2="560" y2="235" stroke="#9a9993" stroke-dasharray="4 4"/>
+  <text x="92" y="228" class="sub">horizontal</text>
+  <line x1="107" y1="183" x2="590" y2="313" stroke="#9a9993" stroke-dasharray="2 4"/>
+  <text x="470" y="322" class="sub">flight path through the air</text>
+
+  <!-- canopy glyph -->
+  <g opacity="0.55">
+    <line x1="296" y1="155" x2="300" y2="235" stroke="#9a9993"/>
+    <line x1="344" y1="168" x2="300" y2="235" stroke="#9a9993"/>
+    <ellipse cx="321" cy="158" rx="50" ry="10" transform="rotate(15 321 158)" fill="#e7e6e2" stroke="#9a9993"/>
+  </g>
+
+  <!-- gamma -->
+  <path d="M 390 235 A 90 90 0 0 1 386.9 258.3" fill="none" stroke="#0b0b0b"/>
+  <text x="398" y="254" class="lbl">γ</text>
+
+  <!-- vectors -->
+  <line x1="300" y1="235" x2="445" y2="274" stroke="#0b0b0b" stroke-width="2.5" marker-end="url(#ink)"/>
+  <text x="450" y="296" class="lbl">V airspeed</text>
+  <line x1="300" y1="235" x2="339" y2="90" stroke="#2a78d6" stroke-width="3" marker-end="url(#blue)"/>
+  <text x="348" y="96" class="lbl">L lift = K·V²·CL</text>
+  <line x1="300" y1="235" x2="247" y2="221" stroke="#e34948" stroke-width="3" marker-end="url(#red)"/>
+  <text x="240" y="214" class="lbl" text-anchor="end">D drag = K·V²·CD</text>
+  <line x1="300" y1="235" x2="300" y2="390" stroke="#0b0b0b" stroke-width="3" marker-end="url(#ink)"/>
+  <text x="310" y="385" class="lbl">m·g weight</text>
+  <circle cx="300" cy="235" r="7" fill="#0b0b0b" stroke="#fcfcfb" stroke-width="2"/>
+
+  <!-- explanation -->
+  <g transform="translate(470 96)">
+    <text class="note" y="0" font-weight="600">How the equations read</text>
+    <text class="note" y="22">Steady glide: L and D add up to</text>
+    <text class="note" y="40">exactly m·g, pointing up.</text>
+    <text class="note" y="64">Brakes → more CL → L wins:</text>
+    <text class="note" y="82">the path curves up, V bleeds off.</text>
+    <text class="note" y="106">Release → less CL → path curves down,</text>
+    <text class="note" y="124">gravity's g·sin γ speeds you up.</text>
+    <text class="note muted" y="148">K = ρ·S / 2m = 0.15 /m</text>
+    <text class="note muted" y="166">(24 m², 95 kg, sea-level air)</text>
+  </g>
+</svg>

@@ -18,6 +18,8 @@ Heading is a compass bearing in radians (0 = north, clockwise).
 
 ## Flight model (`src/sim/glider.ts`, `polar.ts`)
 
+The full explanation, with charts from the real model, is in [physics.md](physics.md).
+
 A point mass under lift, drag and gravity, integrated in wind axes (airspeed V, flight-path
 angle γ, heading ψ, lift-vector bank μ; L and D per unit mass):
 
@@ -78,6 +80,8 @@ tile where one exists, so you touch down on the ground you see.
 
 ## Wing and pilot model (`src/game/wing.ts`)
 
+Geometry and how the sim drives it: [physics.md §10](physics.md#10-the-3d-wing-and-pilot).
+
 Procedural, rebuilt per frame so brakes and collapses deform it: elliptical planform with swept
 tips on an anhedral arc, NACA-style airfoil, 48 cells with inflated panels, nose intakes and seams;
 A/B/C lines cascading in three levels to the risers and brake lines to the toggles; a pod-harness
@@ -86,6 +90,8 @@ two-bone arm IK. The canopy hangs from a pivot at the carabiners, surging ahead 
 into turns relative to the pilot.
 
 ## Air model (`src/sim/wind.ts`, `thermals.ts`)
+
+Explained with diagrams in [physics.md §9](physics.md#9-the-air).
 
 Built on a 512² grid over the site (~82 m cells over the 42 km island bbox), rebuilt only when the wind direction changes:
 
