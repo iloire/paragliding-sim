@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-17 23:03 UTC — Wing planform the right way round
+
+- The canopy's trailing edge is now nearly straight and the leading edge sweeps back about 2 m to the tips, like a real paraglider. Before, the front was flat and the back curved, which is backwards. The physics doc and wing diagram are updated to match.
+
 ## 2026-10-17 22:21 UTC — Start in the air
 
 - The game starts with an air start above the first launch, and switching launch (N or the panel) air-starts too. R still resets to the ground at the launch for take-off practice.

@@ -69,12 +69,14 @@ function buildStations(): Station[] {
   for (let i = 0; i < STATIONS; i++) {
     const t = (i / (STATIONS - 1)) * 2 - 1;
     const sub = i % SUB;
+    const chord = TIP_CHORD + (ROOT_CHORD - TIP_CHORD) * Math.sqrt(Math.max(1 - t * t, 0));
     out.push({
       t,
       angle: Math.sign(t) * THREE.MathUtils.degToRad(ARC_DEG) * Math.abs(t) ** 1.3,
-      chord: TIP_CHORD + (ROOT_CHORD - TIP_CHORD) * Math.sqrt(Math.max(1 - t * t, 0)),
-      // The pilot hangs just behind the 30 % chord point, so the leading edge sits well ahead.
-      leZ: -1.05 + 0.6 * t * t,
+      chord,
+      // Nearly straight trailing edge, so the leading edge does the sweeping back to the tips.
+      // The pilot hangs just behind the 30 % chord point, so the root's leading edge sits well ahead.
+      leZ: 1.7 - 0.25 * t * t - chord,
       cellFrac: Math.sin((sub / SUB) * Math.PI),
     });
   }

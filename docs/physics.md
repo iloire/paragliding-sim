@@ -496,8 +496,9 @@ to it.
 
 - **Planform:** 48 cells over a 12.1 m flat span. The chord follows an ellipse,
   `0.45 + 2.3·√(1 − t²)` m, where t runs −1..1 tip to tip, so the root chord is 2.75 m and the
-  tips 0.45 m. The leading edge sweeps back by `0.6·t²` m towards the tips. The pilot hangs
-  under about 38 % of the root chord.
+  tips 0.45 m. The trailing edge is nearly straight (`1.7 − 0.25·t²` m behind the pilot), so
+  the leading edge sweeps back about 2 m to the tips, as on a real wing. The pilot hangs under
+  about 38 % of the root chord.
 - **Arc:** the span is bent around a 5.6 m radius, through 62° each side
   (`angle = 62°·|t|^1.3`, flatter in the middle). The top of the wing sits 7.4 m above the
   carabiners.
