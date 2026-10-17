@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-17 23:23 UTC — Wingovers: momentum and timing
+
+- Roll pendulum damping 0.28 → 0.18, so a swing keeps most of its momentum into the next.
+- Roll authority grows with V² (dynamic pressure) instead of V, capped at 2.2× trim: the speed from diving out of one swing powers the next pull.
+- The pendulum wall past 63° stiffens with load (9 per G), so a 3 G spiral is still held near 78° but a wingover's momentum carries the pilot past 90°, over the wing.
+- Swinging past 125° (too far over the wing) folds the high side. EN-B builds to ~100° at 60 % brake pumped in rhythm and folds when pumped at full brake; EN-C folds at 85 %; the EN-A school wing tops out near 120°.
+- Tests pin it: rhythm builds past 95° over several swings, pumping against the swing stays under 20°, full-brake pumping folds. Physics doc, figures and tuning tables updated.
+- Known gap: the top of the swing stays at 2–3 G; a light top needs the two-body canopy + pilot model.
+
 ## 2026-10-17 23:12 UTC — Red wing, pod the right way round, a real head
 
 - The pod harness pointed backwards: its pointed foot now sits out front under the instrument deck, with the rounded back protector behind the pilot.

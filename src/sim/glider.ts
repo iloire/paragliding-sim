@@ -11,9 +11,10 @@
 // The wing's pitch attitude is the lift coefficient: brakes and bar set a target CL,
 // and CL follows it through a damped response (the pitch pendulum), with a speed-
 // stability term that pulls the wing back towards its trim speed. Bank is the roll
-// pendulum: brake/weight-shift input rolls it with an authority that grows with speed,
+// pendulum: brake/weight-shift input rolls it with an authority that grows with V²,
 // the pilot's weight rolls it back level, and past ~55° at high G that restoring
 // moment fades by the wing's spiral tendency — so a held brake winds into a spiral.
+// Lightly damped, it keeps its momentum, so brake timed with the swing builds wingovers.
 
 import { G, LIFT_K, type Polar } from './polar';
 import type { AirSample } from './wind';
@@ -80,8 +81,8 @@ export interface Environment {
 }
 
 const PITCH = { omega: 2.2, zeta: 0.55 };
-/** Roll pendulum: ~4.3 s natural period, lightly damped — the rhythm of a wingover. */
-const ROLL = { omega: 1.45, zeta: 0.28 };
+/** Roll pendulum: ~4.3 s natural period, lightly damped so a swing keeps its momentum — the rhythm of a wingover. */
+const ROLL = { omega: 1.45, zeta: 0.18 };
 /** How strongly the wing pitches to hold its trim speed (pendulum stability). */
 const SPEED_STABILITY = 0.6;
 /** Extra drag per G above 1: the yawed, braked wing and the pilot in a spiral. */
@@ -90,12 +91,18 @@ const TURN_DRAG = 0.02;
 const WEIGHT_SHIFT_SHARE = 0.35;
 const DEEP_BRAKE = 0.7;
 const DEEP_BRAKE_GAIN = 0.8;
-const AUTHORITY_MAX = 1.2;
-/** Past this bank the pilot's weight swings far out and pulls back hard — the pendulum's wall. */
+const AUTHORITY_MAX = 2.2;
+/**
+ * Past this bank the pilot's weight swings far out and pulls back hard — the pendulum's wall.
+ * It pushes in proportion to the load, so a 3 G spiral is held near 78° while a swing with
+ * momentum behind it can carry the pilot past 90°, over the wing.
+ */
 const BANK_WALL = 1.1;
-const BANK_WALL_GAIN = 20;
+const BANK_WALL_GAIN = 9;
 /** Load factor below which the wing unloads and a side folds. */
 const COLLAPSE_LOAD = 0.3;
+/** Swung this far over the wing (~125°), the lines can't hold the canopy's shape and the high side folds. */
+const OVER_WING = 2.2;
 const COLLAPSE_SECONDS = 2.5;
 const SPIRAL_LOAD = 2.2;
 /** CL change per (m/s of vertical gust ÷ airspeed): a sharp down-gust drops the angle of attack. */
@@ -180,10 +187,12 @@ function fly(s: GliderState, c: Controls, polar: Polar, env: Environment, dt: nu
   // Past ~70 % one brake bites much harder: the inner wing slows, yaws in, and the turn tightens.
   const deep = Math.max(Math.abs(turn) - DEEP_BRAKE, 0) / (1 - DEEP_BRAKE);
   const input = Math.max(-2, Math.min(2, turn + Math.sign(turn) * DEEP_BRAKE_GAIN * deep + c.weightShift * WEIGHT_SHIFT_SHARE));
-  const authority = Math.min(V / polar.trim, AUTHORITY_MAX) * polar.rollAuthority;
+  // The brake's roll moment is aerodynamic, so it grows with dynamic pressure: the speed gained
+  // diving out of one swing is what powers the next.
+  const authority = Math.min((V / polar.trim) ** 2, AUTHORITY_MAX) * polar.rollAuthority;
   const spiral = polar.spiralTendency * smoothstep(0.95, 1.3, Math.abs(s.bank)) * smoothstep(1.5, 3, s.load);
   const over = Math.max(Math.abs(s.bank) - BANK_WALL, 0);
-  const restoring = Math.sin(s.bank) * (1 - spiral) + Math.sign(s.bank) * BANK_WALL_GAIN * over * over;
+  const restoring = Math.sin(s.bank) * (1 - spiral) + Math.sign(s.bank) * BANK_WALL_GAIN * Math.max(s.load, 0) * over * over;
   const collapseRoll = s.collapse * 0.55;
   const rollAcc = ROLL.omega ** 2 * (authority * input + collapseRoll - restoring) - 2 * ROLL.zeta * ROLL.omega * s.bankRate;
   s.bankRate += rollAcc * dt;
@@ -197,9 +206,9 @@ function fly(s: GliderState, c: Controls, polar: Polar, env: Environment, dt: nu
   s.gamma = Math.max(-GAMMA_LIMIT, Math.min(GAMMA_LIMIT, s.gamma));
   s.heading = wrapAngle(s.heading + ((lift * Math.sin(s.bank)) / (V * Math.max(cosG, 0.15))) * dt);
 
-  // Unloading (the top of a mistimed wingover) folds the high side.
+  // Unloading (the top of a mistimed wingover), or swinging too far over the wing, folds the high side.
   s.unloadTimer = s.load < COLLAPSE_LOAD && !s.stalled && !launching ? s.unloadTimer + dt : 0;
-  if (s.collapse === 0 && s.unloadTimer > 0.15) {
+  if (s.collapse === 0 && (s.unloadTimer > 0.15 || Math.abs(s.bank) > OVER_WING)) {
     s.collapse = s.bank >= 0 ? -1 : 1;
     s.collapseTimer = COLLAPSE_SECONDS;
     s.event = 'collapse';

@@ -97,15 +97,45 @@ describe('glider', () => {
     expect(s.load).toBeLessThan(1.4);
   });
 
-  it('builds wingovers past 90° when the pilot pumps with the swing', () => {
+  /**
+   * Pumps wingovers for 25 s and returns the bank at each end of the swing, plus collapses.
+   * `phase` +1 pulls the brake on the side the wing is swinging towards (from level until it is
+   * 45° up, then hands up); −1 pulls against the swing.
+   */
+  function wingovers(brake: number, phase: 1 | -1): { peaks: number[]; collapses: number } {
     const s = createGlider(0, 0, 3000, 0, 'flying', polar.trim);
-    let maxBank = 0;
-    for (let i = 0; i < 120 * 20; i++) {
-      const dir = i < 30 ? 1 : Math.sign(s.bankRate) || 1;
-      stepGlider(s, { ...hands, brakeRight: dir > 0 ? 0.85 : 0, brakeLeft: dir < 0 ? 0.85 : 0, weightShift: dir }, polar, flatWorld(), 1 / 120);
-      maxBank = Math.max(maxBank, Math.abs(s.bank));
+    const peaks: number[] = [];
+    let collapses = 0;
+    for (let i = 0; i < 120 * 25; i++) {
+      const toward = i < 60 ? 1 : Math.sign(s.bankRate) || 1;
+      const pulling = i < 60 || Math.abs(s.bank) < 0.8 || Math.sign(s.bank) !== toward;
+      const dir = toward * phase;
+      const b = pulling ? brake : 0;
+      const rate = s.bankRate;
+      stepGlider(s, { ...hands, brakeRight: dir > 0 ? b : 0, brakeLeft: dir < 0 ? b : 0, weightShift: pulling ? dir : 0 }, polar, flatWorld(), 1 / 120);
+      if (i > 60 && Math.sign(rate) !== Math.sign(s.bankRate)) peaks.push(Math.abs(s.bank));
+      if (s.event === 'collapse') collapses++;
+      s.event = null;
     }
-    expect(maxBank).toBeGreaterThan(Math.PI / 2);
+    return { peaks, collapses };
+  }
+
+  it('builds wingovers past 90° over several swings when the pilot pumps in rhythm', () => {
+    const { peaks, collapses } = wingovers(0.6, 1);
+    expect(Math.max(...peaks)).toBeGreaterThan((95 * Math.PI) / 180);
+    expect(peaks[4]).toBeGreaterThan(peaks[0] + 0.5); // momentum carries over: each swing adds to the last
+    expect(collapses).toBe(0);
+  });
+
+  it('does not build a swing when the pilot pumps against it', () => {
+    const { peaks } = wingovers(0.6, -1);
+    expect(Math.max(...peaks)).toBeLessThan((20 * Math.PI) / 180);
+  });
+
+  it('folds a side when an overcooked wingover swings too far over the wing', () => {
+    const { peaks, collapses } = wingovers(1, 1);
+    expect(Math.max(...peaks)).toBeGreaterThan(2.2);
+    expect(collapses).toBeGreaterThan(0);
   });
 
   it('folds a side in a sharp down-gust, then reopens', () => {

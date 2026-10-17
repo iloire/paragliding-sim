@@ -38,24 +38,27 @@ equations as speed and height trade.
 - **Pitch.** Brakes and bar pick a target speed, hence a target CL. CL follows it through a damped
   second-order response (the pitch pendulum), plus a speed-stability term that pulls the wing back
   towards its trim speed — that damps the phugoid the way the pilot's weight does.
-- **Roll.** Bank is a pendulum (~4.3 s period, lightly damped — the wingover rhythm). Brake
-  difference + weight shift drive it with an authority that grows with speed; past 70 % one brake
-  bites much harder. The pilot's weight restores it (`sin μ`), with a steep wall past ~63° where
-  the pilot swings far out. Above ~55° at high G that restoring moment fades by the wing's
+- **Roll.** Bank is a pendulum (~4.3 s period, lightly damped so a swing keeps its momentum — the
+  wingover rhythm). Brake difference + weight shift drive it with an authority that grows with V²,
+  so speed from a dive powers the next swing; past 70 % one brake bites much harder. The pilot's
+  weight restores it (`sin μ`), with a wall past ~63° that stiffens with load (holds a 3 G spiral,
+  lets a wingover's momentum carry past 90°). Above ~55° at high G that restoring moment fades by the wing's
   `spiralTendency`, so a held deep brake winds into a spiral dive.
 - **Spiral drag.** Extra drag grows with load factor (the yawed, braked wing and the pilot), so an
   EN-B spiral settles near 75–80° bank, ~3 G, ~10 m/s sink.
 - **Gusts and collapses.** A sudden change in vertical air (against a 1 s filtered value) shifts
   the angle of attack. If the load factor drops below 0.3 for 0.15 s, the high side folds:
   less lift, more drag, a roll towards the folded side, reopening after ~2.5 s (faster if you
-  pump that side's brake). A sharp down-gust or a badly timed wingover can cause one.
+  pump that side's brake). A sharp down-gust, a badly timed wingover, or swinging past ~125° (too
+  far over the wing) causes one.
 - **Stall.** Deep symmetric brakes held >1.2 s, or flying far below stall speed: CL collapses and
   drag jumps, the wing drops; hands up to recover.
 - **Ground.** Run up to 4.2 m/s; lift-off at 1.1 × stall airspeed (or when the ground drops away),
   leaving at trim speed. Touchdown above 3.5 m/s sink, 11 m/s ground speed or 35° bank is a crash.
 
-Tuning numbers and the expected envelope (EN-B): 0.7 brake turn ≈ 30° bank, 11 s per 360°;
-deep brake ≈ 78° / 3.1 G / −10 m/s; pumped wingovers > 90°; flare zooms up at +2 m/s.
+Tuning numbers and the expected envelope (EN-B): 0.7 brake turn ≈ 26° bank, 13 s per 360°;
+deep brake ≈ 78° / 3.2 G / −10.6 m/s; wingovers pumped in rhythm build past 90° over several
+swings, against the rhythm they don't build, overcooked past 125° they fold; flare zooms up at +2 m/s.
 `src/sim/glider.test.ts` pins each of these.
 
 ## Terrain rendering (`src/game/terrain-view.ts`)

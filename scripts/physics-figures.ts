@@ -290,22 +290,27 @@ function steadyTurnFigure(): void {
 }
 
 function wingoverFigure(): void {
-  // Pump with the swing: pull the brake (and shift weight) on the side the wing is already rolling towards.
-  let dir = 1;
-  const data = fly(enb, 20, (t, s) => {
-    dir = t < 0.25 ? 1 : Math.sign(s.bankRate) || dir;
-    return { ...hands, brakeRight: dir > 0 ? 0.85 : 0, brakeLeft: dir < 0 ? 0.85 : 0, weightShift: dir };
-  });
-  const events = data.filter((d) => d.event === 'collapse').map((d) => ({ at: d.t, label: 'collapse' }));
+  // Pump in rhythm: brake (and shift weight) on the side the wing is swinging towards, from level
+  // until it is 45° up, then hands up and let the momentum carry it. Then the same, overcooked.
+  const pump = (brake: number) => {
+    let dir = 1;
+    return fly(enb, 25, (t, s) => {
+      dir = t < 0.5 ? 1 : Math.sign(s.bankRate) || dir;
+      const pulling = t < 0.5 || Math.abs(s.bank) < 0.8 || Math.sign(s.bank) !== dir;
+      const b = pulling ? brake : 0;
+      return { ...hands, brakeRight: dir > 0 ? b : 0, brakeLeft: dir < 0 ? b : 0, weightShift: pulling ? dir : 0 };
+    });
+  };
+  const clean = pump(0.6), hard = pump(1);
+  const events = hard.filter((d) => d.event === 'collapse').map((d) => ({ at: d.t, label: 'fold' }));
   save('wingover.svg', lineChart({
     title: 'Wingovers: pumping the roll pendulum in rhythm (EN-B)',
-    subtitle: 'Reversing the input each time the roll rate reverses adds energy every swing: past ±90° by the third swing.',
-    xLabel: 'Time (s)', x: [0, 20],
+    subtitle: 'Each well-timed pull adds to the last swing. 60 % brake builds to ~100°; full brake swings past 125° and folds a side.',
+    xLabel: 'Time (s)', x: [0, 25],
     vRules: events.slice(0, 3),
     panels: [
-      { yLabel: 'Input (R − L)', series: [series('input', C.muted, data, (s) => Math.sign(s.bankRate))], y: [-1.5, 1.5], height: 70 },
-      { yLabel: 'Bank (°)', series: [series('bank', C.blue, data, (s) => s.bank * DEG)], y: [-130, 130], height: 160, hRules: [{ at: 90, label: '90°' }, { at: -90, label: '−90°' }] },
-      { yLabel: 'Load factor (G)', series: [series('load', C.blue, data, (s) => s.load)], y: [0, 2.5], height: 110, hRules: [{ at: 0.3, label: 'collapse threshold 0.3 G' }] },
+      { yLabel: 'Bank (°)', series: [series('60 % brake', C.blue, clean, (s) => s.bank * DEG), series('full brake', C.red, hard, (s) => s.bank * DEG)], y: [-160, 160], height: 180, hRules: [{ at: 126, label: 'over the wing' }, { at: -126, label: '' }] },
+      { yLabel: 'Load factor (G)', series: [series('60 % brake', C.blue, clean, (s) => s.load), series('full brake', C.red, hard, (s) => s.load)], y: [0, 4], height: 110, hRules: [{ at: 0.3, label: 'collapse threshold 0.3 G' }] },
     ],
   }));
 }

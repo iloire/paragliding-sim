@@ -251,9 +251,9 @@ Bank is a second pendulum, with its own spring and damper:
 
 ```
 input       = (brakeR − brakeL) + deep-brake bite + 0.35·weightShift          clamped to ±2
-authority   = min(V / V_trim, 1.2) · rollAuthority
-restoring   = sin(μ)·(1 − spiral) + 20·max(|μ| − 1.1, 0)²·sign(μ)
-d²μ/dt²     = ω²·(authority·input + collapseRoll − restoring) − 2ζω·dμ/dt     ω = 1.45 rad/s, ζ = 0.28
+authority   = min((V / V_trim)², 2.2) · rollAuthority
+restoring   = sin(μ)·(1 − spiral) + 9·n·max(|μ| − 1.1, 0)²·sign(μ)                n = load factor
+d²μ/dt²     = ω²·(authority·input + collapseRoll − restoring) − 2ζω·dμ/dt     ω = 1.45 rad/s, ζ = 0.18
 ```
 
 Each term is one piece of how a paraglider really turns:
@@ -263,11 +263,11 @@ Each term is one piece of how a paraglider really turns:
 | `brakeR − brakeL` | Differential brake. The braked side flies slower and drags, so the wing rolls and yaws towards it. |
 | **Deep-brake bite** | Past 70 % on one brake, extra input up to +0.8. The inner wing nearly stalls and pivots, and the turn tightens sharply. |
 | `0.35·weightShift` | Leaning in the harness. It helps, but it's weaker than the brakes. |
-| **Authority** ∝ V | A slow wing turns sluggishly; a fast one responds more. Capped at 1.2× the trim value. |
+| **Authority** ∝ V² | The brake's roll moment is aerodynamic, so it grows with dynamic pressure: a slow wing turns sluggishly, a fast one bites hard. The speed gained diving out of one swing powers the next. Capped at 2.2× the trim value. |
 | `sin(μ)` restoring | The pilot's weight swinging back under the wing. It grows with bank, like a pendulum. |
 | **Spiral tendency** | Above ~55° bank *and* 1.5–3 G, the restoring moment fades by `spiralTendency` (smoothstep blends in both). On a wing with tendency > 1 the restoring moment **reverses**, so the spiral holds itself. |
-| **Pendulum wall** | Past 63° (1.1 rad), a steep quadratic push back: the pilot has swung far out and the lines won't let the wing go past them. |
-| ω, ζ | About a 4.3 s natural period, lightly damped (ζ 0.28) so it swings. That is the rhythm of a wingover. |
+| **Pendulum wall** | Past 63° (1.1 rad), a quadratic push back that grows with the load: the pilot pinned out at 3 G in a spiral is held there, but a swing with momentum behind it carries on past 90°, over the wing. |
+| ω, ζ | About a 4.3 s natural period, lightly damped (ζ 0.18) so a swing keeps most of its momentum into the next. That is the rhythm of a wingover. |
 
 ### Gentle turns
 
@@ -281,9 +281,9 @@ At 70 % brake, after 20 s:
 
 | Wing | Bank | 360° takes | Sink |
 |---|---|---|---|
-| EN-A | 23° | 14.0 s | 1.4 m/s |
-| EN-B | 28° | 12.2 s | 1.5 m/s |
-| EN-C | 33° | 10.6 s | 1.7 m/s |
+| EN-A | 22° | 14.9 s | 1.4 m/s |
+| EN-B | 26° | 13.2 s | 1.4 m/s |
+| EN-C | 32° | 11.1 s | 1.6 m/s |
 
 ### Spiral dives
 
@@ -295,9 +295,9 @@ away, so the spiral settles:
 
 | Wing | Bank | Load | Airspeed | Sink |
 |---|---|---|---|---|
-| EN-A | 75° | 2.9 G | 46 km/h | 8.4 m/s |
-| EN-B | 78° | 3.2 G | 50 km/h | 10.5 m/s |
-| EN-C | 81° | 3.5 G | 55 km/h | 13.1 m/s |
+| EN-A | 76° | 3.0 G | 47 km/h | 8.9 m/s |
+| EN-B | 78° | 3.2 G | 51 km/h | 10.6 m/s |
+| EN-C | 81° | 3.4 G | 55 km/h | 12.8 m/s |
 
 Release the brake at t = 12 s and **all three come out on their own** within about 2 s. They
 overshoot to the other side, then convert the stored speed into a climb (the vz spike at 14 s)
@@ -310,14 +310,26 @@ The HUD flags `spiral` when the load passes 2.2 G above about 52° bank, and cle
 
 ### Wingovers
 
-Because the roll pendulum is lightly damped, you can **pump** it: reverse the input each time
-the roll rate reverses, in time with the ~4.3 s swing, and every swing gets bigger:
+A wingover is momentum plus timing. Pull the brake (and lean) on the side the wing is swinging
+towards, from level until it is about 45° up, then hands up and let it carry. Two things make
+each pull add to the last:
+
+- The pendulum is lightly damped, so most of a swing's momentum is still there for the next one.
+- Authority grows with V², so the speed gained diving out of one swing makes the next pull bite
+  harder.
 
 ![Wingovers built by pumping](physics/wingover.svg)
 
-The bank passes 90° on the third swing and the wall holds it at about ±105°. With this timing
-the load stays near 2 G. Time the input badly at the top of a swing and the load can drop below
-0.3 G, which folds the wing ([§7](#7-stalls-gusts-and-collapses)).
+At 60 % brake, EN-B builds over about six swings to ~100°: the pilot level with the wing and
+past it. Pulling against the swing kills it (it never passes ~15°), and an off-rhythm pull
+leaves it wandering around 15–25°. Push too hard and the swing goes past **125°**, too far over
+the wing: the high side folds ([§7](#7-stalls-gusts-and-collapses)). Full-brake pumping does
+that on EN-B and EN-C (EN-C already at 85 %); the EN-A school wing tops out near 120° and can't
+be pushed over.
+
+The load at the top of these swings stays at 2–3 G. On a real wing the top of a big wingover is
+light and slow, because the canopy and the pilot are separate bodies and the lines go nearly
+slack as the pilot swings up. This model can't do that ([§12](#12-limits-and-known-gaps)).
 
 ---
 
@@ -347,7 +359,8 @@ CL_effective = CL + 2.5 · gust / V    (an up-gust raises the angle of attack, a
 ### Collapses
 
 If the load factor stays **below 0.3 G for 0.15 s** (the wing is unloaded and the lines go
-slack), one side folds. It's the high side of the current bank, or the left when level:
+slack), or the bank passes **125°** (swung too far over the wing in a wingover), one side folds.
+It's the high side of the current bank, or the left when level:
 
 - The folded wing loses 35 % of its lift and gains 0.04 of CD.
 - A roll moment of 0.55 pulls towards the folded side, so the glider turns.
@@ -360,8 +373,8 @@ A 5 m/s down-gust from still air shows the whole chain:
 ![A sharp down-gust: unload, fold, turn, reopen](physics/gust-collapse.svg)
 
 The load drops instantly from 1 G to −0.3 G, a side folds 0.15 s later, and the glider banks
-about 45° towards it. When the side reinflates at t ≈ 4.7 s the lift comes back at once, and
-the glider, now fast from the dive, pulls 3 G. Ordinary bumps (±0.6 m/s) never come close; a
+about 50° towards it. When the side reinflates at t ≈ 4.7 s the lift comes back at once, and
+the glider, now fast from the dive, pulls over 3 G. Ordinary bumps (±0.6 m/s) never come close; a
 test checks that too.
 
 ---
@@ -560,16 +573,17 @@ effect.
 | `TRIM_SINK_PENALTY` (`polar.ts`) | 0.1 m/s | Sink at trim above min sink: the polar's curvature |
 | `PITCH` | ω 2.2, ζ 0.55 | How quickly CL follows the brakes, and how much it overshoots |
 | `SPEED_STABILITY` | 0.6 | How hard the wing returns to trim speed; damps the phugoid |
-| `ROLL` | ω 1.45, ζ 0.28 | Roll period (~4.3 s) and how long it keeps swinging |
+| `ROLL` | ω 1.45, ζ 0.18 | Roll period (~4.3 s) and how long it keeps swinging |
 | `WEIGHT_SHIFT_SHARE` | 0.35 | Weight shift relative to the brakes |
 | `DEEP_BRAKE`, `DEEP_BRAKE_GAIN` | 0.7, 0.8 | Where one brake starts to bite, and how hard |
-| `AUTHORITY_MAX` | 1.2 | Cap on speed-dependent roll authority |
-| `BANK_WALL`, `BANK_WALL_GAIN` | 1.1 rad, 20 | Where the pendulum wall starts, and how stiff it is |
+| `AUTHORITY_MAX` | 2.2 | Cap on the V²-dependent roll authority |
+| `BANK_WALL`, `BANK_WALL_GAIN` | 1.1 rad, 9 per G | Where the pendulum wall starts, and how stiff it is per G of load |
 | `SPIRAL_DRAG` | 0.04 per G above 1 | How deep a spiral settles |
 | `TURN_DRAG` | 0.02 × brake difference | Drag cost of turning |
 | `SPIRAL_LOAD` | 2.2 G | Threshold for the HUD's spiral flag |
 | `GUST_CL`, `GUST_TAU` | 2.5, 1 s | Gust sensitivity, and what counts as "sudden" |
 | `COLLAPSE_LOAD`, `COLLAPSE_SECONDS` | 0.3 G, 2.5 s | When a side folds and how long it stays folded |
+| `OVER_WING` | 2.2 rad (126°) | Bank past which a wingover has gone too far over the wing and folds |
 | `STALL_CL_FACTOR`, `STALL_CD` | 0.3, 1.0 | How hard a stall bites |
 | `GAMMA_LIMIT` | 1.45 rad | Path-angle clamp |
 | `RUN_MAX`, `RUN_ACCEL` | 4.2 m/s, 2.5 m/s² | Take-off run |
@@ -589,7 +603,9 @@ and worth revisiting for the Unreal build:
 
 - **One body, not two.** Pitch and roll are tuned oscillators, not the coupled canopy-and-pilot
   dynamics. There's no line tension, no canopy inertia, and no separate pilot swing in the
-  physics. The swinging canopy in `wing.ts` is cosmetic.
+  physics. The swinging canopy in `wing.ts` is cosmetic. The visible cost is the wingover: the
+  top of the swing stays at 2–3 G instead of going light, and "too far over the wing" is a bank
+  threshold (`OVER_WING`) instead of lines going slack.
 - **No yaw dynamics.** Heading follows the bank exactly (a coordinated turn), so there's no
   sideslip, no adverse yaw, and no yaw-roll coupling such as a twist.
 - **Collapses and stalls are states, not shapes.** The aerodynamics don't know what the canopy
