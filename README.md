@@ -5,13 +5,16 @@
 A paragliding simulator prototype at the real **Famara** take-off on Lanzarote, running in the
 browser. It is for pilots who know the site and want the air to behave like it does: ridge lift
 that depends on the wind angle against the Risco de Famara, a soaring band that tops out, an
-inversion that kills it, thermals that mark themselves with cumulus. The terrain and aerial photo
-are the real IGN data.
+inversion that kills it, thermals that mark themselves with cumulus. The wing is a force-based
+model, so spirals, wingovers, flares and gust-induced collapses come out of the physics. The
+terrain and aerial photo are the real IGN data.
 
 This is the **browser prototype** of a planned Unreal Engine game — it proves the flight feel and
 the lift model cheaply first. The plan lives in the notes vault (`Projects/paragliding-simulator/plan.md`).
 
 ![Soaring the Risco de Famara in a 24 km/h north-westerly](docs/screenshots/famara-cliff.png)
+
+![Spiral dive: 77° bank, 3.2 G, −10 m/s](docs/screenshots/spiral-dive.png)
 
 ## Run it
 
@@ -21,7 +24,8 @@ npm run dev        # http://localhost:5173
 ```
 
 Press **W** to run off the launch into the wind, **A/D** to brake left/right, **T** for an air
-start, **L** for the lift map. A gamepad works too (triggers = brakes). The weather panel on the
+start, **L** for the lift map. **Shift + A/D** is a deep brake (hold it for a spiral dive);
+**A/D with Q/E** in rhythm with the swing builds wingovers. A gamepad works too (triggers = brakes). The weather panel on the
 right changes wind, inversion and thermals live.
 
 ## Check it

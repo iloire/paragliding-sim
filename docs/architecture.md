@@ -18,18 +18,52 @@ Heading is a compass bearing in radians (0 = north, clockwise).
 
 ## Flight model (`src/sim/glider.ts`, `polar.ts`)
 
-- **Polar**: `sink(v) = minSink + k·(v − vMinSink)²`, `k` fixed so trim sink is min sink + 0.1 m/s,
-  plus a steep mush term in the last ~20 % above the stall. Wing classes live in `src/sim/wings.json` (km/h).
-- **Controls → airspeed**: symmetric brake pulls the target from trim to just above the stall,
-  the speed bar pushes it to top speed. Airspeed follows the target through a damped second-order
-  response (ω 2.0, ζ 0.5): the surge and pitch-back.
-- **Turning**: brake difference + weight shift set a target bank; bank follows through another
-  second-order response (ω 1.8, ζ 0.4), which is the swing. Turn rate = g·tan(bank)/V; sink grows
-  with 1/cos(bank)^1.5.
-- **Energy**: half of the airspeed lost to a deceleration turns into height (the flare), and vice versa,
-  except in the 2.5 s launch grace.
-- **Ground**: run up to 4.2 m/s; lift-off when airspeed (run + headwind) reaches 1.1 × stall, or
-  the ground drops away. Touchdown above 3.5 m/s sink or 11 m/s ground speed is a crash.
+A point mass under lift, drag and gravity, integrated in wind axes (airspeed V, flight-path
+angle γ, heading ψ, lift-vector bank μ; L and D per unit mass):
+
+```
+dV/dt = −D − g·sin γ
+dγ/dt = (L·cos μ − g·cos γ) / V
+dψ/dt = L·sin μ / (V·cos γ)
+```
+
+Nothing about the flare, the surge, a wingover or a spiral is scripted: they come out of these
+equations as speed and height trade.
+
+- **Lift and drag from the polar.** Lift per unit mass is `LIFT_K·V²·CL` (24 m², 95 kg). The drag
+  coefficient at each CL is chosen so a steady glide sinks exactly as the wing's polar says
+  (`cdFor`), so straight-line performance per wing class (`src/sim/wings.json`) is unchanged.
+- **Pitch.** Brakes and bar pick a target speed, hence a target CL. CL follows it through a damped
+  second-order response (the pitch pendulum), plus a speed-stability term that pulls the wing back
+  towards its trim speed — that damps the phugoid the way the pilot's weight does.
+- **Roll.** Bank is a pendulum (~4.3 s period, lightly damped — the wingover rhythm). Brake
+  difference + weight shift drive it with an authority that grows with speed; past 70 % one brake
+  bites much harder. The pilot's weight restores it (`sin μ`), with a steep wall past ~63° where
+  the pilot swings far out. Above ~55° at high G that restoring moment fades by the wing's
+  `spiralTendency`, so a held deep brake winds into a spiral dive.
+- **Spiral drag.** Extra drag grows with load factor (the yawed, braked wing and the pilot), so an
+  EN-B spiral settles near 75–80° bank, ~3 G, ~10 m/s sink.
+- **Gusts and collapses.** A sudden change in vertical air (against a 1 s filtered value) shifts
+  the angle of attack. If the load factor drops below 0.3 for 0.15 s, the high side folds:
+  less lift, more drag, a roll towards the folded side, reopening after ~2.5 s (faster if you
+  pump that side's brake). A sharp down-gust or a badly timed wingover can cause one.
+- **Stall.** Deep symmetric brakes held >1.2 s, or flying far below stall speed: CL collapses and
+  drag jumps, the wing drops; hands up to recover.
+- **Ground.** Run up to 4.2 m/s; lift-off at 1.1 × stall airspeed (or when the ground drops away),
+  leaving at trim speed. Touchdown above 3.5 m/s sink, 11 m/s ground speed or 35° bank is a crash.
+
+Tuning numbers and the expected envelope (EN-B): 0.7 brake turn ≈ 30° bank, 11 s per 360°;
+deep brake ≈ 78° / 3.1 G / −10 m/s; pumped wingovers > 90°; flare zooms up at +2 m/s.
+`src/sim/glider.test.ts` pins each of these.
+
+## Wing and pilot model (`src/game/wing.ts`)
+
+Procedural, rebuilt per frame so brakes and collapses deform it: elliptical planform with swept
+tips on an anhedral arc, NACA-style airfoil, 48 cells with inflated panels, nose intakes and seams;
+A/B/C lines cascading in three levels to the risers and brake lines to the toggles; a pod-harness
+pilot that stands and runs on the ground, settles seated in flight, and holds the toggles on
+two-bone arm IK. The canopy hangs from a pivot at the carabiners, surging ahead and leading
+into turns relative to the pilot.
 
 ## Air model (`src/sim/wind.ts`, `thermals.ts`)
 

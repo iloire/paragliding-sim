@@ -27,6 +27,9 @@ const EVENTS: Record<string, [string, boolean]> = {
   water: ['In the Atlantic. R to reset', true],
   stall: ['STALL — hands up!', true],
   recovered: ['Recovered', false],
+  collapse: ['COLLAPSE — weight-shift away, brake the open side, pump the folded one', true],
+  reinflated: ['Reinflated', false],
+  spiral: ['Spiral dive', false],
 };
 
 async function boot(): Promise<void> {
@@ -177,7 +180,21 @@ async function boot(): Promise<void> {
 
   if (import.meta.env.DEV) {
     // Dev-only handle for browser-driven checks.
-    Object.assign(window, { __sim: { get state() { return state; }, wind, terrain, launches: site.launches } });
+    Object.assign(window, {
+      __sim: {
+        get state() { return state; }, wind, terrain, launches: site.launches,
+        /** Orbit camera at an offset from the pilot, in the pilot's heading frame (right, up, back). */
+        frame(right: number, up: number, back: number) {
+          while (rig.mode !== 'orbit') rig.next();
+          const h = state.heading;
+          camera.position.set(
+            pilotPos.x + right * Math.cos(h) - back * Math.sin(h),
+            pilotPos.y + up,
+            pilotPos.z + right * Math.sin(h) + back * Math.cos(h),
+          );
+        },
+      },
+    });
   }
 
   reset();
@@ -201,7 +218,7 @@ async function boot(): Promise<void> {
       if (state.event === 'takeoff') input.latchRun();
       if (state.event) {
         const [text, warn] = EVENTS[state.event] ?? [state.event, false];
-        hud.say(text, warn ? 5 : 3.5, warn);
+        hud.say(state.event === 'spiral' ? `${text} — ${state.load.toFixed(1)} G` : text, warn ? 5 : 3.5, warn);
         state.event = null;
       }
       const flying = state.phase === 'flying';
@@ -225,8 +242,9 @@ async function boot(): Promise<void> {
 
     toScene(extent, state.x, state.y, state.z, pilotPos);
     model.group.position.copy(pilotPos);
-    model.group.rotation.set(state.phase === 'flying' ? -state.airspeedRate * 0.04 : 0, -state.heading, -state.bank);
-    model.update(state, input.controls.brakeLeft, input.controls.brakeRight);
+    const flyingNow = state.phase === 'flying';
+    model.group.rotation.set(flyingNow ? state.gamma : 0, -state.heading, flyingNow ? -state.bank : 0);
+    model.update(state, input.controls, dt);
     clouds.update(wind.thermals.clouds(clock, ...windUV(), weather.inversionM));
 
     const ground = terrain.groundAt(state.x, state.y);

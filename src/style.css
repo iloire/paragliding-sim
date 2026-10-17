@@ -59,6 +59,7 @@ html, body {
 .readouts dt { color: var(--ink-dim); font-size: 11px; letter-spacing: 0.1em; }
 .readouts dd { margin: 0; font-size: 18px; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
 .readouts span { color: var(--ink-dim); font-size: 10px; padding-left: 4px; }
+.readouts .alert dd { color: var(--sink); }
 
 .wind { display: grid; justify-items: center; align-content: center; gap: 4px; border-left: 1px solid var(--edge); padding-left: 16px; }
 .wind-rose { width: 46px; height: 46px; border: 1px solid var(--edge); border-radius: 50%; display: grid; place-items: center; }

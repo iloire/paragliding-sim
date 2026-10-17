@@ -17,6 +17,8 @@ export class Hud {
   private readonly groundspeed = el('groundspeed');
   private readonly glide = el('glide');
   private readonly time = el('flighttime');
+  private readonly gload = el('gload');
+  private readonly bank = el('bank');
   private readonly windArrow = el('wind-arrow');
   private readonly windSpeed = el('wind-speed');
   private readonly message = el('message');
@@ -57,6 +59,9 @@ export class Hud {
     this.airspeed.textContent = flying ? Math.round(s.airspeed * 3.6).toString() : '–';
     this.groundspeed.textContent = Math.round(s.groundSpeed * 3.6).toString();
     this.glide.textContent = glide === null ? '–' : !Number.isFinite(glide) || glide > 30 ? '∞' : glide.toFixed(1);
+    this.gload.textContent = flying ? s.load.toFixed(1) : '–';
+    this.gload.parentElement?.classList.toggle('alert', flying && (s.load > 2.5 || s.load < 0.4));
+    this.bank.textContent = flying ? `${Math.round(Math.abs((s.bank * 180) / Math.PI))}°` : '–';
     const m = Math.floor(flightSeconds / 60), sec = Math.floor(flightSeconds % 60);
     this.time.textContent = `${m}:${sec.toString().padStart(2, '0')}`;
     // Arrow shows where the wind blows relative to where you're facing (up = tailwind).

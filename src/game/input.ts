@@ -50,8 +50,10 @@ export class Input {
   update(dt: number): void {
     const both = this.down('KeyS', 'ArrowDown') ? BOTH_BRAKES : 0;
     const flare = this.down('Space');
-    const targetL = flare ? 1 : Math.min((this.down('KeyA', 'ArrowLeft') ? TURN_BRAKE : 0) + both, 1);
-    const targetR = flare ? 1 : Math.min((this.down('KeyD', 'ArrowRight') ? TURN_BRAKE : 0) + both, 1);
+    // Shift turns a normal turn into a deep brake — the way into a spiral.
+    const turnBrake = this.down('ShiftLeft', 'ShiftRight') ? 1 : TURN_BRAKE;
+    const targetL = flare ? 1 : Math.min((this.down('KeyA', 'ArrowLeft') ? turnBrake : 0) + both, 1);
+    const targetR = flare ? 1 : Math.min((this.down('KeyD', 'ArrowRight') ? turnBrake : 0) + both, 1);
     const ramp = (v: number, t: number) => v + Math.max(-RAMP * dt, Math.min(RAMP * dt, t - v));
     this.keyLeft = ramp(this.keyLeft, targetL);
     this.keyRight = ramp(this.keyRight, targetR);
