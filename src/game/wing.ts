@@ -35,9 +35,9 @@ const COLOURS = {
   seam: 0.86,
   bottomShade: 0.72,
   intake: new THREE.Color(0x15161a),
-  lineA: new THREE.Color(0x9c3a30),
-  lineBC: new THREE.Color(0xa88a52),
-  lineBrake: new THREE.Color(0xb2603a),
+  lineA: new THREE.Color(0xeeece8),
+  lineBC: new THREE.Color(0xe4e1db),
+  lineBrake: new THREE.Color(0xf4f2ee),
   riser: new THREE.Color(0x24262b),
 };
 
