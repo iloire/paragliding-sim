@@ -54,6 +54,14 @@ html, body {
 }
 #instrument.minimal { grid-template-columns: auto auto auto; grid-template-areas: "vario agl wind"; }
 #instrument.minimal :is(.readouts, #thermal, .footer) { display: none; }
+#instrument.phone { grid-template-columns: auto auto auto; grid-template-areas: "vario agl readouts"; }
+#instrument.phone :is(#thermal, .wind, .footer, .readouts > :not(.gnd)) { display: none; }
+/* Ground speed reads as a third big number beside the height, not a row of the readouts table. */
+#instrument.phone .readouts { display: block; }
+#instrument.phone .gnd { display: grid; grid-template-columns: auto auto; grid-template-areas: "v u" "l l"; justify-items: end; gap: 4px 3px; align-items: end; }
+#instrument.phone .gnd dt { grid-area: l; }
+#instrument.phone .gnd dd { grid-area: v; font-family: var(--display); font-weight: 700; font-size: 32px; line-height: 0.85; color: var(--ink); }
+#instrument.phone .gnd span { grid-area: u; padding: 0; }
 #instrument.hidden { display: none; }
 
 .label { color: var(--ink-dim); font-size: 10px; letter-spacing: 0.1em; }
@@ -236,7 +244,7 @@ html, body {
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 720px) and (pointer: fine) {
   #instrument { grid-template-columns: auto auto auto; grid-template-areas: "vario agl wind"; }
   #instrument :is(.readouts, #thermal, .footer) { display: none; }
   #help { display: none; }

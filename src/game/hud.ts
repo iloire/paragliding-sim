@@ -9,8 +9,10 @@ function el<T extends HTMLElement = HTMLElement>(id: string): T {
   return e as T;
 }
 
-const LAYOUTS = ['full', 'minimal', 'hidden'] as const;
-export type Layout = (typeof LAYOUTS)[number];
+export type Layout = 'full' | 'minimal' | 'phone' | 'hidden';
+const LAYOUTS: Layout[] = ['full', 'minimal', 'hidden'];
+/** A phone gets only what a glance can take in: climb, height above ground, ground speed. */
+const PHONE_LAYOUTS: Layout[] = ['phone', 'hidden'];
 
 /** Climb that flashes the vario when first crossed; re-arms below the lower value. */
 const FLASH_CLIMB = 2;
@@ -59,10 +61,14 @@ export class Hud {
   private readonly help = el('help');
   private readonly helpToggle = el('help-toggle');
   private messageTimer = 0;
-  private layout: Layout = 'full';
+  private readonly layouts: Layout[];
+  private layout: Layout;
   private flashArmed = true;
 
-  constructor(commitSha: string) {
+  constructor(commitSha: string, touch: boolean) {
+    this.layouts = touch ? PHONE_LAYOUTS : LAYOUTS;
+    this.layout = this.layouts[0];
+    this.applyLayout();
     el('sha').textContent = commitSha ? `· ${commitSha}` : '';
     let collapsed = false; // open on a first visit, so a new pilot sees the keys
     try { collapsed = localStorage.getItem(HELP_KEY) === '1'; } catch { /* storage blocked */ }
@@ -88,12 +94,15 @@ export class Hud {
     try { localStorage.setItem(HELP_KEY, collapsed ? '1' : '0'); } catch { /* private mode: just not remembered */ }
   }
 
-  /** Cycles full → minimal → hidden and returns the new layout. */
+  /** Cycles full → minimal → hidden (phone → hidden on touch) and returns the new layout. */
   cycleLayout(): Layout {
-    this.layout = LAYOUTS[(LAYOUTS.indexOf(this.layout) + 1) % LAYOUTS.length];
-    this.panel.classList.toggle('minimal', this.layout === 'minimal');
-    this.panel.classList.toggle('hidden', this.layout === 'hidden');
+    this.layout = this.layouts[(this.layouts.indexOf(this.layout) + 1) % this.layouts.length];
+    this.applyLayout();
     return this.layout;
+  }
+
+  private applyLayout(): void {
+    for (const l of ['minimal', 'phone', 'hidden'] as const) this.panel.classList.toggle(l, this.layout === l);
   }
 
   say(text: string, seconds = 4, warn = false): void {

@@ -47,7 +47,7 @@ const EVENTS: Record<string, [string, boolean]> = {
 
 async function boot(): Promise<void> {
   startAnalytics();
-  const hud = new Hud(__COMMIT_SHA__);
+  const hud = new Hud(__COMMIT_SHA__, TOUCH);
   const regions = await loadCatalog();
   const start = parseStart(location.search, regions);
   const region = start.region;
@@ -222,7 +222,6 @@ async function boot(): Promise<void> {
   canvas.addEventListener('pointerdown', () => audio.start());
   if (TOUCH) {
     input.touch = new TouchPad(onAction, (dx, dy) => rig.drag(dx, dy));
-    hud.cycleLayout(); // full → minimal: the full panel covers too much of a phone
   }
 
   const gui = new GUI({ title: 'Famara Glide' });

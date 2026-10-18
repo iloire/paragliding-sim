@@ -125,8 +125,9 @@ bigger slide (`SHIFT_DEAD`) because a thumb drifts sideways while braking. The m
 A row of buttons stands in for the action keys.
 
 On touch the game also waits for a tap before starting (sound, fullscreen and the Android
-landscape lock all need one), asks for landscape in portrait, starts the instrument in its
-minimal layout, closes the settings panel, and caps the pixel ratio at 1.5. The thumb pads take
+landscape lock all need one), asks for landscape in portrait, gives the instrument a phone
+layout (climb, height above ground and ground speed only; INST toggles it with hidden, and the
+thermal-assistant track is never drawn), closes the settings panel, and caps the pixel ratio at 1.5. The thumb pads take
 the canvas, so `OrbitControls` never sees a touch. Instead a second finger in a half that already
 has a thumb releases that brake and turns the gesture into a camera drag (`CameraRig.drag`, which
 switches to the orbit camera). It stays a drag until the last of those fingers lifts, so the

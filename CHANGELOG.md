@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-18 11:55 UTC — Phone instrument: climb, height, ground speed
+
+- On phones the instrument now shows only the three numbers you need at a glance: climb (with the vario scale), height above ground and ground speed. The thermal-assistant track, wind rose and footer are gone, and INST toggles between that and hidden.
+
 ## 2026-10-18 11:45 UTC — Two-finger camera orbit on phones
 
 - **Orbit with two fingers:** on a touch screen, put a second finger down in the same half as a thumb and drag to swing the camera round the pilot. That brake lets go while you drag, and the camera switches to orbit if it was on chase or pilot view.
