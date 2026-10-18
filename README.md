@@ -56,7 +56,7 @@ You start in the air above the launch, facing into the wind.
 | **Shift + A / D** | Deep brake (hold it for a spiral dive) |
 | **Q / E** | Weight shift (with A/D in rhythm = wingovers) |
 | **W** | Run on the ground, speed bar in the air |
-| **T** · **R** | Air start · back to the launch, on the ground |
+| **R** | Restart, in the air above the launch |
 | **C** · **L** | Camera (orbit, chase, pilot) · lift map |
 | **M** · **N** | Site picker · next launch |
 | **H** | All controls |

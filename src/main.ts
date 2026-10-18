@@ -14,7 +14,7 @@ import { loadSite, type Launch } from './game/site';
 import { createGlider as createGliderModel, type Crew } from './game/wing';
 import { TerrainView } from './game/terrain-view';
 import { createLiftMap, createSurround, Sunlight, toScene } from './game/world';
-import { compass, glideTo, TurnTrack } from './sim/instruments';
+import { glideTo, TurnTrack } from './sim/instruments';
 import { createGlider, stepGlider, type Environment, type GliderState } from './sim/glider';
 import { buildIgc, type Fix } from './sim/igc';
 import { Polar, WINGS, type WingId } from './sim/polar';
@@ -24,7 +24,7 @@ import { WindField, type Weather } from './sim/wind';
 declare const __COMMIT_SHA__: string;
 
 const STEP = 1 / 120;
-const AIRSTART_HEIGHT = 120;
+const START_HEIGHT = 120;
 const IGC_INTERVAL = 1;
 /** Solar time a flight starts at without ?time= — the thermals' peak, which the weather sliders describe. */
 const DEFAULT_HOUR = 13;
@@ -119,16 +119,11 @@ async function boot(): Promise<void> {
   const startDate = Date.now();
   const pilotPos = new THREE.Vector3();
 
-  function reset(airstart = false): void {
-    if (airstart) {
-      // Above launch, pointed into the wind, already flying.
-      const into = ((weather.windFromDeg * Math.PI) / 180);
-      state = createGlider(launch.x, launch.y, launch.z + AIRSTART_HEIGHT, into, 'flying', polar.trim);
-      hud.say(`Air start over ${launch.spec.name}, facing into the wind`);
-    } else {
-      state = createGlider(launch.x, launch.y, launch.z, launch.heading);
-      hud.say(`${launch.spec.name} launch · facing ${compass(launch.heading)} · ${KEY.run}`, 6);
-    }
+  /** The one way to start a flight: above the launch, pointed into the wind, already flying. */
+  function reset(): void {
+    const into = ((weather.windFromDeg * Math.PI) / 180);
+    state = createGlider(launch.x, launch.y, launch.z + START_HEIGHT, into, 'flying', polar.trim);
+    hud.say(`Over ${launch.spec.name}, facing into the wind`);
     climb = 0;
     flightTime = 0;
     airborne = false;
@@ -144,7 +139,7 @@ async function boot(): Promise<void> {
     launch = site.launches.find((l) => l.spec.id === id) ?? site.launches[0];
     siteButton.name(siteLabel());
     writeUrl();
-    reset(true);
+    reset();
   }
 
   /** Keeps the address bar a link to the current setup. */
@@ -195,7 +190,6 @@ async function boot(): Promise<void> {
     audio.start();
     switch (a) {
       case 'reset': reset(); break;
-      case 'airstart': reset(true); break;
       case 'camera': hud.say(`Camera: ${rig.next()}`, 1.5); break;
       case 'mute': audio.muted = !audio.muted; hud.say(audio.muted ? 'Vario muted' : 'Vario on', 1.5); break;
       case 'pause': paused = !paused; hud.say(paused ? 'Paused' : 'Resumed', paused ? 1e9 : 1); break;
@@ -246,8 +240,7 @@ async function boot(): Promise<void> {
   });
   fl.add(settings, 'crew', { Solo: 'solo', Tandem: 'tandem' }).name('Pilot').onChange((c: Crew) => model.setCrew(c));
   fl.add(settings, 'liftMap').name('Lift map (L)').onChange(toggleLiftMap);
-  fl.add({ airstart: () => reset(true) }, 'airstart').name('Air start (T)');
-  fl.add({ reset: () => reset() }, 'reset').name('Reset to launch (R)');
+  fl.add({ reset }, 'reset').name('Restart (R)');
   fl.add({ igc: downloadIgc }, 'igc').name('Download IGC');
   if (TOUCH) gui.close();
 
@@ -277,7 +270,7 @@ async function boot(): Promise<void> {
   }
 
   setTime();
-  reset(true);
+  reset();
   if (TOUCH) tapToFly();
   else hud.ready();
 
