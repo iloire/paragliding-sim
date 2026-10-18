@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-18 12:05 UTC — Compact site picker on phones
+
+- On phones (and any screen under 500 px tall) the Sites picker spreads the regions across two columns, with each region's launches as small wrapping chips under a short name. All six regions and 21 launches now fit on a landscape phone without scrolling. The close button says "Close" instead of "Esc" on touch screens.
+
+## 2026-10-18 11:56 UTC — One restart, in the air
+
+- Reset to launch and air start are now the same thing. **R** (BACK on a gamepad, RESET on a phone) puts you back above the launch, facing into the wind and already flying. **T**, the gamepad X button, the AIR touch button and the panel's "Air start" row are gone. After a landing you can still run and take off again from where you are.
+
 ## 2026-10-18 11:55 UTC — Phone instrument: climb, height, ground speed
 
 - On phones the instrument now shows only the three numbers you need at a glance: climb (with the vario scale), height above ground and ground speed. The thermal-assistant track, wind rose and footer are gone, and INST toggles between that and hidden.

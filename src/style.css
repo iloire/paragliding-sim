@@ -235,6 +235,24 @@ html, body {
   .credit-long { display: none; }
   .credit-short { display: inline; }
 }
+/* Phones fly in landscape, so the picker is short on height: spread the regions across the width
+   in two columns, with launches as wrapping chips under a small region name. */
+@media (pointer: coarse), (max-height: 500px) {
+  #picker {
+    width: min(760px, calc(100vw - 24px)); max-height: calc(100dvh - 16px);
+    padding: 8px 12px 12px;
+  }
+  #picker h2 { font-size: 16px; }
+  #picker h3 { font-size: 11px; margin-top: 6px; }
+  #picker section { columns: 2 260px; column-gap: 16px; }
+  #picker section h3 { column-span: all; }
+  #picker .picker-region { break-inside: avoid; padding-bottom: 2px; }
+  #picker h4 { margin: 6px 0 4px; font-size: 15px; }
+  #picker h4 span { margin-left: 8px; font-size: 10px; }
+  #picker ul { display: flex; flex-wrap: wrap; gap: 4px; }
+  #picker li button { width: auto; min-height: 34px; padding: 4px 9px; font-size: 12px; }
+  .picker-close { min-height: 32px; padding: 0 12px; }
+}
 @media (pointer: coarse) and (orientation: portrait) {
   #rotate {
     position: fixed; inset: 0; z-index: 2000; /* over lil-gui */

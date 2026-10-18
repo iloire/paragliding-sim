@@ -2,6 +2,9 @@
 
 import { byCountry, type Region } from './catalog';
 
+/** No Esc key on a phone. */
+const CLOSE_LABEL = matchMedia('(pointer: coarse)').matches ? 'Close' : 'Esc';
+
 export class SitePicker {
   private readonly panel = document.createElement('aside');
   private current = { regionId: '', launchId: '' };
@@ -75,7 +78,7 @@ export class SitePicker {
           </div>`).join('')}
       </section>`).join('');
     this.panel.innerHTML = `
-      <header><h2>Sites</h2><button type="button" class="picker-close" aria-label="Close">Esc</button></header>
+      <header><h2>Sites</h2><button type="button" class="picker-close" aria-label="Close">${CLOSE_LABEL}</button></header>
       ${groups}`;
   }
 }
