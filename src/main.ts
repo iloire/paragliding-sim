@@ -240,7 +240,8 @@ async function boot(): Promise<void> {
   let last = performance.now();
   let acc = 0;
   renderer.setAnimationLoop((now) => {
-    const dt = Math.min((now - last) / 1000, 0.25);
+    // The first frame's timestamp can predate `last`, so never step backwards.
+    const dt = Math.min(Math.max(now - last, 0) / 1000, 0.25);
     last = now;
     input.update(dt);
 
