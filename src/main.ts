@@ -18,7 +18,7 @@ import { glideTo, TurnTrack } from './sim/instruments';
 import { createGlider, stepGlider, type Environment, type GliderState } from './sim/glider';
 import { buildIgc, type Fix } from './sim/igc';
 import { Polar, WINGS, type WingId } from './sim/polar';
-import { dayOfYear, daylight, heating, sunPosition } from './sim/sun';
+import { dayOfYear, flyingHours, heating, sunPosition } from './sim/sun';
 import { WindField, type Weather } from './sim/wind';
 
 declare const __COMMIT_SHA__: string;
@@ -101,10 +101,10 @@ async function boot(): Promise<void> {
   const settings = { wing: 'EN-B' as WingId, crew: 'solo' as Crew, liftMap: false };
   const lat = site.toLatLon(extent / 2, extent / 2)[0];
   const day = dayOfYear(new Date());
-  const { sunrise, sunset } = daylight(lat, day);
-  const sky = { hour: start.hour ?? DEFAULT_HOUR, preset: '', info: '' };
+  const hours = flyingHours(lat, day); // no flying in the dark, whatever ?time= says
+  const sky = { hour: Math.min(Math.max(start.hour ?? DEFAULT_HOUR, hours.first), hours.last), preset: '', info: '' };
   const PRESETS: Record<string, number> = {
-    Sunrise: sunrise + 0.25, Morning: 10, Midday: 13, Afternoon: 15.5, Sunset: sunset - 0.25,
+    Sunrise: hours.first, Morning: 10, Midday: 13, Afternoon: 15.5, Sunset: hours.last,
   };
   let polar = new Polar(WINGS[settings.wing]);
   let state: GliderState = createGlider(launch.x, launch.y, launch.z, launch.heading);
@@ -232,7 +232,7 @@ async function boot(): Promise<void> {
   tm.add(sky, 'preset', ['', ...Object.keys(PRESETS)]).name('Preset').onChange((p: string) => {
     if (p in PRESETS) { sky.hour = PRESETS[p]; setTime(); }
   });
-  tm.add(sky, 'hour', 5, 21, 0.05).name('Solar time h').onChange(() => { sky.preset = ''; setTime(); });
+  tm.add(sky, 'hour', hours.first, hours.last, 0.05).name('Solar time h').onChange(() => { sky.preset = ''; setTime(); });
   tm.add(sky, 'info').name('Sun').disable();
   const wx = gui.addFolder('Weather');
   wx.add(weather, 'windSpeedKmh', 0, 45, 1).name('Wind km/h').onChange(refreshWeather);

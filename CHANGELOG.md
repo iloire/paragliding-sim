@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-18 17:10 UTC — No flying in the dark
+
+- The Solar time slider now runs from Sunrise to Sunset for the site and today's date (the sun about 3° up at each end), not a fixed 5–21 h. Before, 18:00 at Famara in October put you in black night.
+- A `?time=` outside those hours, from an old link or typed by hand, is pulled back to the nearest end.
+
 ## 2026-10-18 12:52 UTC — Full stalls drop you
 
 - Holding both brakes through a stall now deflates the canopy: the wing loses its lift and falls back behind you, the lines go soft, and you drop at 9–10 m/s with almost no forward speed instead of mushing along at 28 km/h and −5 m/s. The canopy is drawn crumpled into a horseshoe and flapping. Hands up, it refills, pitches forward and flies again after about 3.5 s and 30 m.

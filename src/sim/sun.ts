@@ -11,6 +11,8 @@ export interface Sun {
 }
 
 const RAD = Math.PI / 180;
+/** Margin inside sunrise and sunset for the hours on offer: the sun ~3° up, so the scene stays lit. */
+const DAYLIGHT_MARGIN_H = 0.25;
 /** Hours after sunrise for the ground to warm through; until then the same sun heats less. */
 const WARM_UP_H = 7;
 /** Below this elevation the sun no longer drives thermals. */
@@ -42,6 +44,12 @@ export function daylight(latDeg: number, day: number): { sunrise: number; sunset
   const c = -Math.tan(latDeg * RAD) * Math.tan(declination(day));
   const h0 = Math.acos(Math.min(Math.max(c, -1), 1)) / RAD / 15;
   return { sunrise: 12 - h0, sunset: 12 + h0 };
+}
+
+/** The solar hours a flight can be set at: sunrise to sunset, short of the dark either side. */
+export function flyingHours(latDeg: number, day: number): { first: number; last: number } {
+  const { sunrise, sunset } = daylight(latDeg, day);
+  return { first: sunrise + DAYLIGHT_MARGIN_H, last: sunset - DAYLIGHT_MARGIN_H };
 }
 
 /**

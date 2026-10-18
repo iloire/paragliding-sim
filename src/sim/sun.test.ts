@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayOfYear, daylight, heating, sunPosition } from './sun';
+import { dayOfYear, daylight, flyingHours, heating, sunPosition } from './sun';
 
 const FAMARA = 29.08;
 const JUNE_21 = 172;
@@ -66,5 +66,20 @@ describe('dayOfYear', () => {
   it('counts from 1 January', () => {
     expect(dayOfYear(new Date(2026, 0, 1))).toBe(1);
     expect(dayOfYear(new Date(2026, 11, 31))).toBe(365);
+  });
+});
+
+describe('flyingHours', () => {
+  it('keeps every hour on offer in daylight, sun above the horizon', () => {
+    for (const day of [JUNE_21, MAR_20, DEC_21, 291]) {
+      const { first, last } = flyingHours(FAMARA, day);
+      expect(sunPosition(FAMARA, day, first).elevationDeg).toBeGreaterThan(1);
+      expect(sunPosition(FAMARA, day, last).elevationDeg).toBeGreaterThan(1);
+      expect(sunPosition(FAMARA, day, last + 0.5).elevationDeg).toBeLessThan(0);
+    }
+  });
+
+  it('ends a mid-October day at Famara before 18:00', () => {
+    expect(flyingHours(FAMARA, 291).last).toBeLessThan(18);
   });
 });
