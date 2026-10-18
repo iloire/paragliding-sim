@@ -61,8 +61,10 @@ fly — other Canary islands first, then sites abroad — and a way to pick betw
 3. Map picker.
 4. ~~First region off the Canaries: **Loarre** (Huesca), IGN in UTM 30N, with `plainM` for an
    inland horizon instead of the sea.~~ ✅
+   ~~Castejón de Sos, Àger and Organyà (UTM 30 extended into zone 31).~~ ✅
    Still to do: `source` + `attribution` per region and credits from the region (needed once a
-   non-IGN region lands); another Canary island (Tenerife or La Palma).
+   non-IGN region lands); another Canary island (Tenerife or La Palma). Five regions are
+   ~260 MB in git, so terrain storage (step 5) is due before many more.
 5. Copernicus provider for the first site outside Spain (Ölüdeniz, Bassano or Annecy); terrain
    storage out of plain git.
 6. Editor page, only if needed.

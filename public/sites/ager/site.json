@@ -1,0 +1,22 @@
+{
+  "name": "Àger",
+  "country": "Spain",
+  "proj4": "+proj=utm +zone=30 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs",
+  "crs": "EPSG:25830",
+  "bbox": [799000, 4650000, 823000, 4674000],
+  "plainM": 450,
+  "heightmap": { "file": "height.bin", "size": 2048 },
+  "ortho": { "file": "ortho.jpg", "size": 4096 },
+  "detail": { "dir": "detail", "tileM": 3000, "orthoSize": 2048, "radiusM": 5000 },
+  "launches": [
+    { "id": "sant-alis", "name": "Sant Alís", "lat": 42.0399, "lon": 0.766854 },
+    { "id": "ager", "name": "Àger", "lat": 42.0464, "lon": 0.7461 }
+  ],
+  "weather": {
+    "windSpeedKmh": 14,
+    "windFromDeg": 190,
+    "inversionM": 2600,
+    "thermalStrength": 2.5,
+    "turbulence": 0.35
+  }
+}

@@ -85,7 +85,10 @@ async function fetchDem(epsg: string, x0: number, y0: number, x1: number, y1: nu
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
       const i = (r + crop) * w + c + crop;
-      out[r * size + c] = isSea[i] ? SEA_LEVEL_DM : Math.round(height[i] * 10);
+      const dm = isSea[i] ? SEA_LEVEL_DM : Math.round(height[i] * 10);
+      // Int16 decimetres top out at 3276.7 m; an Int16Array would silently wrap a higher peak.
+      if (dm > 32767) throw new Error(`${(dm / 10).toFixed(0)} m is above the 3276 m the Int16 format holds — shrink the bbox`);
+      out[r * size + c] = dm;
     }
   }
   return out;

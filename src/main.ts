@@ -68,7 +68,7 @@ async function boot(): Promise<void> {
   const liftMap = createLiftMap(wind);
   const terrainView = new TerrainView(terrain, ortho, site.detailTileM, site.detailTiles, liftMap.texture,
     renderer.capabilities.getMaxAnisotropy());
-  scene.add(terrainView.group, createSurround(site.spec.plainM));
+  scene.add(terrainView.group, createSurround(extent, site.spec.plainM));
   const clouds = new CloudLayer(extent);
   scene.add(clouds.group);
 

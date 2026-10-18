@@ -1,0 +1,24 @@
+{
+  "name": "Organyà",
+  "country": "Spain",
+  "proj4": "+proj=utm +zone=30 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs",
+  "crs": "EPSG:25830",
+  "bbox": [846000, 4670000, 870000, 4694000],
+  "plainM": 800,
+  "heightmap": { "file": "height.bin", "size": 2048 },
+  "ortho": { "file": "ortho.jpg", "size": 4096 },
+  "detail": { "dir": "detail", "tileM": 3000, "orthoSize": 2048, "radiusM": 5000 },
+  "launches": [
+    { "id": "organya", "name": "Organyà", "lat": 42.2286, "lon": 1.3244 },
+    { "id": "santa-fe", "name": "Santa Fe", "lat": 42.208, "lon": 1.30002 },
+    { "id": "prats", "name": "Prats", "lat": 42.2132, "lon": 1.37339, "headingDeg": 180 },
+    { "id": "narieda", "name": "Narieda", "lat": 42.192, "lon": 1.34461 }
+  ],
+  "weather": {
+    "windSpeedKmh": 10,
+    "windFromDeg": 180,
+    "inversionM": 2800,
+    "thermalStrength": 2.8,
+    "turbulence": 0.35
+  }
+}

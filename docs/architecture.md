@@ -121,9 +121,13 @@ picker, sites outside Spain) is in [plan-sites.md](plan-sites.md).
 `npm run fetch-terrain -- lanzarote` reads `public/sites/lanzarote/site.json` and downloads:
 
 - **Height**: IGN WCS `Elevacion<EPSG>_5` (MDT05, 5 m) in the region's `crs` — `4083` (REGCAN95 / UTM 28N)
-  for the Canaries, `25830` (ETRS89 / UTM 30N) for Loarre — resampled to 2048² (~20.5 m over Lanzarote's
-  42 km bbox, ~14.6 m over Loarre's 30 km), 3×3 smoothed to hide 1 m terracing, written as Int16 decimetres.
-  Sea (nodata or ≤ 0 m) becomes −15 m.
+  for the Canaries, `25830` (ETRS89 / UTM 30N) for the mainland — resampled to 2048² (~20.5 m over
+  Lanzarote's 42 km bbox, ~14.6 m over Loarre's 30 km, ~11.7 m over the 24 km Pyrenean ones), 3×3
+  smoothed to hide 1 m terracing, written as Int16 decimetres. Sea (nodata or ≤ 0 m) becomes −15 m.
+  IGN offers no `25831` coverage, so Castejón, Àger and Organyà (all in zone 31) use zone 30 extended
+  east: < 0.2 % scale error, and grid north sits ~3° off true north there.
+  **Int16 decimetres stop at 3276.7 m**, and `fetch-terrain` refuses anything higher rather than
+  let it wrap; Castejón's bbox stops south of Aneto and Posets for that reason (its top is 3046 m).
 - **Orthophoto**: IGN WMS `pnoa-ma`, 4096² JPEG over the same bbox.
 - **Detail tiles** (`detail` in `site.json`): the bbox cut into `tileM` squares; a tile is fetched
   if it has ≥ 1 % land and its centre is within `radiusM` (per axis) of a launch. Each gets the DEM
@@ -140,6 +144,11 @@ Both are © Instituto Geográfico Nacional, CC BY 4.0 — the attribution is on 
 
 **Beyond the bbox.** An island region is surrounded by open sea: the heightmap returns the sea
 floor outside it and the terrain's last 700 m slope down into the water. An inland region sets
-`plainM` in `site.json` (Loarre: 550 m, the Hoya de Huesca farmland): outside the bbox is then
-dry ground at that height, the terrain edge slopes down to it, and a flat land-coloured plane
-replaces the sea out to the horizon.
+`plainM` in `site.json`: outside the bbox is then dry ground at that height, the terrain edge
+slopes down to it, and a flat land-coloured ring with a hole for the site replaces the sea out to
+the horizon (a full plane would bury any valley floor below `plainM`). Set it near the 10th
+percentile of the heights along the bbox edge: Loarre 450, Castejón 1000, Àger 450, Organyà 800 m.
+
+**Launch headings.** A launch faces the steepest descent around it in the DEM unless `site.json`
+gives `headingDeg`. Pin it where that disagrees with the published orientation (Rials, Pedras
+Blancas and Liri at Castejón, Prats at Organyà).

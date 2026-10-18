@@ -4,7 +4,7 @@
   "proj4": "+proj=utm +zone=30 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs",
   "crs": "EPSG:25830",
   "bbox": [690000, 4670000, 720000, 4700000],
-  "plainM": 550,
+  "plainM": 450,
   "heightmap": { "file": "height.bin", "size": 2048 },
   "ortho": { "file": "ortho.jpg", "size": 4096 },
   "detail": { "dir": "detail", "tileM": 3000, "orthoSize": 2048, "radiusM": 5000 },

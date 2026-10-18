@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-18 03:55 UTC — Castejón de Sos, Àger and Organyà
+
+- Three Pyrenean regions, 24 km IGN bboxes each, launches from ParaglidingEarth: **Castejón de Sos** (Rials, Chía – Abedules, Pedras Blancas, Liri), **Àger** (Sant Alís, Àger) and **Organyà** (Organyà, Santa Fe, Prats, Narieda). They sit in UTM zone 31, which IGN's WCS does not serve, so they use zone 30 extended east.
+- `fetch-terrain` refuses heights above 3276 m instead of letting the Int16 decimetres wrap; Castejón's bbox stops south of Aneto and Posets.
+- The inland plain is now a ring around the site instead of a full plane, so valley floors below `plainM` are no longer buried. Plain heights set from each region's edge heights.
+- Launch headings pinned where the DEM's steepest slope disagrees with the published orientation (Rials, Pedras Blancas, Liri, Prats).
+
 ## 2026-10-18 03:30 UTC — Loarre, the first mainland region
 
 - New region `loarre` (Huesca Pre-Pyrenees): a 30 km IGN bbox in ETRS89 / UTM 30N with the Loarre (1277 m, S–SW) and Tiacuto launches from ParaglidingEarth, plus detail tiles around both. Default weather is a light southerly thermal day with the inversion at 2600 m.

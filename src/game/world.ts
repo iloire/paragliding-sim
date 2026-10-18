@@ -15,9 +15,22 @@ export function toScene(extent: number, x: number, y: number, z: number, out = n
   return out.set(x - extent / 2, z, extent / 2 - y);
 }
 
-/** What surrounds the site out to the horizon: sea at 0 m, or dry farmland at `plainM`. */
-export function createSurround(plainM?: number): THREE.Mesh {
-  const geometry = new THREE.PlaneGeometry(400000, 400000);
+/**
+ * What surrounds the site out to the horizon: sea at 0 m under everything (an island has
+ * water inside its bbox too), or dry farmland at `plainM` with a hole for the site, so a
+ * valley floor below the plain's height is never covered.
+ */
+export function createSurround(extent: number, plainM?: number): THREE.Mesh {
+  const R = 200000;
+  let geometry: THREE.BufferGeometry;
+  if (plainM === undefined) {
+    geometry = new THREE.PlaneGeometry(2 * R, 2 * R);
+  } else {
+    const shape = new THREE.Shape([new THREE.Vector2(-R, -R), new THREE.Vector2(R, -R), new THREE.Vector2(R, R), new THREE.Vector2(-R, R)]);
+    const e = extent / 2;
+    shape.holes.push(new THREE.Path([new THREE.Vector2(-e, -e), new THREE.Vector2(-e, e), new THREE.Vector2(e, e), new THREE.Vector2(e, -e)]));
+    geometry = new THREE.ShapeGeometry(shape);
+  }
   geometry.rotateX(-Math.PI / 2);
   const material = plainM === undefined
     ? new THREE.MeshStandardMaterial({ color: 0x0a2a3d, roughness: 0.32, metalness: 0 })
