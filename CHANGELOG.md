@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-18 04:10 UTC — Submarine pilot
+
+- The pilot flies an Ozone Submarine-style harness: a blue hull lofted from rounded-box sections, with a blunt cocoon over the feet, an open cockpit, a tall fairing rising behind the head to a cut-off tail, and a keel under it. On the ground the fairing hangs deflated off the pilot's back.
+- A white full-face helmet with a smoked visor, a black vest and tan gloves replace the red open helmet and the dark suit.
+- The brake handles hang at chin height by the risers instead of above the head, so the arms no longer reach straight up: the elbows drop and the hands come down to the hips at full brake.
+
 ## 2026-10-18 02:05 UTC — Phones and tablets
 
 - **Touch controls**: a thumb pad on each half of the screen, resting wherever the thumb lands. Pull it down to brake that side (analog, a quarter of the screen height is full travel), push it up to run and for speed bar, slide it sideways to shift weight. A ring and knob show where each thumb is. A row of buttons replaces the action keys: camera, air start, reset, sites, instrument, pause.

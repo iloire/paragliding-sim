@@ -500,16 +500,23 @@ canopy every frame, so they follow a collapse or a brake pull.
 
 ### The pilot
 
-The pilot is built from primitives: a cylinder torso, sphere joints, cylinder limbs, a head
-(face, wraparound glasses, a red open-shell helmet that sits lower at the nape, camera mount
-on top), and a **pod harness**. The pod is a lathe (a rotated teardrop profile) from the
-rounded back protector behind the pilot to the pointed foot out front, with orange piping and a flight deck on top.
+The pilot is built from primitives: a cylinder torso under a black vest, sphere joints, cylinder
+limbs, tan gloves, and a white full-face helmet with a smoked mirror visor and a camera mount on
+top. The arms are two-bone IK to the brake handles, which hang at chin height beside the risers,
+so the elbows drop down and out and the hands come down to the hips at full brake.
+
+The harness is modelled on the Ozone **Submarine**: a hull lofted from rounded-box sections
+(superellipses) along the body, in three pieces: the **cocoon**, a blunt nose over the feet
+with a flight deck on top; the **fairing**, an open cockpit around the hips that rises behind
+the head into a tall ram-air fairing and runs back to a cut-off tail 1.65 m behind the seat;
+and a **keel** hanging under the fairing. It is blue, with a dark band along each side and the
+fairing's baffles drawn as panel lines.
 
 Two key poses blend with a filter of about 0.4 s:
 
 - **Standing / running** on the ground: legs scissor with run speed, body leans forward, and the
-  pod hangs folded behind the legs.
-- **Seated** in flight: reclined, legs forward inside the pod (the legs are hidden once the pod
+  harness hangs off the back, the fairing deflated and the cocoon folded under the seat.
+- **Seated** in flight: reclined, legs forward inside the cocoon (the legs are hidden once it
   closes), head tilted to look ahead.
 
 ---

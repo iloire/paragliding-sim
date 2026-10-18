@@ -5,8 +5,8 @@
 //   inflated cells between ribs, open intakes at the nose, seams, a two-tone design.
 // - Lines: A/B/C rows cascading in three levels to the risers, brake lines from the
 //   trailing edge to handles that move with your brake input.
-// - Pilot: pod harness, seated and reclined in flight, standing and running on the
-//   ground, arms on two-bone IK holding the brake handles, weight shift leaning the body.
+// - Pilot: Submarine-style pod harness with a tall rear fairing, seated in flight, standing
+//   and running on the ground, arms on two-bone IK holding the brake handles, weight shift leaning the body.
 //
 // Rig-local frame: origin at the pilot's feet / seat base, +Y up, forward −Z.
 // The canopy hangs from a pivot at the carabiners. The flight model swings canopy, lines and
@@ -237,12 +237,12 @@ export function createGlider(): GliderModel {
   // ---------- pilot ----------
   const pilot = new THREE.Group();
   group.add(pilot);
-  const suit = new THREE.MeshStandardMaterial({ color: 0x3a4250, roughness: 0.85 });
+  const suit = new THREE.MeshStandardMaterial({ color: 0x24304a, roughness: 0.85 });
+  const vestMat = new THREE.MeshStandardMaterial({ color: 0x16171b, roughness: 0.75 });
   const harnessMat = new THREE.MeshStandardMaterial({ color: 0x23262c, roughness: 0.7 });
-  const accent = new THREE.MeshStandardMaterial({ color: 0xff5b1e, roughness: 0.5 });
-  const glove = new THREE.MeshStandardMaterial({ color: 0x15161a, roughness: 0.6 });
-  const skin = new THREE.MeshStandardMaterial({ color: 0xd9a07a, roughness: 0.8 });
-  const visorMat = new THREE.MeshStandardMaterial({ color: 0x0c0d10, roughness: 0.15, metalness: 0.6 });
+  const accent = new THREE.MeshStandardMaterial({ color: 0x15161a, roughness: 0.5 });
+  const glove = new THREE.MeshStandardMaterial({ color: 0xc9a06a, roughness: 0.75 });
+  const visorMat = new THREE.MeshStandardMaterial({ color: 0x2a2f38, roughness: 0.08, metalness: 0.85 });
 
   const limb = (r: number, mat: THREE.Material) => {
     const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 0.9, 1, 10), mat);
@@ -257,6 +257,9 @@ export function createGlider(): GliderModel {
 
   const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.165, 0.14, 1, 14), suit);
   pilot.add(torso);
+  // Black vest over the chest, open at the shoulders.
+  const vest = new THREE.Mesh(new THREE.CylinderGeometry(0.185, 0.175, 1, 14), vestMat);
+  pilot.add(vest);
   const pelvis = joint(0.15, suit);
   const shoulders = [joint(0.075, suit), joint(0.075, suit)];
   const toggles = [0, 1].map(() => {
@@ -265,70 +268,119 @@ export function createGlider(): GliderModel {
     pilot.add(t);
     return t;
   });
-  // Head: a face with wraparound glasses under an open shell helmet that sits lower at
-  // the back, painted red with a white centre stripe and a dark nape, camera mount on top.
+  // Head: a white full-face helmet with a smoked mirror visor, a grey stripe over the crown
+  // and a camera mount on top.
   const helmet = new THREE.Group();
   pilot.add(helmet);
-  const face = new THREE.Mesh(new THREE.SphereGeometry(0.1, 20, 14), skin);
-  face.scale.set(0.85, 1.05, 0.95);
-  face.position.set(0, -0.035, -0.015);
-  helmet.add(face);
-  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 6), skin);
-  nose.position.set(0, -0.045, -0.11);
-  helmet.add(nose);
-  // Sphere segment centred on −Z (phi = 1.5π), a band just above the face's equator.
-  const glasses = new THREE.Mesh(new THREE.SphereGeometry(0.104, 20, 4, Math.PI * 1.17, Math.PI * 0.66, Math.PI * 0.4, Math.PI * 0.11), visorMat);
-  face.add(glasses);
-  const shellGeo = new THREE.SphereGeometry(0.135, 28, 16, 0, Math.PI * 2, 0, Math.PI * 0.58);
+  const shellGeo = new THREE.SphereGeometry(0.14, 28, 18);
   const shellCol: number[] = [];
   const sp = shellGeo.attributes.position as THREE.BufferAttribute;
   for (let i = 0; i < sp.count; i++) {
     const x = sp.getX(i), y = sp.getY(i), z = sp.getZ(i);
-    const hex = Math.abs(x) < 0.022 && y > 0 ? 0xf6f3ee : z > 0.09 ? 0x23262c : 0xd21f2b;
+    const hex = Math.abs(x) < 0.02 && y > 0.02 && z > -0.1 ? 0x8a9099 : y < -0.1 ? 0x2a2c31 : 0xf2f2ef;
     const c = new THREE.Color(hex);
     shellCol.push(c.r, c.g, c.b);
   }
   shellGeo.setAttribute('color', new THREE.Float32BufferAttribute(shellCol, 3));
-  const shell = new THREE.Mesh(shellGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.3, metalness: 0.1, side: THREE.DoubleSide }));
-  shell.scale.set(1, 1, 1.12);
-  shell.position.set(0, 0.01, 0.01);
-  shell.rotation.x = 0.35; // lifts the brow, drops the rim over the nape
+  const shell = new THREE.Mesh(shellGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.25, metalness: 0.1 }));
+  shell.scale.set(0.92, 1, 1.08);
   helmet.add(shell);
-  const mount = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.035, 0.05), glove);
+  // Sphere segment centred on −Z (phi = 1.5π), from the brow down past the eyes.
+  const visor = new THREE.Mesh(new THREE.SphereGeometry(0.143, 24, 8, Math.PI * 1.2, Math.PI * 0.6, Math.PI * 0.3, Math.PI * 0.27), visorMat);
+  shell.add(visor);
+  const mount = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.035, 0.05), accent);
   mount.position.set(0, 0.145, -0.01);
   helmet.add(mount);
-  const upperArms = [limb(0.05, suit), limb(0.05, suit)];
-  const foreArms = [limb(0.045, suit), limb(0.045, suit)];
-  const elbows = [joint(0.05, suit), joint(0.05, suit)];
-  const hands = [joint(0.05, glove), joint(0.05, glove)];
+  const upperArms = [limb(0.052, suit), limb(0.052, suit)];
+  const foreArms = [limb(0.046, suit), limb(0.046, suit)];
+  const elbows = [joint(0.052, suit), joint(0.052, suit)];
+  const hands = [joint(0.052, glove), joint(0.052, glove)];
+  hands.forEach((h) => h.scale.set(1, 1.15, 1.3));
   const thighs = [limb(0.075, suit), limb(0.075, suit)];
   const shins = [limb(0.055, suit), limb(0.055, suit)];
   const knees = [joint(0.07, suit), joint(0.07, suit)];
   const boots = [joint(0.07, harnessMat), joint(0.07, harnessMat)];
   boots.forEach((b) => b.scale.set(0.9, 0.7, 1.6));
 
-  // Pod harness: one teardrop shell from the rounded back protector to the pointed
-  // foot of the cocoon, slightly flattened, with orange piping along each side.
-  const podProfile = [
-    [0, 0.5], [0.18, 0.46], [0.29, 0.36], [0.34, 0.2], [0.34, 0], [0.31, -0.35],
-    [0.25, -0.7], [0.17, -0.95], [0.08, -1.08], [0, -1.12],
-  ].map(([r, z]) => new THREE.Vector2(r, z));
-  const podGeo = new THREE.LatheGeometry(podProfile, 32);
-  podGeo.rotateX(Math.PI / 2); // lathe axis Y → along Z, nose (feet) forward at −Z
-  podGeo.scale(1, 0.9, 1);
-  const podCol: number[] = [];
-  const pp = podGeo.attributes.position as THREE.BufferAttribute;
-  for (let i = 0; i < pp.count; i++) {
-    const piping = Math.abs(pp.getY(i)) < 0.022 && Math.abs(pp.getX(i)) > 0.12;
-    const c = new THREE.Color(piping ? 0xff5b1e : 0x23262c);
-    podCol.push(c.r, c.g, c.b);
-  }
-  podGeo.setAttribute('color', new THREE.Float32BufferAttribute(podCol, 3));
-  podGeo.computeVertexNormals();
-  const pod = new THREE.Mesh(podGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6 }));
-  pilot.add(pod);
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.03, 0.22), new THREE.MeshStandardMaterial({ color: 0x101114, roughness: 0.4, emissive: 0x0d1a12, emissiveIntensity: 0.6 }));
-  pilot.add(deck);
+  // Submarine-style pod harness, lofted from rounded-box sections along the body: a blunt
+  // nose over the feet, an open cockpit around the hips, then a tall ram-air fairing that
+  // rises behind the head and runs back to a cut-off tail, with a keel hanging under it.
+  // Blue with a dark band along each side and the fairing's baffles as panel lines.
+  const SEAT = new THREE.Vector3(0, 0.72, 0.2); // pivot the harness folds about on the ground
+  interface Section { z: number; w: number; bottom: number; top: number }
+  const HULL = { blue: new THREE.Color(0x1d9fe2), band: new THREE.Color(0x3b4756), cockpit: new THREE.Color(0x141519) };
+  const loft = (sections: Section[], paint: (s: Section, z: number, fy: number, up: number) => THREE.Color): THREE.BufferGeometry => {
+    const RING = 36, EXP = 2.6;
+    const pos: number[] = [], col: number[] = [], idx: number[] = [];
+    for (const s of sections) {
+      for (let k = 0; k <= RING; k++) {
+        const a = (k / RING) * Math.PI * 2;
+        const ca = Math.cos(a), sa = Math.sin(a);
+        const mid = (s.top + s.bottom) / 2, h = (s.top - s.bottom) / 2;
+        const y = mid + h * Math.sign(sa) * Math.abs(sa) ** (2 / EXP);
+        pos.push(s.w * Math.sign(ca) * Math.abs(ca) ** (2 / EXP), y, s.z);
+        const c = paint(s, s.z, (y - s.bottom) / Math.max(s.top - s.bottom, 1e-3), sa);
+        col.push(c.r, c.g, c.b);
+      }
+    }
+    const R = RING + 1;
+    for (let i = 0; i < sections.length - 1; i++) {
+      for (let k = 0; k < RING; k++) {
+        const a = i * R + k, b = a + R;
+        idx.push(a, a + 1, b, b, a + 1, b + 1);
+      }
+    }
+    // Fan caps at both ends.
+    for (const [i, flip] of [[0, true], [sections.length - 1, false]] as const) {
+      const s = sections[i];
+      const centre = pos.length / 3;
+      pos.push(0, (s.top + s.bottom) / 2, s.z);
+      col.push(col[i * R * 3], col[i * R * 3 + 1], col[i * R * 3 + 2]);
+      for (let k = 0; k < RING; k++) {
+        const a = i * R + k;
+        if (flip) idx.push(centre, a + 1, a); else idx.push(centre, a, a + 1);
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    geo.setIndex(idx);
+    geo.computeVertexNormals();
+    geo.translate(-SEAT.x, -SEAT.y, -SEAT.z);
+    return geo;
+  };
+  const sec = (z: number, w: number, bottom: number, top: number): Section => ({ z, w, bottom, top });
+  const paintHull = (_s: Section, z: number, fy: number, up: number): THREE.Color => {
+    const c = new THREE.Color();
+    if (z > -0.24 && z < 0.5 && up > 0.55) return c.copy(HULL.cockpit); // the open cockpit
+    c.copy(fy > 0.2 && fy < 0.34 && z < 1.25 ? HULL.band : HULL.blue);
+    if (z > 0.5 && up < 0.95 && (fy * 7) % 1 < 0.07) c.multiplyScalar(0.8); // baffle seams
+    return c;
+  };
+  const harnessMatHull = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55 });
+  const harness = new THREE.Group();
+  pilot.add(harness);
+  const cocoon = new THREE.Mesh(loft([
+    sec(-1.44, 0.03, 0.72, 0.78), sec(-1.41, 0.13, 0.62, 0.86), sec(-1.35, 0.2, 0.56, 0.91),
+    sec(-1.24, 0.245, 0.53, 0.95), sec(-1.05, 0.265, 0.51, 0.98), sec(-0.7, 0.275, 0.5, 1.01),
+    sec(-0.38, 0.28, 0.5, 1.05), sec(-0.22, 0.28, 0.5, 1.06),
+  ], paintHull), harnessMatHull);
+  const fairing = new THREE.Mesh(loft([
+    sec(-0.22, 0.28, 0.5, 1.06), sec(-0.17, 0.29, 0.5, 0.99), sec(0.2, 0.29, 0.5, 0.98),
+    sec(0.44, 0.285, 0.51, 1.04), sec(0.52, 0.28, 0.52, 1.22), sec(0.62, 0.275, 0.53, 1.45),
+    sec(0.74, 0.27, 0.54, 1.66), sec(0.84, 0.265, 0.56, 1.74), sec(0.98, 0.25, 0.58, 1.73), sec(1.2, 0.225, 0.64, 1.65),
+    sec(1.5, 0.19, 0.76, 1.55), sec(1.6, 0.175, 0.8, 1.52), sec(1.64, 0.13, 0.86, 1.47),
+    sec(1.655, 0.04, 0.95, 1.38),
+  ], paintHull), harnessMatHull);
+  const keel = new THREE.Mesh(loft([
+    sec(0.62, 0.05, 0.6, 0.66), sec(0.7, 0.12, 0.5, 0.8), sec(1.0, 0.12, 0.5, 0.85),
+    sec(1.38, 0.1, 0.56, 0.9), sec(1.44, 0.08, 0.6, 0.88), sec(1.46, 0.03, 0.66, 0.84),
+  ], (_s, _z, fy) => (fy < 0.2 ? HULL.band : HULL.blue).clone()), harnessMatHull);
+  harness.add(cocoon, fairing, keel);
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.025, 0.2), new THREE.MeshStandardMaterial({ color: 0x101114, roughness: 0.4, emissive: 0x0d1a12, emissiveIntensity: 0.6 }));
+  deck.position.set(0, 1.06 - SEAT.y, -0.48 - SEAT.z);
+  deck.rotation.x = 0.25;
+  harness.add(deck);
 
   // Two key poses, blended by how far into flight the pilot has settled.
   type Pose = Record<'hips' | 'neck' | 'head' | 'kneeL' | 'kneeR' | 'footL' | 'footR' | 'shoulderL' | 'shoulderR', THREE.Vector3>;
@@ -358,7 +410,8 @@ export function createGlider(): GliderModel {
   const elbowPole = new THREE.Vector3();
 
   function brakeHandle(side: number, brake: number, out: THREE.Vector3): THREE.Vector3 {
-    return out.set(side * 0.27, 0.62 - brake * 0.78, 0.13 + brake * 0.06);
+    // Hands up by the risers at chin height, down to the hips at full brake.
+    return out.set(side * 0.27, 0.24 - brake * 0.62, 0.04 + brake * 0.1);
   }
 
   function solveArm(i: number, shoulder: THREE.Vector3, hand: THREE.Vector3, side: number): void {
@@ -366,8 +419,8 @@ export function createGlider(): GliderModel {
     const d = tmp.subVectors(hand, shoulder);
     const dist = Math.min(d.length(), l1 + l2 - 1e-3);
     d.normalize();
-    // Elbow sits out to the side and back, the way you hold brakes.
-    elbowPole.set(side, -0.3, 0.5).normalize();
+    // Elbow drops down and out to the side, the way you hold brakes.
+    elbowPole.set(side * 0.7, -1, 0.15).normalize();
     const along = (dist * dist + l1 * l1 - l2 * l2) / (2 * dist);
     const h = Math.sqrt(Math.max(l1 * l1 - along * along, 0));
     const perp = elbowPole.sub(d.clone().multiplyScalar(elbowPole.dot(d))).normalize();
@@ -466,6 +519,7 @@ export function createGlider(): GliderModel {
     }
 
     span(torso, pose.hips, pose.neck);
+    span(vest, tmp.lerpVectors(pose.hips, pose.neck, 0.35), pose.neck.clone().lerp(pose.hips, 0.08));
     pelvis.position.copy(pose.hips);
     shoulders[0].position.copy(pose.shoulderL);
     shoulders[1].position.copy(pose.shoulderR);
@@ -480,13 +534,14 @@ export function createGlider(): GliderModel {
     boots[0].position.copy(pose.footL);
     boots[1].position.copy(pose.footR);
 
-    // Standing, the pod hangs folded behind the legs; seated it zips over them.
-    pod.position.set(0, 0.62 + 0.18 * flyBlend, 0.3 - 0.1 * flyBlend);
-    pod.scale.set(0.85 + 0.15 * flyBlend, 0.85 + 0.15 * flyBlend, 0.35 + 0.65 * flyBlend);
-    pod.rotation.x = 0.1 * flyBlend - 0.25 * (1 - flyBlend);
+    // Flying, the fairing is inflated behind the seat; on the ground it hangs off the back,
+    // deflated, with the cocoon folded under the seat.
+    const g = 1 - flyBlend;
+    harness.position.set(0, SEAT.y + 0.12 * g, SEAT.z + 0.02 * g);
+    harness.rotation.x = 1.4 * g;
+    harness.scale.set(1 - 0.15 * g, 1 - 0.55 * g, 1 - 0.6 * g);
+    cocoon.scale.z = 1 - 0.85 * g;
     deck.visible = flyBlend > 0.5;
-    deck.position.set(0, 1.03, -0.42);
-    deck.rotation.x = 0.5;
     for (const m of [...thighs, ...shins, ...knees, ...boots]) m.visible = flyBlend < 0.85;
 
     // Hands follow the brake handles (which hang from the swinging canopy).
