@@ -10,7 +10,7 @@ import { TouchPad } from './game/touch';
 import { clockTime, loadCatalog, parseStart, startQuery } from './game/catalog';
 import { SitePicker } from './game/picker';
 import { loadSite, type Launch } from './game/site';
-import { createGlider as createGliderModel } from './game/wing';
+import { createGlider as createGliderModel, type Crew } from './game/wing';
 import { TerrainView } from './game/terrain-view';
 import { createLiftMap, createSurround, Sunlight, toScene } from './game/world';
 import { compass, glideTo, TurnTrack } from './sim/instruments';
@@ -94,7 +94,7 @@ async function boot(): Promise<void> {
   };
 
   let launch: Launch = site.launches.find((l) => l.spec.id === start.launchId) ?? site.launches[0];
-  const settings = { wing: 'EN-B' as WingId, launch: launch.spec.id, liftMap: false };
+  const settings = { wing: 'EN-B' as WingId, crew: 'solo' as Crew, launch: launch.spec.id, liftMap: false };
   const lat = site.toLatLon(extent / 2, extent / 2)[0];
   const day = dayOfYear(new Date());
   const { sunrise, sunset } = daylight(lat, day);
@@ -240,6 +240,7 @@ async function boot(): Promise<void> {
   fl.add(settings, 'wing', Object.fromEntries(Object.entries(WINGS).map(([id, w]) => [w.label, id]))).name('Wing').onChange((id: WingId) => {
     polar = new Polar(WINGS[id]);
   });
+  fl.add(settings, 'crew', { Solo: 'solo', Tandem: 'tandem' }).name('Pilot').onChange((c: Crew) => model.setCrew(c));
   fl.add(settings, 'liftMap').name('Lift map (L)').onChange(toggleLiftMap);
   fl.add({ sites: () => picker.open(region.id, launch.spec.id) }, 'sites').name('Sites… (M)');
   fl.add({ airstart: () => reset(true) }, 'airstart').name('Air start (T)');

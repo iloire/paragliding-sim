@@ -542,6 +542,24 @@ Two key poses blend with a filter of about 0.4 s:
 - **Seated** in flight: reclined, legs forward inside the cocoon (the legs are hidden once it
   closes), head tilted to look ahead.
 
+### The tandem crew
+
+**Flight → Pilot → Tandem** swaps the solo pilot for a tandem crew (`src/game/tandem.ts`); the
+canopy, lines and flight model stay as they are. Two spreader bars, one per side, hang from the
+main carabiners by a short link. The **passenger** is clipped to their front ends and sits in
+front and about 30 cm lower, legs hanging out of an open seat harness, hands on the shoulder
+straps. The **pilot** is clipped to the rear ends, sits up behind so they see over the
+passenger's helmet, knees either side of the passenger's seat, and flies the brakes on the same
+arm IK as the solo pilot. Their brake handles hang 18 cm further back to match.
+
+Both wear softshells with a white chevron on the chest, high collars, sunglasses and open-face
+helmets (a sphere cap tilted back so it sits above the brow and covers the nape): the pilot in
+charcoal with dark trousers, an orange helmet and a beard, the passenger in black with black
+shorts and bare legs, a black helmet and a slightly smaller build. The harness webbing is black
+with mint loops. Standing, both run one behind the other, legs scissoring out of phase.
+
+A tandem wing has trimmers, not a speed bar, so nobody's legs move when the wing speeds up.
+
 ---
 
 ## 11. Tuning constants

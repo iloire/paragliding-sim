@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-18 09:31 UTC — Tandem crew
+
+- **Flight → Pilot → Tandem** puts a tandem crew under the wing: a passenger in front and lower in an open seat harness, legs hanging, hands on the shoulder straps, and the pilot behind and higher on the brakes, both clipped to spreader bars hanging from the carabiners. They stand and run one behind the other on launch.
+- Dressed after a real Famara crew: the pilot in a charcoal softshell, an orange open-face helmet, sunglasses and a beard; the passenger in a black softshell and shorts with a black helmet and sunglasses; white chevron logos on both chests, black webbing with mint loops.
+- Tandems fly on trimmers, not a speed bar, so the legs don't move when the wing speeds up. The flight model is unchanged; W still speeds the wing up.
+
 ## 2026-10-18 11:40 UTC — Legs push the speed bar
 
 - You can see the pilot push the bar: at trim the bent knees make two bumps in the top of the cocoon; on bar the legs straighten, the bumps flatten and ride forward, and the pod's nose goes forward with the feet (45 cm on full bar). It follows the pilot's actual push, fed in as the wing picks up speed.

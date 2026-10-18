@@ -7,6 +7,7 @@
 //   trailing edge to handles that move with your brake input.
 // - Pilot: Submarine-style pod harness with a tall rear fairing, seated in flight, standing
 //   and running on the ground, arms on two-bone IK holding the brake handles, weight shift leaning the body.
+//   Or a tandem crew (src/game/tandem.ts): passenger in front, pilot behind, on spreader bars.
 //
 // Rig-local frame: origin at the pilot's feet / seat base, +Y up, forward −Z.
 // The canopy hangs from a pivot at the carabiners. The flight model swings canopy, lines and
@@ -14,6 +15,8 @@
 
 import * as THREE from 'three';
 import type { Controls, GliderState } from '../sim/glider';
+import { Gait, solveArm, span, type Arm } from './body';
+import { createTandem } from './tandem';
 
 const CELLS = 48;
 const SUB = 3; // spanwise vertices per cell: rib, two inside the cell
@@ -41,9 +44,12 @@ const COLOURS = {
   riser: new THREE.Color(0x24262b),
 };
 
+export type Crew = 'solo' | 'tandem';
+
 export interface GliderModel {
   group: THREE.Group;
   update(s: GliderState, c: Controls, dt: number): void;
+  setCrew(crew: Crew): void;
 }
 
 interface Station {
@@ -81,15 +87,6 @@ function buildStations(): Station[] {
     });
   }
   return out;
-}
-
-/** Places a unit-height mesh (along +Y, centred) between two points. */
-function span(mesh: THREE.Object3D, a: THREE.Vector3, b: THREE.Vector3): void {
-  const dir = new THREE.Vector3().subVectors(b, a);
-  const len = dir.length();
-  mesh.position.copy(a).addScaledVector(dir, 0.5);
-  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
-  mesh.scale.set(1, Math.max(len, 1e-3), 1);
 }
 
 export function createGlider(): GliderModel {
@@ -291,11 +288,10 @@ export function createGlider(): GliderModel {
   const mount = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.035, 0.05), accent);
   mount.position.set(0, 0.145, -0.01);
   helmet.add(mount);
-  const upperArms = [limb(0.052, suit), limb(0.052, suit)];
-  const foreArms = [limb(0.046, suit), limb(0.046, suit)];
-  const elbows = [joint(0.052, suit), joint(0.052, suit)];
-  const hands = [joint(0.052, glove), joint(0.052, glove)];
-  hands.forEach((h) => h.scale.set(1, 1.15, 1.3));
+  const arms: Arm[] = [0, 1].map(() => ({
+    upper: limb(0.052, suit), fore: limb(0.046, suit), elbow: joint(0.052, suit), hand: joint(0.052, glove), length: 0.3,
+  }));
+  arms.forEach((a) => a.hand.scale.set(1, 1.15, 1.3));
   const thighs = [limb(0.075, suit), limb(0.075, suit)];
   const shins = [limb(0.055, suit), limb(0.055, suit)];
   const knees = [joint(0.07, suit), joint(0.07, suit)];
@@ -423,9 +419,13 @@ export function createGlider(): GliderModel {
   const pose = {} as Pose;
   for (const key of Object.keys(standing) as (keyof Pose)[]) pose[key] = new THREE.Vector3();
 
+  const tandem = createTandem();
+  tandem.group.visible = false;
+  group.add(tandem.group);
+  let crew: Crew = 'solo';
+
   // ---------- state for animation ----------
-  let flyBlend = 0;
-  let runPhase = 0;
+  const gait = new Gait();
   let foldL = 0;
   let foldR = 0;
   const tmp = new THREE.Vector3();
@@ -433,26 +433,9 @@ export function createGlider(): GliderModel {
   const elbowPole = new THREE.Vector3();
 
   function brakeHandle(side: number, brake: number, out: THREE.Vector3): THREE.Vector3 {
-    // Hands up by the risers at chin height, down to the hips at full brake.
-    return out.set(side * 0.27, 0.24 - brake * 0.62, 0.04 + brake * 0.1);
-  }
-
-  function solveArm(i: number, shoulder: THREE.Vector3, hand: THREE.Vector3, side: number): void {
-    const l1 = 0.3, l2 = 0.3;
-    const d = tmp.subVectors(hand, shoulder);
-    const dist = Math.min(d.length(), l1 + l2 - 1e-3);
-    d.normalize();
-    // Elbow drops down and out to the side, the way you hold brakes.
-    elbowPole.set(side * 0.7, -1, 0.15).normalize();
-    const along = (dist * dist + l1 * l1 - l2 * l2) / (2 * dist);
-    const h = Math.sqrt(Math.max(l1 * l1 - along * along, 0));
-    const perp = elbowPole.sub(d.clone().multiplyScalar(elbowPole.dot(d))).normalize();
-    const elbow = shoulder.clone().addScaledVector(d, along).addScaledVector(perp, h);
-    const handPos = shoulder.clone().addScaledVector(d, dist);
-    span(upperArms[i], shoulder, elbow);
-    span(foreArms[i], elbow, handPos);
-    elbows[i].position.copy(elbow);
-    hands[i].position.copy(handPos);
+    // Hands up by the risers at chin height, down to the hips at full brake. The tandem pilot
+    // sits further back, so the handles hang further back too.
+    return out.set(side * 0.27, 0.24 - brake * 0.62, (crew === 'tandem' ? 0.22 : 0.04) + brake * 0.1);
   }
 
   function updateCanopy(brakeL: number, brakeR: number): void {
@@ -527,9 +510,8 @@ export function createGlider(): GliderModel {
 
   function updatePilot(s: GliderState, c: Controls, dt: number): void {
     const flying = s.phase === 'flying';
-    flyBlend += ((flying ? 1 : 0) - flyBlend) * (1 - Math.exp(-dt * 2.5));
-    runPhase += s.runSpeed * dt * 2.6;
-    const swing = flying ? 0 : Math.min(s.runSpeed / 4, 1);
+    gait.update(s, dt);
+    const { flyBlend, runPhase, swing } = gait;
 
     for (const key of Object.keys(pose) as (keyof Pose)[]) pose[key].lerpVectors(standing[key], seated[key], flyBlend);
     // Running: legs scissor, body leans into the run.
@@ -575,8 +557,9 @@ export function createGlider(): GliderModel {
       brakeHandle(side, side < 0 ? c.brakeLeft : c.brakeRight, handleWorld);
       canopyPivot.localToWorld(handleWorld);
       pilot.worldToLocal(handleWorld);
-      solveArm(i, i === 0 ? pose.shoulderL : pose.shoulderR, handleWorld, side);
-      toggles[i].position.copy(hands[i].position);
+      // Elbow drops down and out to the side, the way you hold brakes.
+      solveArm(arms[i], i === 0 ? pose.shoulderL : pose.shoulderR, handleWorld, elbowPole.set(side * 0.7, -1, 0.15));
+      toggles[i].position.copy(arms[i].hand.position);
     }
 
     // Weight shift leans the body into the turn.
@@ -590,8 +573,15 @@ export function createGlider(): GliderModel {
 
     updateCanopy(c.brakeLeft, c.brakeRight);
     updateLines(c.brakeLeft, c.brakeRight);
-    updatePilot(s, c, dt);
+    if (crew === 'tandem') tandem.update(s, c, dt, (side, brake, out) => canopyPivot.localToWorld(brakeHandle(side, brake, out)));
+    else updatePilot(s, c, dt);
   }
 
-  return { group, update };
+  function setCrew(next: Crew): void {
+    crew = next;
+    pilot.visible = crew === 'solo';
+    tandem.group.visible = crew === 'tandem';
+  }
+
+  return { group, update, setCrew };
 }

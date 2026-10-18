@@ -57,7 +57,9 @@ tips on an anhedral arc, NACA-style airfoil, 48 cells with inflated panels, nose
 A/B/C lines cascading in three levels to the risers and brake lines to the toggles; a pod-harness
 pilot that stands and runs on the ground, settles seated in flight, and holds the toggles on
 two-bone arm IK. The canopy hangs from a pivot at the carabiners, surging ahead and leading
-into turns relative to the pilot.
+into turns relative to the pilot. A tandem crew (`src/game/tandem.ts`) can replace the solo pilot:
+passenger in front, pilot behind, on spreader bars. `src/game/body.ts` holds what both share:
+placing limbs between two points, the arm IK and the standing-to-seated gait.
 
 ## Air model (`src/sim/wind.ts`, `thermals.ts`)
 
