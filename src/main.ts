@@ -4,12 +4,13 @@ import * as THREE from 'three';
 import { FlightAudio } from './game/audio';
 import { CameraRig } from './game/camera';
 import { CloudLayer } from './game/clouds';
-import { Hud } from './game/hud';
+import { Hud, type HudFrame } from './game/hud';
 import { Input, type Action } from './game/input';
 import { loadSite, type Launch } from './game/site';
 import { createGlider as createGliderModel } from './game/wing';
 import { TerrainView } from './game/terrain-view';
 import { createLiftMap, createSea, createSkyAndLight, toScene } from './game/world';
+import { ClimbAverage, compass, glideTo, TurnTrack } from './sim/instruments';
 import { createGlider, stepGlider, type Environment, type GliderState } from './sim/glider';
 import { buildIgc, type Fix } from './sim/igc';
 import { Polar, WINGS, type WingId } from './sim/polar';
@@ -80,15 +81,12 @@ async function boot(): Promise<void> {
   let climb = 0;
   let flightTime = 0;
   let glideAvg: number | null = null;
+  const climbAvg = new ClimbAverage();
+  const track = new TurnTrack();
   let fixes: Fix[] = [];
   let fixTimer = 0;
   const startDate = Date.now();
   const pilotPos = new THREE.Vector3();
-
-  function compass(rad: number): string {
-    const names = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
-    return names[Math.round(((rad * 180) / Math.PI / 22.5) % 16 + 16) % 16];
-  }
 
   function reset(airstart = false): void {
     if (airstart) {
@@ -103,6 +101,8 @@ async function boot(): Promise<void> {
     climb = 0;
     flightTime = 0;
     glideAvg = null;
+    climbAvg.reset();
+    track.reset();
     fixes = [];
     rig.snap(toScene(extent, state.x, state.y, state.z, pilotPos), state);
   }
@@ -137,6 +137,7 @@ async function boot(): Promise<void> {
       case 'mute': audio.muted = !audio.muted; hud.say(audio.muted ? 'Vario muted' : 'Vario on', 1.5); break;
       case 'pause': paused = !paused; hud.say(paused ? 'Paused' : 'Resumed', paused ? 1e9 : 1); break;
       case 'help': hud.toggleHelp(); break;
+      case 'layout': hud.say(`Instrument: ${hud.cycleLayout()}`, 1.5); break;
       case 'lift': toggleLiftMap(!settings.liftMap); break;
       case 'nextLaunch': {
         const i = site.launches.indexOf(launch);
@@ -226,8 +227,11 @@ async function boot(): Promise<void> {
       climb += ((flying ? state.vz : 0) - climb) * (1 - Math.exp(-dt / 0.6));
       if (flying) {
         flightTime += dt;
-        if (-state.vz > 0.2) {
-          const glide = state.groundSpeed / -state.vz;
+        climbAvg.add(state.vz, dt);
+        track.add(state.x, state.y, state.vz, dt);
+        // From the smoothed climb the vario shows, so a moment of lift doesn't snap L/D to ∞.
+        if (-climb > 0.2) {
+          const glide = state.groundSpeed / -climb;
           glideAvg = glideAvg === null || !Number.isFinite(glideAvg) ? glide : glideAvg + (glide - glideAvg) * (1 - Math.exp(-dt / 4));
         } else {
           glideAvg = Infinity; // climbing or level: no glide ratio to show
@@ -254,10 +258,23 @@ async function boot(): Promise<void> {
     terrainView.update(camera.position, camera.position.y - camGroundZ);
     audio.update(dt, climb, state.airspeed, state.phase === 'flying');
     const [dx, dy] = wind.direction;
-    hud.update(dt, state, climb, state.z - ground, state.phase === 'flying' ? glideAvg : null, flightTime,
-      wind.windSpeedAt(state.x, state.y, state.z) * 3.6, Math.atan2(dx, dy));
+    const glide = state.phase === 'flying' ? glideAvg : null;
+    hud.update(dt, state, {
+      climb, climbAvg: climbAvg.value, agl: state.z - ground, glide, flightSeconds: flightTime,
+      windKmh: wind.windSpeedAt(state.x, state.y, state.z) * 3.6, windToRad: Math.atan2(dx, dy),
+      landing: nearestLanding(glide), track,
+    });
     renderer.render(scene, camera);
   });
+
+  function nearestLanding(glide: number | null): HudFrame['landing'] {
+    let best: HudFrame['landing'] = null;
+    for (const l of site.landings) {
+      const g = glideTo(state.x, state.y, state.z, l.x, l.y, l.z, glide);
+      if (!best || g.distance < best.glide.distance) best = { name: l.spec.name, glide: g };
+    }
+    return best;
+  }
 
   function windUV(): [number, number] {
     const [dx, dy] = wind.direction;

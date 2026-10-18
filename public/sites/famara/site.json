@@ -15,6 +15,9 @@
     { "id": "macher", "name": "Macher", "lat": 28.9506, "lon": -13.7103 },
     { "id": "playa-quemada", "name": "Playa Quemada", "lat": 28.9025, "lon": -13.7413 }
   ],
+  "landings": [
+    { "id": "famara-beach", "name": "Playa de Famara", "lat": 29.114, "lon": -13.56 }
+  ],
   "weather": {
     "windSpeedKmh": 24,
     "windFromDeg": 345,

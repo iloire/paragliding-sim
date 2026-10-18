@@ -1,6 +1,7 @@
 // The DOM overlay: instrument panel, centre messages, help, credits.
 
 import type { GliderState } from '../sim/glider';
+import { compass, type GlideTo, type TurnTrack } from '../sim/instruments';
 
 function el<T extends HTMLElement = HTMLElement>(id: string): T {
   const e = document.getElementById(id);
@@ -8,22 +9,58 @@ function el<T extends HTMLElement = HTMLElement>(id: string): T {
   return e as T;
 }
 
+const LAYOUTS = ['full', 'minimal', 'hidden'] as const;
+export type Layout = (typeof LAYOUTS)[number];
+
+/** Climb that flashes the vario when first crossed; re-arms below the lower value. */
+const FLASH_CLIMB = 2;
+const FLASH_REARM = 1;
+const AGL_LOW = 50;
+const AGL_DANGER = 20;
+/** Thermal assistant: metres from the centre to the edge of the plot. */
+const TRACK_RADIUS_M = 80;
+
+export interface HudFrame {
+  climb: number;
+  climbAvg: number;
+  agl: number;
+  glide: number | null;
+  flightSeconds: number;
+  windKmh: number;
+  /** Compass direction the wind blows towards (rad). */
+  windToRad: number;
+  landing: { name: string; glide: GlideTo } | null;
+  track: TurnTrack;
+}
+
 export class Hud {
+  private readonly panel = el('instrument');
   private readonly vario = el('vario');
   private readonly varioFill = el('vario-fill');
+  private readonly varioAvg = el('vario-avg');
   private readonly alt = el('alt');
   private readonly agl = el('agl');
+  private readonly aglBox = el('agl-box');
   private readonly airspeed = el('airspeed');
   private readonly groundspeed = el('groundspeed');
   private readonly glide = el('glide');
   private readonly time = el('flighttime');
   private readonly gload = el('gload');
   private readonly bank = el('bank');
+  private readonly thermal = el<HTMLCanvasElement>('thermal').getContext('2d')!;
   private readonly windArrow = el('wind-arrow');
+  private readonly windFrom = el('wind-from');
   private readonly windSpeed = el('wind-speed');
+  private readonly landing = el('landing');
+  private readonly landingArrow = el('landing-arrow');
+  private readonly landingName = el('landing-name');
+  private readonly landingDist = el('landing-dist');
+  private readonly landingNeed = el('landing-need');
   private readonly message = el('message');
   private readonly help = el('help');
   private messageTimer = 0;
+  private layout: Layout = 'full';
+  private flashArmed = true;
 
   constructor(commitSha: string) {
     el('sha').textContent = commitSha ? `· ${commitSha}` : '';
@@ -37,6 +74,14 @@ export class Hud {
     this.help.classList.toggle('hidden');
   }
 
+  /** Cycles full → minimal → hidden and returns the new layout. */
+  cycleLayout(): Layout {
+    this.layout = LAYOUTS[(LAYOUTS.indexOf(this.layout) + 1) % LAYOUTS.length];
+    this.panel.classList.toggle('minimal', this.layout === 'minimal');
+    this.panel.classList.toggle('hidden', this.layout === 'hidden');
+    return this.layout;
+  }
+
   say(text: string, seconds = 4, warn = false): void {
     this.message.textContent = text;
     this.message.classList.add('show');
@@ -44,33 +89,122 @@ export class Hud {
     this.messageTimer = seconds;
   }
 
-  update(dt: number, s: GliderState, climb: number, agl: number, glide: number | null, flightSeconds: number, windKmh: number, windToRad: number): void {
+  update(dt: number, s: GliderState, f: HudFrame): void {
     const flying = s.phase === 'flying';
-    this.vario.textContent = `${climb >= 0 ? '+' : '−'}${Math.abs(climb).toFixed(1)}`;
+    const { climb } = f;
+    this.vario.textContent = signed(climb);
     this.vario.classList.toggle('up', climb >= 0.2);
     this.vario.classList.toggle('down', climb <= -2);
+    if (flying && this.flashArmed && climb >= FLASH_CLIMB) {
+      this.flashArmed = false;
+      this.vario.classList.remove('flash');
+      void this.vario.offsetWidth; // restart the animation
+      this.vario.classList.add('flash');
+    } else if (climb < FLASH_REARM) {
+      this.flashArmed = true;
+    }
     const frac = Math.max(-1, Math.min(1, climb / 5));
-    this.varioFill.style.left = frac >= 0 ? '50%' : `${50 + frac * 50}%`;
-    this.varioFill.style.width = `${Math.abs(frac) * 50}%`;
+    this.varioFill.style.top = frac >= 0 ? `${50 - frac * 50}%` : '50%';
+    this.varioFill.style.height = `${Math.abs(frac) * 50}%`;
     this.varioFill.style.background = frac >= 0 ? 'var(--lift)' : 'var(--sink)';
+    this.varioAvg.textContent = flying ? signed(f.climbAvg) : '–';
+    this.varioAvg.classList.toggle('up', flying && f.climbAvg >= 0.2);
+
+    const agl = Math.max(f.agl, 0);
+    this.agl.textContent = Math.round(agl).toString();
+    this.aglBox.classList.toggle('danger', flying && agl < AGL_DANGER);
+    this.aglBox.classList.toggle('low', flying && agl >= AGL_DANGER && agl < AGL_LOW);
 
     this.alt.textContent = Math.round(s.z).toString();
-    this.agl.textContent = Math.round(Math.max(agl, 0)).toString();
     this.airspeed.textContent = flying ? Math.round(s.airspeed * 3.6).toString() : '–';
     this.groundspeed.textContent = Math.round(s.groundSpeed * 3.6).toString();
-    this.glide.textContent = glide === null ? '–' : !Number.isFinite(glide) || glide > 30 ? '∞' : glide.toFixed(1);
+    this.glide.textContent = f.glide === null ? '–' : !Number.isFinite(f.glide) || f.glide > 30 ? '∞' : f.glide.toFixed(1);
+    const bankDeg = Math.abs((s.bank * 180) / Math.PI);
     this.gload.textContent = flying ? s.load.toFixed(1) : '–';
-    this.gload.parentElement?.classList.toggle('alert', flying && (s.load > 2.5 || s.load < 0.4));
-    this.bank.textContent = flying ? `${Math.round(Math.abs((s.bank * 180) / Math.PI))}°` : '–';
-    const m = Math.floor(flightSeconds / 60), sec = Math.floor(flightSeconds % 60);
+    this.bank.textContent = flying ? `${Math.round(bankDeg)}°` : '–';
+    // G and bank only matter in a manoeuvre: dimmed in straight flight, red when extreme.
+    const loadAlert = flying && (s.load > 2.5 || s.load < 0.4);
+    this.gload.parentElement?.classList.toggle('alert', loadAlert);
+    this.gload.parentElement?.classList.toggle('quiet', !flying || (s.load >= 0.6 && s.load <= 1.8));
+    this.bank.parentElement?.classList.toggle('alert', flying && bankDeg > 60);
+    this.bank.parentElement?.classList.toggle('quiet', !flying || bankDeg < 25);
+    const m = Math.floor(f.flightSeconds / 60), sec = Math.floor(f.flightSeconds % 60);
     this.time.textContent = `${m}:${sec.toString().padStart(2, '0')}`;
-    // Arrow shows where the wind blows relative to where you're facing (up = tailwind).
-    this.windArrow.style.transform = `rotate(${((windToRad - s.heading) * 180) / Math.PI}deg)`;
-    this.windSpeed.textContent = Math.round(windKmh).toString();
+
+    // Glider fixed pointing up; the arrow turns with the wind relative to it (pointing up = tailwind).
+    this.windArrow.style.transform = `rotate(${deg(f.windToRad - s.heading)}deg)`;
+    this.windFrom.textContent = compass(f.windToRad + Math.PI);
+    this.windSpeed.textContent = Math.round(f.windKmh).toString();
+
+    this.landing.classList.toggle('none', f.landing === null);
+    if (f.landing) {
+      const g = f.landing.glide;
+      this.landing.classList.remove('ok', 'marginal', 'out');
+      if (g.status !== 'none') this.landing.classList.add(g.status);
+      this.landingArrow.style.transform = `rotate(${deg(g.bearing - s.heading)}deg)`;
+      this.landingName.textContent = f.landing.name;
+      this.landingDist.textContent = `${(g.distance / 1000).toFixed(1)} km`;
+      this.landingNeed.textContent = Number.isFinite(g.required) ? `L/D ${g.required.toFixed(1)}` : 'below';
+    }
+
+    if (this.layout === 'full') this.drawTrack(s, f.track, flying);
 
     if (this.messageTimer > 0) {
       this.messageTimer -= dt;
       if (this.messageTimer <= 0) this.message.classList.remove('show');
     }
   }
+
+  /** Thermal assistant: the last half-minute of track, heading up, dots coloured by climb. */
+  private drawTrack(s: GliderState, track: TurnTrack, flying: boolean): void {
+    const ctx = this.thermal;
+    const size = ctx.canvas.width, c = size / 2, k = (c - 4) / TRACK_RADIUS_M;
+    ctx.clearRect(0, 0, size, size);
+    ctx.strokeStyle = 'rgba(244, 239, 228, 0.14)';
+    ctx.lineWidth = 2;
+    for (const r of [c - 4, (c - 4) / 2]) {
+      ctx.beginPath();
+      ctx.arc(c, c, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    if (!flying) return;
+
+    const sin = Math.sin(s.heading), cos = Math.cos(s.heading);
+    const toScreen = (x: number, y: number): [number, number] => {
+      const dx = x - s.x, dy = y - s.y;
+      return [c + (dx * cos - dy * sin) * k, c - (dx * sin + dy * cos) * k];
+    };
+    for (const p of track.points) {
+      const [px, py] = toScreen(p.x, p.y);
+      const strength = Math.min(Math.abs(p.vz) / 3, 1);
+      ctx.fillStyle = p.vz >= 0 ? `rgba(127, 224, 138, ${0.25 + strength * 0.75})` : `rgba(255, 122, 89, ${0.15 + strength * 0.5})`;
+      ctx.beginPath();
+      ctx.arc(px, py, 2 + strength * 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const best = track.best();
+    if (best) {
+      const [bx, by] = toScreen(best.x, best.y);
+      ctx.strokeStyle = '#7fe08a';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(bx, by, 10, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#f4efe4';
+    ctx.beginPath();
+    ctx.moveTo(c, c - 9);
+    ctx.lineTo(c + 7, c + 6);
+    ctx.lineTo(c - 7, c + 6);
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function signed(v: number): string {
+  return `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}`;
+}
+
+function deg(rad: number): number {
+  return (rad * 180) / Math.PI;
 }

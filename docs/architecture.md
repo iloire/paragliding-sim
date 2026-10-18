@@ -80,6 +80,25 @@ the time the air took to climb, have a sink ring, stop at the inversion and mark
 These rules come from the notes vault's *coastal-soaring-lift-factors* note; the tests in
 `src/sim/wind.test.ts` pin each of them on a synthetic cliff.
 
+## Instrument panel (`src/game/hud.ts`, `src/sim/instruments.ts`)
+
+Laid out by what a pilot glances at: the vario (big number, a vertical ±5 m/s scale and the 20 s
+average climb), height above ground (amber below 50 m, red below 20 m), then smaller reference
+readouts. G and bank stay dimmed until a manoeuvre makes them matter (bank over 25°, load outside
+0.6–1.8 G). The vario number flashes when climb first passes +2 m/s.
+
+- **Thermal assistant**: the last 30 s of track, heading up, 80 m to the edge, dots sized and
+  coloured by climb, with a ring on the best climb so you can shift the circle towards it.
+- **Wind rose**: the glider is fixed pointing up at the centre; the arrow sits on the upwind rim and
+  points along the flow. The text gives the compass direction the wind comes *from*.
+- **Glide to landing**: the nearest field from `landings` in `site.json`, with distance, a bearing
+  arrow and the L/D needed to arrive at its height. Green when the current averaged L/D beats it by
+  25 %, amber when it just makes it, red when it doesn't. Hidden for a site with no landings.
+- **I** cycles full → minimal (vario, AGL, wind) → hidden. Phones get the minimal layout.
+
+The maths (averaging, glide-to, track buffer, compass) is pure and tested in `instruments.test.ts`;
+`hud.ts` only draws.
+
 ## Terrain data
 
 `npm run fetch-terrain -- famara` reads `public/sites/famara/site.json` and downloads:
@@ -93,5 +112,9 @@ These rules come from the notes vault's *coastal-soaring-lift-factors* note; the
   and a `orthoSize`² photo, as `detail/<col>_<row>.bin|.jpg` (col from the west, row from the
   south), listed in `detail/tiles.json`. Lanzarote (7 launches): 54 tiles, ~65 MB. IGN's WCS offers nothing finer
   than 5 m; the 2 m MDT02 is download-only.
+
+`landings` in `site.json` is a list of `{ id, name, lat, lon }` like `launches`; the ground height
+comes from the DEM. The Famara beach landing (29.114, −13.56) was placed on the flat 5 m ground
+behind Playa de Famara on the DEM; check it against the local landing before trusting it.
 
 Both are © Instituto Geográfico Nacional, CC BY 4.0 — the attribution is on screen.

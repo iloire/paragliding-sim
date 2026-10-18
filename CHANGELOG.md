@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-18 01:08 UTC — Instrument panel rework
+
+- Laid out by priority: big vario with a vertical ±5 m/s scale and the 20 s average climb, then AGL large, then smaller reference readouts; flight time moved to a footer row.
+- AGL turns amber below 50 m and red below 20 m. G and bank are dimmed in straight flight and light up past 25° bank or outside 0.6–1.8 G.
+- Thermal assistant: the last 30 s of track heading-up, coloured by climb, with the best climb ringed.
+- Wind rose with the glider fixed at the centre and the arrow along the flow; wind shown as the compass direction it comes from (e.g. NNW 24 km/h).
+- Glide to landing: nearest field from the new `landings` list in `site.json` (Playa de Famara), with distance, bearing and the L/D needed, graded green/amber/red against the current L/D.
+- L/D is averaged from the smoothed climb the vario shows, so a moment of lift no longer snaps it to ∞ (and the landing readout green) while sinking.
+- Vario flashes when climb first passes +2 m/s. **I** cycles the panel full → minimal → hidden; phones get the minimal layout.
+
 ## 2026-10-18 01:32 UTC — Rigid-body flight model
 
 - The glider is now one rigid body: pilot (89 kg) at the bottom of 7.5 m of lines, canopy (6 kg plus its trapped air) at the top, with full attitude and angular velocity. The pendulum is the geometry, not a tuned oscillator.

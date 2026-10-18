@@ -14,6 +14,13 @@ export interface LaunchSpec {
   headingDeg?: number;
 }
 
+export interface LandingSpec {
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+}
+
 export interface SiteSpec {
   name: string;
   proj4: string;
@@ -24,6 +31,8 @@ export interface SiteSpec {
   /** Native-resolution tiles near the launches, written by scripts/fetch-terrain.ts. */
   detail?: { dir: string; tileM: number; orthoSize: number; radiusM: number };
   launches: LaunchSpec[];
+  /** Official landing fields, for the HUD's glide-to-landing readout. */
+  landings?: LandingSpec[];
   weather: Weather;
 }
 
@@ -33,6 +42,13 @@ export interface Launch {
   y: number;
   z: number;
   heading: number;
+}
+
+export interface Landing {
+  spec: LandingSpec;
+  x: number;
+  y: number;
+  z: number;
 }
 
 export interface DetailTile {
@@ -49,6 +65,7 @@ export interface Site {
   detailTileM: number;
   detailTiles: DetailTile[];
   launches: Launch[];
+  landings: Landing[];
   toLatLon(x: number, y: number): [number, number];
 }
 
@@ -68,6 +85,12 @@ export async function loadSite(id: string): Promise<Site> {
     return { spec: l, x, y, z: terrain.groundAt(x, y), heading };
   });
 
+  const landings = (spec.landings ?? []).map((l): Landing => {
+    const [e, n] = proj.forward([l.lon, l.lat]);
+    const x = e - x0, y = n - y0;
+    return { spec: l, x, y, z: terrain.groundAt(x, y) };
+  });
+
   return {
     spec,
     terrain,
@@ -75,6 +98,7 @@ export async function loadSite(id: string): Promise<Site> {
     detailTileM: spec.detail?.tileM ?? 0,
     detailTiles,
     launches,
+    landings,
     toLatLon(x, y) {
       const [lon, lat] = proj.inverse([x + x0, y + y0]);
       return [lat, lon];

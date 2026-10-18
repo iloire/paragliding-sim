@@ -18,23 +18,41 @@
 
     <section id="instrument" aria-label="Flight instrument">
       <div class="vario">
-        <div class="vario-value" id="vario">+0.0</div>
-        <div class="vario-unit">m/s</div>
-        <div class="vario-bar"><div id="vario-fill"></div></div>
+        <div class="vario-scale" aria-hidden="true"><div id="vario-fill"></div></div>
+        <div class="vario-read">
+          <div class="vario-value" id="vario">+0.0</div>
+          <div class="vario-unit">m/s</div>
+          <div class="vario-avg">AVG <b id="vario-avg">+0.0</b></div>
+        </div>
+      </div>
+      <div class="agl" id="agl-box">
+        <div class="agl-value"><span id="agl">0</span><small>m</small></div>
+        <div class="label">AGL</div>
       </div>
       <dl class="readouts">
         <div><dt>ALT</dt><dd id="alt">0</dd><span>m</span></div>
-        <div><dt>AGL</dt><dd id="agl">0</dd><span>m</span></div>
         <div><dt>AIR</dt><dd id="airspeed">0</dd><span>km/h</span></div>
-        <div><dt>GND</dt><dd id="groundspeed">0</dd><span>km/h</span></div>
         <div><dt>L/D</dt><dd id="glide">–</dd><span></span></div>
-        <div><dt>TIME</dt><dd id="flighttime">0:00</dd><span></span></div>
-        <div><dt>G</dt><dd id="gload">–</dd><span></span></div>
-        <div><dt>BANK</dt><dd id="bank">–</dd><span></span></div>
+        <div><dt>GND</dt><dd id="groundspeed">0</dd><span>km/h</span></div>
+        <div class="maneuver"><dt>G</dt><dd id="gload">–</dd><span></span></div>
+        <div class="maneuver"><dt>BANK</dt><dd id="bank">–</dd><span></span></div>
       </dl>
+      <canvas id="thermal" width="152" height="152" aria-label="Thermal assistant"></canvas>
       <div class="wind">
-        <div class="wind-rose"><div id="wind-arrow">▲</div></div>
-        <div class="wind-text"><span id="wind-speed">0</span> km/h<br /><small>WIND</small></div>
+        <div class="wind-rose">
+          <div id="wind-arrow"><i>▲</i></div>
+          <div class="wind-glider">▲</div>
+        </div>
+        <div class="wind-text"><b id="wind-from">N</b> <span id="wind-speed">0</span> km/h<br /><small>WIND</small></div>
+      </div>
+      <div class="footer">
+        <span class="label">TIME</span> <b id="flighttime">0:00</b>
+        <div class="landing" id="landing">
+        <span id="landing-arrow">▲</span>
+        <span id="landing-name"></span>
+        <span id="landing-dist"></span>
+        <span class="landing-need">need <b id="landing-need">–</b></span>
+        </div>
       </div>
     </section>
 
@@ -53,6 +71,7 @@
         <tr><td>R · N</td><td>Reset · next launch</td></tr>
         <tr><td>C · L</td><td>Camera · lift map</td></tr>
         <tr><td>V · P · H</td><td>Mute · pause · help</td></tr>
+        <tr><td>I</td><td>Instrument: full · minimal · hidden</td></tr>
       </table>
       <p>Gamepad: triggers = brakes, stick = weight shift, A = run / bar, Y = camera.</p>
     </aside>

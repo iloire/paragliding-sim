@@ -16,6 +16,8 @@ the lift model cheaply first. The plan lives in the notes vault (`Projects/parag
 
 ![Soaring the Risco de Famara in a 24 km/h north-westerly](docs/screenshots/famara-cliff.png)
 
+![Instrument panel: vario with 20 s average, AGL, thermal assistant, wind rose and glide to the Famara beach landing](docs/screenshots/instrument-panel.png)
+
 ![Spiral dive over Lanzarote: 82° bank, 3.4 G, −13.7 m/s](docs/screenshots/spiral-dive.png)
 
 ![Above the Famara launch: native 5 m terrain and 1.5 m/px photo near the camera](docs/screenshots/terrain-detail.png)
