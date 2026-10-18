@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-18 11:00 UTC — Play counter
+
+- The live sim counts its players with GoatCounter: visits by country, browser and screen size, takeoffs per launch, and how flights end (landed, crashed or in the water) with their length. No cookies and no personal data, so there is no consent banner. Local dev builds never count.
+
 ## 2026-10-18 10:22 UTC — Live on GitHub Pages, non-commercial licence
 
 - The sim is public at [iloire.github.io/paragliding-sim](https://iloire.github.io/paragliding-sim/). CI builds every green push to `main` with the `/paragliding-sim/` base path, deploys it to Pages and smoke-tests the live page.

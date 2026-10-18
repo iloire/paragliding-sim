@@ -144,6 +144,19 @@ loaded region switches in place; one in another region sets the URL and reloads,
 terrain, wind field and lift map are all built for one region. The roadmap (wind wedges, map
 picker, sites outside Spain) is in [plan-sites.md](plan-sites.md).
 
+## Analytics (`src/game/analytics.ts`)
+
+[GoatCounter](https://paragliding-sim.goatcounter.com) counts who plays. It sets no cookies and
+keeps no personal data, so the game shows no consent banner. The script loads in production
+builds only, so dev flights never count. Page views bring country, browser, screen size and
+referrer. Flights are events, counted as paths:
+
+- `flight/<region>/<launch>` on a takeoff from the ground (titled with the wing and solo/tandem)
+- `landed|crashed|water/<duration bucket>` when a flight ends (air starts included); a pilot
+  walking into the sea on the ground doesn't count
+
+The GoatCounter account (code `paragliding-sim`) was created by hand on goatcounter.com.
+
 ## Terrain data
 
 `npm run fetch-terrain -- lanzarote` reads `public/sites/lanzarote/site.json` and downloads:

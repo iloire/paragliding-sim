@@ -1,6 +1,7 @@
 import './style.css';
 import GUI from 'lil-gui';
 import * as THREE from 'three';
+import { durationBucket, startAnalytics, track as count } from './game/analytics';
 import { FlightAudio } from './game/audio';
 import { CameraRig } from './game/camera';
 import { CloudLayer } from './game/clouds';
@@ -45,6 +46,7 @@ const EVENTS: Record<string, [string, boolean]> = {
 };
 
 async function boot(): Promise<void> {
+  startAnalytics();
   const hud = new Hud(__COMMIT_SHA__);
   const regions = await loadCatalog();
   const start = parseStart(location.search, regions);
@@ -94,7 +96,7 @@ async function boot(): Promise<void> {
   };
 
   let launch: Launch = site.launches.find((l) => l.spec.id === start.launchId) ?? site.launches[0];
-  const settings = { wing: 'EN-B' as WingId, crew: 'solo' as Crew, launch: launch.spec.id, liftMap: false };
+  const settings = { wing: 'EN-B' as WingId, crew: 'solo' as Crew, liftMap: false };
   const lat = site.toLatLon(extent / 2, extent / 2)[0];
   const day = dayOfYear(new Date());
   const { sunrise, sunset } = daylight(lat, day);
@@ -107,6 +109,7 @@ async function boot(): Promise<void> {
   let paused = false;
   let climb = 0;
   let flightTime = 0;
+  let airborne = false; // a flight is under way, so its end is worth counting
   let glideAvg: number | null = null;
   let groundSpeedAvg = 0;
   let sinkAvg = 0;
@@ -128,6 +131,7 @@ async function boot(): Promise<void> {
     }
     climb = 0;
     flightTime = 0;
+    airborne = false;
     glideAvg = null;
     groundSpeedAvg = state.groundSpeed;
     sinkAvg = 0;
@@ -138,8 +142,7 @@ async function boot(): Promise<void> {
 
   function setLaunch(id: string): void {
     launch = site.launches.find((l) => l.spec.id === id) ?? site.launches[0];
-    settings.launch = launch.spec.id;
-    gui.controllersRecursive().forEach((c) => c.updateDisplay());
+    siteButton.name(siteLabel());
     writeUrl();
     reset(true);
   }
@@ -236,13 +239,14 @@ async function boot(): Promise<void> {
   wx.add(weather, 'thermalStrength', 0, 4, 0.1).name('Thermals m/s').onChange(refreshWeather);
   wx.add(weather, 'turbulence', 0, 1, 0.05).name('Wind turbulence').onChange(refreshWeather);
   const fl = gui.addFolder('Flight');
-  fl.add(settings, 'launch', Object.fromEntries(site.launches.map((l) => [l.spec.name, l.spec.id]))).name('Launch').onChange(setLaunch);
+  // The picker is the one place to choose a launch; this row says where you are and opens it.
+  const siteLabel = () => `${region.spec.name} · ${launch.spec.name} (M)`;
+  const siteButton = fl.add({ sites: () => picker.open(region.id, launch.spec.id) }, 'sites').name(siteLabel());
   fl.add(settings, 'wing', Object.fromEntries(Object.entries(WINGS).map(([id, w]) => [w.label, id]))).name('Wing').onChange((id: WingId) => {
     polar = new Polar(WINGS[id]);
   });
   fl.add(settings, 'crew', { Solo: 'solo', Tandem: 'tandem' }).name('Pilot').onChange((c: Crew) => model.setCrew(c));
   fl.add(settings, 'liftMap').name('Lift map (L)').onChange(toggleLiftMap);
-  fl.add({ sites: () => picker.open(region.id, launch.spec.id) }, 'sites').name('Sites… (M)');
   fl.add({ airstart: () => reset(true) }, 'airstart').name('Air start (T)');
   fl.add({ reset: () => reset() }, 'reset').name('Reset to launch (R)');
   fl.add({ igc: downloadIgc }, 'igc').name('Download IGC');
@@ -311,6 +315,7 @@ async function boot(): Promise<void> {
       wind.thermals.update(clock, weather.thermalStrength);
       if (state.event === 'takeoff') input.latchRun();
       if (state.event) {
+        countFlight(state.event);
         const [text, warn] = EVENTS[state.event] ?? [state.event, false];
         hud.say(state.event === 'spiral' ? `${text} — ${state.load.toFixed(1)} G` : text, warn ? 5 : 3.5, warn);
         state.event = null;
@@ -318,6 +323,7 @@ async function boot(): Promise<void> {
       const flying = state.phase === 'flying';
       climb += ((flying ? state.vz : 0) - climb) * (1 - Math.exp(-dt / 0.6));
       if (flying) {
+        airborne = true;
         flightTime += dt;
         track.add(state.x, state.y, state.vz, dt);
         // Ratio of averages, not an average of ratios: coming out of lift the instant ratio
@@ -356,6 +362,15 @@ async function boot(): Promise<void> {
     });
     renderer.render(scene, camera);
   });
+
+  /** Takeoffs and how flights end, for the GoatCounter dashboard. */
+  function countFlight(event: string): void {
+    if (event === 'takeoff') count(`flight/${region.id}/${launch.spec.id}`, `${settings.wing} ${settings.crew}`);
+    else if (airborne && (event === 'landed' || event === 'crashed' || event === 'water')) {
+      airborne = false;
+      count(`${event}/${durationBucket(flightTime)}`);
+    }
+  }
 
   function nearestLanding(glide: number | null): HudFrame['landing'] {
     let best: HudFrame['landing'] = null;

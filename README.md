@@ -114,6 +114,11 @@ GitHub Pages, from CI. Every push to `main` that passes the tests is built with 
 `/paragliding-sim/` base path and deployed. The deploy job then fetches the live page and the site list,
 so a green badge means that commit is live.
 
+## Analytics
+
+[GoatCounter](https://www.goatcounter.com) counts plays and flights, with no cookies and no banner.
+See [docs/architecture.md](docs/architecture.md#analytics-srcgameanalyticsts).
+
 ## Licence
 
 The code is free for non-commercial use under a [custom licence](LICENSE); commercial use (selling it,
