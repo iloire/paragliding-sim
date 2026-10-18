@@ -1,5 +1,7 @@
 # Famara Glide
 
+https://github.com/user-attachments/assets/1ba96746-a80a-4a2d-8748-9449cd02ba23
+
 [![CI](https://github.com/iloire/paragliding-sim/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/iloire/paragliding-sim/actions/workflows/ci.yml)
 
 ### ▶ Fly it now: **[https://iloire.github.io/paragliding-sim/](https://iloire.github.io/paragliding-sim/)**
@@ -10,7 +12,6 @@ and the lift model cheaply first.
 
 It runs in a desktop browser, or on a phone held sideways. Nothing to install.
 
-[![Ridge soaring the Risco de Famara in a 24 km/h north-westerly](docs/screenshots/famara-ridge.png)](https://iloire.github.io/paragliding-sim/)
 
 ## What's in it
 
@@ -23,13 +24,7 @@ It runs in a desktop browser, or on a phone held sideways. Nothing to install.
 - **Speed bar, time of day, sunsets**: thermals are weak in the morning and strongest in the early afternoon.
 - **Instruments**: vario, AGL, a thermal assistant, a wind rose, glide to the landing, and IGC export.
 
-| | |
-|---|---|
-| ![Tandem crew: passenger in front, pilot behind on the brakes](docs/screenshots/tandem.png) | ![Spiral dive at 60° of bank, −7 m/s](docs/screenshots/spiral-dive.png) |
-| ![Rials, Castejón de Sos, in the Pyrenees](docs/screenshots/castejon-rials.png) | ![Sunset over Famara](docs/screenshots/sunset.png) |
-| ![Site picker over the lift map](docs/screenshots/site-picker.png) | |
 
-▶ [Watch 40 s of gameplay at Famara](docs/videos/famara-gameplay.mp4), stall included.
 
 ## Sites
 
