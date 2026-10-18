@@ -8,11 +8,11 @@ const RAMP = 2.5; // brake travel per second on keys
 const TURN_BRAKE = 0.7;
 const BOTH_BRAKES = 0.55;
 
-export type Action = 'reset' | 'camera' | 'mute' | 'pause' | 'help' | 'lift' | 'nextLaunch' | 'layout' | 'sites';
+export type Action = 'reset' | 'camera' | 'mute' | 'pause' | 'help' | 'lift' | 'nextLaunch' | 'layout' | 'sites' | 'warp';
 
 const ACTION_KEYS: Record<string, Action> = {
   KeyR: 'reset', KeyC: 'camera', KeyV: 'mute',
-  KeyP: 'pause', KeyH: 'help', KeyL: 'lift', KeyN: 'nextLaunch', KeyI: 'layout', KeyM: 'sites',
+  KeyP: 'pause', KeyH: 'help', KeyL: 'lift', KeyN: 'nextLaunch', KeyI: 'layout', KeyM: 'sites', KeyT: 'warp',
 };
 // Standard-mapping gamepad buttons.
 const PAD = { A: 0, B: 1, X: 2, Y: 3, RB: 5, LT: 6, RT: 7, BACK: 8, START: 9 };

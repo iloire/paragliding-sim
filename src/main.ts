@@ -26,6 +26,8 @@ declare const __COMMIT_SHA__: string;
 const STEP = 1 / 120;
 const START_HEIGHT = 120;
 const IGC_INTERVAL = 1;
+/** Time warp steps T cycles through; anything that needs the pilot drops it back to 1×. */
+const WARPS = [1, 2, 4];
 /** Solar time a flight starts at without ?time= — the thermals' peak, which the weather sliders describe. */
 const DEFAULT_HOUR = 13;
 
@@ -107,6 +109,7 @@ async function boot(): Promise<void> {
   let polar = new Polar(WINGS[settings.wing]);
   let state: GliderState = createGlider(launch.x, launch.y, launch.z, launch.heading);
   let paused = false;
+  let warp = 1;
   let climb = 0;
   let flightTime = 0;
   let airborne = false; // a flight is under way, so its end is worth counting
@@ -186,6 +189,11 @@ async function boot(): Promise<void> {
     URL.revokeObjectURL(a.href);
   }
 
+  function setWarp(w: number): void {
+    warp = w;
+    hud.setWarp(w);
+  }
+
   function onAction(a: Action): void {
     audio.start();
     switch (a) {
@@ -194,6 +202,7 @@ async function boot(): Promise<void> {
       case 'mute': audio.muted = !audio.muted; hud.say(audio.muted ? 'Vario muted' : 'Vario on', 1.5); break;
       case 'pause': paused = !paused; hud.say(paused ? 'Paused' : 'Resumed', paused ? 1e9 : 1); break;
       case 'help': hud.toggleHelp(); break;
+      case 'warp': setWarp(WARPS[(WARPS.indexOf(warp) + 1) % WARPS.length]); hud.say(`Time ×${warp}`, 1.5); break;
       case 'layout': hud.say(`Instrument: ${hud.cycleLayout()}`, 1.5); break;
       case 'lift': toggleLiftMap(!settings.liftMap); break;
       case 'sites': if (picker.isOpen) picker.close(); else picker.open(region.id, launch.spec.id); break;
@@ -240,6 +249,7 @@ async function boot(): Promise<void> {
   });
   fl.add(settings, 'crew', { Solo: 'solo', Tandem: 'tandem' }).name('Pilot').onChange((c: Crew) => model.setCrew(c));
   fl.add(settings, 'liftMap').name('Lift map (L)').onChange(toggleLiftMap);
+  fl.add({ warp: () => onAction('warp') }, 'warp').name('Time warp (T)');
   fl.add({ reset }, 'reset').name('Restart (R)');
   fl.add({ igc: downloadIgc }, 'igc').name('Download IGC');
   if (TOUCH) gui.close();
@@ -298,7 +308,9 @@ async function boot(): Promise<void> {
     input.update(dt);
 
     if (!paused) {
-      acc += dt;
+      // Warp runs more fixed steps per frame; the flight's own clocks (time, track, averages, IGC) follow it.
+      const simDt = dt * warp;
+      acc += simDt;
       while (acc >= STEP) {
         clock += STEP;
         stepGlider(state, input.controls, polar, env, STEP);
@@ -309,22 +321,23 @@ async function boot(): Promise<void> {
       if (state.event) {
         countFlight(state.event);
         const [text, warn] = EVENTS[state.event] ?? [state.event, false];
+        if (warn || state.event === 'landed') setWarp(1);
         hud.say(state.event === 'spiral' ? `${text} — ${state.load.toFixed(1)} G` : text, warn ? 5 : 3.5, warn);
         state.event = null;
       }
       const flying = state.phase === 'flying';
-      climb += ((flying ? state.vz : 0) - climb) * (1 - Math.exp(-dt / 0.6));
+      climb += ((flying ? state.vz : 0) - climb) * (1 - Math.exp(-simDt / 0.6));
       if (flying) {
         airborne = true;
-        flightTime += dt;
-        track.add(state.x, state.y, state.vz, dt);
+        flightTime += simDt;
+        track.add(state.x, state.y, state.vz, simDt);
         // Ratio of averages, not an average of ratios: coming out of lift the instant ratio
         // is huge (14 m/s over 0.2 m/s sink) and would hold L/D at ∞ for seconds.
-        const k = 1 - Math.exp(-dt / 4);
+        const k = 1 - Math.exp(-simDt / 4);
         groundSpeedAvg += (state.groundSpeed - groundSpeedAvg) * k;
         sinkAvg += (-state.vz - sinkAvg) * k;
         glideAvg = sinkAvg > 0.2 ? groundSpeedAvg / sinkAvg : Infinity; // climbing or level: no glide ratio to show
-        fixTimer += dt;
+        fixTimer += simDt;
         if (fixTimer >= IGC_INTERVAL) {
           fixTimer = 0;
           const [lat, lon] = site.toLatLon(state.x, state.y);

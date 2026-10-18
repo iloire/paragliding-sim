@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-18 12:46 UTC — Time warp
+
+- **T** (or "Time warp" in the Flight panel) cycles the sim through 1×, 2× and 4×, for the long glides and climbs. A small 2× / 4× tag in the instrument's top-right corner shows while it is on. Warp drops back to 1× on its own at a stall, collapse, crash or landing. Flight time, the thermal track, L/D and the IGC log all run on sim time.
+
 ## 2026-10-18 12:05 UTC — Compact site picker on phones
 
 - On phones (and any screen under 500 px tall) the Sites picker spreads the regions across two columns, with each region's launches as small wrapping chips under a short name. All six regions and 21 launches now fit on a landscape phone without scrolling. The close button says "Close" instead of "Esc" on touch screens.

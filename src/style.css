@@ -63,6 +63,9 @@ html, body {
 #instrument.phone .gnd dd { grid-area: v; font-family: var(--display); font-weight: 700; font-size: 32px; line-height: 0.85; color: var(--ink); }
 #instrument.phone .gnd span { grid-area: u; padding: 0; }
 #instrument.hidden { display: none; }
+/* Time warp: a quiet corner tag, only there while the sim runs fast. */
+#warp { position: absolute; top: 3px; right: 6px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; color: var(--accent); font-variant-numeric: tabular-nums; }
+#warp:empty { display: none; }
 
 .label { color: var(--ink-dim); font-size: 10px; letter-spacing: 0.1em; }
 

@@ -57,6 +57,7 @@ export class Hud {
   private readonly landingName = el('landing-name');
   private readonly landingDist = el('landing-dist');
   private readonly landingNeed = el('landing-need');
+  private readonly warp = el('warp');
   private readonly message = el('message');
   private readonly help = el('help');
   private readonly helpToggle = el('help-toggle');
@@ -103,6 +104,11 @@ export class Hud {
 
   private applyLayout(): void {
     for (const l of ['minimal', 'phone', 'hidden'] as const) this.panel.classList.toggle(l, this.layout === l);
+  }
+
+  /** The corner tag reads 2× or 4×, and is empty at real time. */
+  setWarp(warp: number): void {
+    this.warp.textContent = warp > 1 ? `${warp}×` : '';
   }
 
   say(text: string, seconds = 4, warn = false): void {
