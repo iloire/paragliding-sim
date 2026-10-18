@@ -82,9 +82,10 @@ These rules come from the notes vault's *coastal-soaring-lift-factors* note; the
 
 ## Instrument panel (`src/game/hud.ts`, `src/sim/instruments.ts`)
 
-Laid out by what a pilot glances at: the vario (big number, a vertical ±5 m/s scale and the 20 s
-average climb), height above ground (amber below 50 m, red below 20 m), then smaller reference
-readouts. G and bank stay dimmed until a manoeuvre makes them matter (bank over 25°, load outside
+A compact strip (~600×110 px) laid out by what a pilot glances at: the vario (big number and a
+vertical ±5 m/s scale), height above ground (amber below 50 m, red below 20 m), then smaller
+reference readouts. L/D is a ratio of 4 s averages (ground speed over sink), not an average of
+instant ratios, so it recovers straight away on leaving lift. G and bank stay dimmed until a manoeuvre makes them matter (bank over 25°, load outside
 0.6–1.8 G). The vario number flashes when climb first passes +2 m/s.
 
 - **Thermal assistant**: the last 30 s of track, heading up, 80 m to the edge, dots sized and
@@ -96,7 +97,7 @@ readouts. G and bank stay dimmed until a manoeuvre makes them matter (bank over 
   25 %, amber when it just makes it, red when it doesn't. Hidden for a site with no landings.
 - **I** cycles full → minimal (vario, AGL, wind) → hidden. Phones get the minimal layout.
 
-The maths (averaging, glide-to, track buffer, compass) is pure and tested in `instruments.test.ts`;
+The maths (glide-to, track buffer, compass) is pure and tested in `instruments.test.ts`;
 `hud.ts` only draws.
 
 ## Terrain data

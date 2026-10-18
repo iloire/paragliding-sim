@@ -1,42 +1,11 @@
-// Flight-computer maths behind the HUD: averaged climb, glide to a landing and the
-// recent track for the thermal assistant. Pure, so it can be tested without a DOM.
+// Flight-computer maths behind the HUD: glide to a landing and the recent track for
+// the thermal assistant. Pure, so it can be tested without a DOM.
 
 const COMPASS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
 
 /** 16-point compass name for a heading in radians (0 = north, clockwise). */
 export function compass(rad: number): string {
   return COMPASS[Math.round(((rad * 180) / Math.PI / 22.5) % 16 + 16) % 16];
-}
-
-/** Mean climb over the last `windowS` seconds — what a vario's "average" shows while circling. */
-export class ClimbAverage {
-  private samples: { t: number; vz: number; dt: number }[] = [];
-  private sum = 0;
-  private span = 0;
-  private now = 0;
-
-  constructor(private readonly windowS = 20) {}
-
-  add(vz: number, dt: number): void {
-    this.now += dt;
-    this.samples.push({ t: this.now, vz, dt });
-    this.sum += vz * dt;
-    this.span += dt;
-    while (this.samples.length > 0 && this.samples[0].t <= this.now - this.windowS) {
-      const old = this.samples.shift()!;
-      this.sum -= old.vz * old.dt;
-      this.span -= old.dt;
-    }
-  }
-
-  get value(): number {
-    return this.span > 0 ? this.sum / this.span : 0;
-  }
-
-  reset(): void {
-    this.samples = [];
-    this.sum = this.span = this.now = 0;
-  }
 }
 
 export type GlideStatus = 'ok' | 'marginal' | 'out' | 'none';

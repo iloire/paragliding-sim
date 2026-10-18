@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ClimbAverage, compass, glideTo, TurnTrack } from './instruments';
+import { compass, glideTo, TurnTrack } from './instruments';
 
 describe('compass', () => {
   it('names the 16 points and wraps negative and >360° headings', () => {
@@ -8,32 +8,6 @@ describe('compass', () => {
     expect(compass((345 * Math.PI) / 180)).toBe('NNW');
     expect(compass(-Math.PI / 2)).toBe('W');
     expect(compass(2 * Math.PI + Math.PI)).toBe('S');
-  });
-});
-
-describe('ClimbAverage', () => {
-  it('averages over the window and forgets older samples', () => {
-    const avg = new ClimbAverage(10);
-    for (let i = 0; i < 100; i++) avg.add(-1, 0.1); // 10 s of sink
-    expect(avg.value).toBeCloseTo(-1);
-    for (let i = 0; i < 50; i++) avg.add(3, 0.1); // 5 s of climb: half the window
-    expect(avg.value).toBeCloseTo(1, 1);
-    for (let i = 0; i < 100; i++) avg.add(3, 0.1); // the sink has aged out
-    expect(avg.value).toBeCloseTo(3);
-  });
-
-  it('weights by time, not by sample count', () => {
-    const avg = new ClimbAverage(20);
-    avg.add(4, 1);
-    for (let i = 0; i < 10; i++) avg.add(0, 0.1);
-    expect(avg.value).toBeCloseTo(2);
-  });
-
-  it('reads zero after a reset', () => {
-    const avg = new ClimbAverage();
-    avg.add(2, 1);
-    avg.reset();
-    expect(avg.value).toBe(0);
   });
 });
 

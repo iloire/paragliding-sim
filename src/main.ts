@@ -10,7 +10,7 @@ import { loadSite, type Launch } from './game/site';
 import { createGlider as createGliderModel } from './game/wing';
 import { TerrainView } from './game/terrain-view';
 import { createLiftMap, createSea, createSkyAndLight, toScene } from './game/world';
-import { ClimbAverage, compass, glideTo, TurnTrack } from './sim/instruments';
+import { compass, glideTo, TurnTrack } from './sim/instruments';
 import { createGlider, stepGlider, type Environment, type GliderState } from './sim/glider';
 import { buildIgc, type Fix } from './sim/igc';
 import { Polar, WINGS, type WingId } from './sim/polar';
@@ -81,7 +81,8 @@ async function boot(): Promise<void> {
   let climb = 0;
   let flightTime = 0;
   let glideAvg: number | null = null;
-  const climbAvg = new ClimbAverage();
+  let groundSpeedAvg = 0;
+  let sinkAvg = 0;
   const track = new TurnTrack();
   let fixes: Fix[] = [];
   let fixTimer = 0;
@@ -101,7 +102,8 @@ async function boot(): Promise<void> {
     climb = 0;
     flightTime = 0;
     glideAvg = null;
-    climbAvg.reset();
+    groundSpeedAvg = state.groundSpeed;
+    sinkAvg = 0;
     track.reset();
     fixes = [];
     rig.snap(toScene(extent, state.x, state.y, state.z, pilotPos), state);
@@ -227,15 +229,13 @@ async function boot(): Promise<void> {
       climb += ((flying ? state.vz : 0) - climb) * (1 - Math.exp(-dt / 0.6));
       if (flying) {
         flightTime += dt;
-        climbAvg.add(state.vz, dt);
         track.add(state.x, state.y, state.vz, dt);
-        // From the smoothed climb the vario shows, so a moment of lift doesn't snap L/D to ∞.
-        if (-climb > 0.2) {
-          const glide = state.groundSpeed / -climb;
-          glideAvg = glideAvg === null || !Number.isFinite(glideAvg) ? glide : glideAvg + (glide - glideAvg) * (1 - Math.exp(-dt / 4));
-        } else {
-          glideAvg = Infinity; // climbing or level: no glide ratio to show
-        }
+        // Ratio of averages, not an average of ratios: coming out of lift the instant ratio
+        // is huge (14 m/s over 0.2 m/s sink) and would hold L/D at ∞ for seconds.
+        const k = 1 - Math.exp(-dt / 4);
+        groundSpeedAvg += (state.groundSpeed - groundSpeedAvg) * k;
+        sinkAvg += (-state.vz - sinkAvg) * k;
+        glideAvg = sinkAvg > 0.2 ? groundSpeedAvg / sinkAvg : Infinity; // climbing or level: no glide ratio to show
         fixTimer += dt;
         if (fixTimer >= IGC_INTERVAL) {
           fixTimer = 0;
@@ -260,7 +260,7 @@ async function boot(): Promise<void> {
     const [dx, dy] = wind.direction;
     const glide = state.phase === 'flying' ? glideAvg : null;
     hud.update(dt, state, {
-      climb, climbAvg: climbAvg.value, agl: state.z - ground, glide, flightSeconds: flightTime,
+      climb, agl: state.z - ground, glide, flightSeconds: flightTime,
       windKmh: wind.windSpeedAt(state.x, state.y, state.z) * 3.6, windToRad: Math.atan2(dx, dy),
       landing: nearestLanding(glide), track,
     });

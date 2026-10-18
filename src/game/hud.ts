@@ -22,7 +22,6 @@ const TRACK_RADIUS_M = 80;
 
 export interface HudFrame {
   climb: number;
-  climbAvg: number;
   agl: number;
   glide: number | null;
   flightSeconds: number;
@@ -37,7 +36,6 @@ export class Hud {
   private readonly panel = el('instrument');
   private readonly vario = el('vario');
   private readonly varioFill = el('vario-fill');
-  private readonly varioAvg = el('vario-avg');
   private readonly alt = el('alt');
   private readonly agl = el('agl');
   private readonly aglBox = el('agl-box');
@@ -107,8 +105,6 @@ export class Hud {
     this.varioFill.style.top = frac >= 0 ? `${50 - frac * 50}%` : '50%';
     this.varioFill.style.height = `${Math.abs(frac) * 50}%`;
     this.varioFill.style.background = frac >= 0 ? 'var(--lift)' : 'var(--sink)';
-    this.varioAvg.textContent = flying ? signed(f.climbAvg) : '–';
-    this.varioAvg.classList.toggle('up', flying && f.climbAvg >= 0.2);
 
     const agl = Math.max(f.agl, 0);
     this.agl.textContent = Math.round(agl).toString();
