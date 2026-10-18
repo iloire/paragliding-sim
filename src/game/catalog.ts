@@ -16,12 +16,17 @@ export interface Start {
   hour?: number;
 }
 
-/** Reads the manifest and every region's site.json (≈1 KB each; the terrain loads later). */
+/**
+ * Reads the manifest and every region's site.json (≈1 KB each; the terrain loads later).
+ * Revalidated on every load: Pages caches for 10 min, and a stale manifest without a new
+ * region sends its deep link to the first region instead.
+ */
 export async function loadCatalog(): Promise<Region[]> {
-  const index = (await (await fetch(`${siteBase('')}index.json`)).json()) as { regions: string[] };
+  const fresh: RequestInit = { cache: 'no-cache' };
+  const index = (await (await fetch(`${siteBase('')}index.json`, fresh)).json()) as { regions: string[] };
   return Promise.all(index.regions.map(async (id): Promise<Region> => ({
     id,
-    spec: (await (await fetch(`${siteBase(id)}site.json`)).json()) as SiteSpec,
+    spec: (await (await fetch(`${siteBase(id)}site.json`, fresh)).json()) as SiteSpec,
   })));
 }
 
