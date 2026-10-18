@@ -1,6 +1,8 @@
 # Plan: two-body flight model (canopy + pilot on lines)
 
-Status: proposal, not started. Written 2026-10-18 after the wingover work in `5ab7996`.
+Status: first attempt made 2026-10-18, not merged. The work is on branch `two-body-wip` (`ac071f9`);
+what it taught is in [First attempt](#first-attempt-2026-10-18) below. Written 2026-10-18 after the
+wingover work in `5ab7996`.
 
 ## Why
 
@@ -126,6 +128,52 @@ New tests, the reason for doing this:
 
 Steps 1–4 are the bulk: about two to three focused sessions, mostly tuning. Steps 5–7 are about
 one more. Nothing ships until step 7. Until then the classic model stays the default.
+
+## First attempt (2026-10-18)
+
+Branch `two-body-wip`, commit `ac071f9`. 40 of 44 tests pass; stall, spiral and both wingover tests
+fail. `scripts/flight-tuning/` on that branch has the diagnostics (turn/spiral regimes, wingover
+pumping, spiral exit traces).
+
+**What worked**
+
+- Two point masses (pilot 89 kg; canopy 6 kg plus ~44 kg of carried air as inertia only) on
+  elastic, damped, tension-only lines. Hard impulse constraints gave 90 G spikes and NaNs when slack
+  lines snapped taut; ~1 % stretch at 1 G fixed it.
+- AoA from the line geometry, with CL(α)/CD and the rigging angle per brake/bar *solved from the
+  polar*: straight glides at trim, 50 %/70 % brake and full bar land within 1 km/h and 0.1 m/s of
+  `wings.json`. Brake as camber (lift at the same AoA) plus rigging.
+- Canopy pitch stability, pitch damping and a stalled canopy's nose-down moment as forces on the
+  canopy about the riser pivot. Flare +2.2 m/s, a full stall after ~1.7 s of deep brakes, hands-up
+  recovery in ~2 s with a realistic surge.
+- Gentle turns, with bank steered to the old roll law: 19° at 50 %, 27° at 70 %, ~15 s per 360°.
+- Wingovers pumped in rhythm reached 105–120° with a 0–0.7 G top, and overcooked ones folded from
+  slack lines, not from a bank threshold.
+
+**What did not**
+
+- **Steep turns and spirals.** Holding one brake past ~75 % ends in a parachutal stall-spin
+  (pilot ~10 km/h, canopy ~22 km/h) instead of a spiral. In a steep turn the canopy flies the inner
+  circle, slower than the pilot; it needs CL near its maximum for the G, falls back and stalls.
+  A real canopy dives nose-down into the spiral so the sink rate keeps air over it; with its pitch
+  locked to the lines plus a lumped pitch moment, this model doesn't.
+- **Free lateral dynamics.** With the canopy's yaw free (brake yaw, weathervane, side force,
+  span-wise speed difference), the system falls into SAT/"bolas" states where pilot and canopy
+  orbit each other. No parameter set found by search gave stable turns, a spiral and pumpable
+  wingovers together.
+- **Mistakes worth not repeating:** moments applied as couples or as forces along the chord do
+  work and pumped energy in; the pendulum dampers must ignore the glider's own turn rotation
+  (Ω × r between the bodies), taken from the centre of mass, filtered; unnormalised lift and roll
+  directions are needed when the canopy's airflow turns sideways.
+
+**What a second attempt needs**
+
+The canopy as a **rigid body with its own attitude** (roll, pitch, yaw) and inertia, joined to the
+pilot at the risers, with aerodynamic moments (Cl, Cm, Cn and their damping derivatives) and an
+apparent-mass tensor (large normal to the canopy, small along the chord). That is the established
+9-DOF parafoil model (Slegers & Costello; Mooij), and it is what lets the canopy pitch into a
+spiral on its own. It is a larger job than this plan's estimate: several sessions, with the
+acceptance tests above unchanged.
 
 ## Open questions
 
