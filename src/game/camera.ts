@@ -1,5 +1,5 @@
-// Three camera modes: chase (behind and above, smoothed), pilot (the view from
-// the harness, rolling with the swing), orbit (mouse-driven around the pilot).
+// Three camera modes: orbit (mouse-driven around the pilot, the default), chase (behind and
+// above, smoothed), pilot (the view from the harness, rolling with the swing).
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -9,7 +9,7 @@ export type CameraMode = 'chase' | 'pilot' | 'orbit';
 const MODES: CameraMode[] = ['chase', 'pilot', 'orbit'];
 
 export class CameraRig {
-  mode: CameraMode = 'chase';
+  mode: CameraMode = 'orbit';
   private readonly orbit: OrbitControls;
   private readonly desired = new THREE.Vector3();
   private readonly look = new THREE.Vector3();
@@ -19,7 +19,7 @@ export class CameraRig {
 
   constructor(readonly camera: THREE.PerspectiveCamera, dom: HTMLElement) {
     this.orbit = new OrbitControls(camera, dom);
-    this.orbit.enabled = false;
+    this.orbit.enabled = true;
     this.orbit.enableDamping = true;
     this.orbit.maxDistance = 3000;
   }
@@ -28,23 +28,30 @@ export class CameraRig {
     this.mode = MODES[(MODES.indexOf(this.mode) + 1) % MODES.length];
     this.orbit.enabled = this.mode === 'orbit';
     this.camera.up.set(0, 1, 0);
-    if (this.mode === 'orbit') {
-      // Start off the pilot's right shoulder, behind and above, rather than inside the helmet.
-      const fx = Math.sin(this.lastHeading), fz = -Math.cos(this.lastHeading);
-      const p = this.lastTarget;
-      this.camera.position.set(p.x - fz * 7 - fx * 9, p.y + 3, p.z + fx * 7 - fz * 9);
-      this.orbit.target.copy(p);
-      this.orbit.update();
-    }
+    if (this.mode === 'orbit') this.placeOrbit();
     return this.mode;
   }
 
-  /** Jump straight to the chase position (after a reset) instead of flying there. */
+  /** Jump straight to the camera's position (after a reset) instead of flying there. */
   snap(pilot: THREE.Vector3, s: GliderState): void {
+    this.lastTarget.copy(pilot);
+    this.lastHeading = s.heading;
+    if (this.mode === 'orbit') {
+      this.placeOrbit();
+      return;
+    }
     this.chaseTarget(pilot, s);
     this.camera.position.copy(this.desired);
-    this.lastTarget.copy(pilot);
     this.camera.lookAt(this.look);
+  }
+
+  /** Off the pilot's right shoulder, behind and above, rather than inside the helmet. */
+  private placeOrbit(): void {
+    const fx = Math.sin(this.lastHeading), fz = -Math.cos(this.lastHeading);
+    const p = this.lastTarget;
+    this.camera.position.set(p.x - fz * 7 - fx * 9, p.y + 3, p.z + fx * 7 - fz * 9);
+    this.orbit.target.copy(p);
+    this.orbit.update();
   }
 
   private chaseTarget(pilot: THREE.Vector3, s: GliderState): void {

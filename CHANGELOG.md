@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-18 04:20 UTC — Orbit camera by default
+
+- The game starts in the orbit camera, off the pilot's right shoulder, so the wing and harness are in view and the mouse can look around them. **C** still cycles orbit → chase → pilot. A reset or air start puts the orbit camera back behind the shoulder.
+
 ## 2026-10-18 04:10 UTC — Submarine pilot
 
 - The pilot flies an Ozone Submarine-style harness: a blue hull lofted from rounded-box sections, with a blunt cocoon over the feet, an open cockpit, a tall fairing rising behind the head to a cut-off tail, and a keel under it. On the ground the fairing hangs deflated off the pilot's back.
