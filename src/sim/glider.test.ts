@@ -38,8 +38,22 @@ describe('glider', () => {
     run(s, { ...hands, brakeLeft: 1, brakeRight: 1 }, flatWorld(), 3);
     expect(s.stalled).toBe(true);
     expect(s.vz).toBeLessThan(-4);
-    run(s, hands, flatWorld(), 2);
+  });
+
+  it('drops like a stone in a held full stall, and flies again hands up', () => {
+    const s = createGlider(0, 0, 1000, 0, 'flying', polar.trim);
+    const full = { ...hands, brakeLeft: 1, brakeRight: 1 };
+    let minLoad = Infinity;
+    for (let i = 0; i < 3 * 120; i++) { stepGlider(s, full, polar, flatWorld(), 1 / 120); minLoad = Math.min(minLoad, s.load); }
+    expect(minLoad).toBeLessThan(0.5); // the canopy deflates and the pilot falls into the lines
+    run(s, full, flatWorld(), 5);
+    expect(s.deflation).toBe(1);
+    expect(s.vz).toBeLessThan(-8);
+    expect(s.groundSpeed).toBeLessThan(3);
+    expect(Math.abs(s.bank)).toBeLessThan(0.3); // canopy overhead, not "upside down" about a vertical path
+    run(s, hands, flatWorld(), 5);
     expect(s.stalled).toBe(false);
+    expect(s.deflation).toBe(0);
   });
 
   it('lands softly from a normal glide', () => {

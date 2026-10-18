@@ -388,6 +388,8 @@ export function createGlider(): GliderModel {
   const gait = new Gait();
   let foldL = 0;
   let foldR = 0;
+  let crumple = 0;
+  let flutter = 0;
   const tmp = new THREE.Vector3();
   const handleWorld = new THREE.Vector3();
   const elbowPole = new THREE.Vector3();
@@ -399,6 +401,9 @@ export function createGlider(): GliderModel {
   }
 
   function updateCanopy(brakeL: number, brakeR: number): void {
+    // Full stall: the deflated canopy bows into a horseshoe, tips forward and in, centre back,
+    // and the empty cloth flaps.
+    const ca0 = crumple;
     for (let si = 0; si < STATIONS; si++) {
       const st = stations[si];
       const side = st.t < 0 ? -1 : 1;
@@ -422,6 +427,12 @@ export function createGlider(): GliderModel {
         let x = base[idx] - nx * drop;
         let y = base[idx + 1] - ny * drop;
         let z = base[idx + 2] - drop * 0.35;
+        if (ca0 > 0) {
+          const a = Math.abs(st.t);
+          x *= 1 - 0.22 * ca0 * a;
+          z += ca0 * (0.6 * (1 - a) - 1.2 * a * a);
+          y += ca0 * (0.14 * Math.sin(si * 0.45 + flutter) * (0.4 + u) - 0.4 * (1 - a));
+        }
         if (foldAngle > 0) {
           const rx = x - px, ry = y - py;
           x = px + rx * ca - ry * sa;
@@ -530,6 +541,8 @@ export function createGlider(): GliderModel {
     const targetL = s.collapse === -1 ? 1 : 0, targetR = s.collapse === 1 ? 1 : 0;
     foldL += (targetL - foldL) * (1 - Math.exp(-dt * (targetL > foldL ? 9 : 2)));
     foldR += (targetR - foldR) * (1 - Math.exp(-dt * (targetR > foldR ? 9 : 2)));
+    crumple += (s.deflation - crumple) * (1 - Math.exp(-dt * 6));
+    flutter += dt * 9;
 
     updateCanopy(c.brakeLeft, c.brakeRight);
     updateLines(c.brakeLeft, c.brakeRight);

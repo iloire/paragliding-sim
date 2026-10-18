@@ -75,6 +75,8 @@ export interface GliderState {
   stallTimer: number;
   /** How long both brakes have been held past 90 % (s). */
   deepTimer: number;
+  /** How much of its pressure the canopy has lost in a held full stall: 0 = inflated, 1 = a crumpled sack. */
+  deflation: number;
   /** How far the bar is actually in (0..1): the pilot's push, fed in as the wing picks up speed. */
   bar: number;
   /** −1 = left side collapsed, 1 = right side, 0 = open. */
@@ -161,6 +163,17 @@ const BRAKE_SHARE = [0.6, 1, 1.4];
 /** Both brakes held past 90 %: the trailing edge keeps coming down, adding this incidence over DEEP_HOLD s — the stall. */
 const DEEP_STALL_INCIDENCE = 0.2;
 const DEEP_HOLD = 1.2;
+/**
+ * A full stall held on both brakes: the inlets no longer face the air, the cells lose their
+ * pressure over DEFLATE_SECONDS and the canopy crumples back behind the pilot. Deflated, it keeps
+ * DEFLATED_LIFT of its lift and shows DEFLATED_DRAG of its area to the air, so it drops at the
+ * 8–9 m/s of a real full stall. Brakes up past STALL_HOLD_BRAKE, it refills over REINFLATE_SECONDS.
+ */
+const STALL_HOLD_BRAKE = 0.7;
+const DEFLATE_SECONDS = 0.7;
+const REINFLATE_SECONDS = 1;
+const DEFLATED_LIFT = 0.15;
+const DEFLATED_DRAG = 0.7;
 /** A folded side keeps this share of its lift, and drags this much more. */
 const FOLD_LIFT = 0.3;
 const FOLD_CD = 0.08;
@@ -459,13 +472,14 @@ function tilted(st: Strip, brake: number, tipTilt: number): Strip {
   return { ...st, n: [0, Math.sin(phi), Math.cos(phi)], s: [0, Math.cos(phi), -Math.sin(phi)] };
 }
 
-function stripForce(rig: Rig, strip: Strip, air: Vec, rigAngle: number, brake: number, folded: boolean): StripForce {
+function stripForce(rig: Rig, strip: Strip, air: Vec, rigAngle: number, brake: number, folded: boolean, deflation = 0): StripForce {
   const st = tilted(strip, brake, rig.tipTilt);
   const u = air[0], w = dot(air, st.n), sv = dot(air, st.s);
   const vp = Math.hypot(u, w) || 1e-6;
   const alpha = Math.atan2(-w, u) + rigAngle + BRAKE_INCIDENCE * rig.brakeScale * brake;
   let cl = rig.cl(alpha, brake), cd = rig.cd(alpha, brake);
   if (folded) { cl *= FOLD_LIFT; cd += FOLD_CD; }
+  if (deflation > 0) { cl *= 1 - (1 - DEFLATED_LIFT) * deflation; cd *= 1 - (1 - DEFLATED_DRAG) * deflation; }
   const qs = HALF_RHO * (AREA / STRIPS);
   // In the strip's plane (chord and normal): lift across the flow towards the normal, drag against it.
   const along = qs * vp * (cl * -w - cd * u); // × x̂ / vp · vp²
@@ -495,7 +509,7 @@ export function createGlider(x: number, y: number, z: number, heading: number, p
     bank: 0, bankRate: 0, yaw: heading, pitch: 0, roll: 0,
     cl: 0, clRate: 0, alpha: 0,
     load: 1, vz: 0, groundSpeed: 0, runSpeed: 0,
-    phase, stalled: false, stallTimer: 0, deepTimer: 0, bar: 0,
+    phase, stalled: false, stallTimer: 0, deepTimer: 0, deflation: 0, bar: 0,
     collapse: 0, collapseTimer: 0, unloadTimer: 0, inSpiral: false,
     time: 0, takeoffAt: -Infinity, event: null,
     cg: [x, y, z + CG_HEIGHT], vel: [0, 0, 0], q: [1, 0, 0, 0], omega: [0, 0, 0],
@@ -546,6 +560,8 @@ function fly(s: GliderState, c: Controls, polar: Polar, env: Environment, dt: nu
   const brakes = strips.map((st) => stripBrake(sideBrake(st), st));
   s.deepTimer = Math.min(c.brakeLeft, c.brakeRight) > 0.9 ? s.deepTimer + dt : 0;
   const deepStall = DEEP_STALL_INCIDENCE * smoothstep(0, DEEP_HOLD, s.deepTimer);
+  const holding = s.stalled && Math.min(c.brakeLeft, c.brakeRight) > STALL_HOLD_BRAKE;
+  s.deflation = Math.min(Math.max(s.deflation + (holding ? dt / DEFLATE_SECONDS : -dt / REINFLATE_SECONDS), 0), 1);
   // The speed bar, as the pilot flies it (see BAR_LEAD): stamped in at once, the shorter A-risers
   // would dive the canopy, swing the pilot under it and send the glider up and down for a minute.
   const reached = (s.airspeed - polar.trim) / (polar.top - polar.trim);
@@ -576,10 +592,11 @@ function fly(s: GliderState, c: Controls, polar: Polar, env: Environment, dt: nu
       // Where this strip's lift and drag act along the chord, from its angle of attack now.
       const a0 = stripAlpha(rig, st, sub(add(velB, cross(w, st.r)), windCB), rigging, brakes[i]);
       const stall = rig.alphaStall(brakes[i]);
-      const shift = CP_ALPHA * (a0 - trimAlpha[i] - BRAKE_INCIDENCE * rig.brakeScale * brakes[i] - deepStall)
-        + CP_STALL * (1 - deepStall / DEEP_STALL_INCIDENCE) * smoothstep(stall, stall + 0.2, a0);
+      // (A crumpled canopy has no profile: its drag acts about its middle.)
+      const shift = (1 - s.deflation) * (CP_ALPHA * (a0 - trimAlpha[i] - BRAKE_INCIDENCE * rig.brakeScale * brakes[i] - deepStall)
+        + CP_STALL * (1 - deepStall / DEEP_STALL_INCIDENCE) * smoothstep(stall, stall + 0.2, a0));
       const at: Vec = [st.r[0] - CHORD * Math.min(Math.max(shift, -CP_LIMITS[1]), -CP_LIMITS[0]), st.r[1], st.r[2]];
-      const f = stripForce(rig, st, sub(add(velB, cross(w, at)), windCB), rigging, brakes[i], folded[i]);
+      const f = stripForce(rig, st, sub(add(velB, cross(w, at)), windCB), rigging, brakes[i], folded[i], s.deflation);
       F = add(F, f.force);
       M = add(M, cross(at, f.force));
       clSum += f.cl / STRIPS;
@@ -601,7 +618,8 @@ function fly(s: GliderState, c: Controls, polar: Polar, env: Environment, dt: nu
     // (Bounded: a path can't swing faster than a couple of radians a second.)
     const pathTurn = scale(cross(airB, accB), 1 / Math.max(dot(airB, airB), 1)).map((v) => Math.max(-2, Math.min(2, v))) as Vec;
     const vTop = Math.max(len(sub(add(velB, cross(w, canopy)), windCB)), 1);
-    M[1] -= HALF_RHO * vTop * vTop * AREA * CHORD * CM_Q * (((w[1] - pathTurn[1]) * CHORD) / (2 * vTop));
+    // (A crumpled canopy doesn't weathervane into its airflow: only its rotation is damped.)
+    M[1] -= HALF_RHO * vTop * vTop * AREA * CHORD * CM_Q * (((w[1] - (1 - s.deflation) * pathTurn[1]) * CHORD) / (2 * vTop));
 
     // Rigid body: Newton for the centre of mass, Euler's equations for the rotation.
     const gyro = cross(w, [I[0] * w[0], I[1] * w[1], I[2] * w[2]]);
@@ -638,15 +656,19 @@ function fly(s: GliderState, c: Controls, polar: Polar, env: Environment, dt: nu
   s.airspeed = len(vpa);
   const t = scale(vpa, 1 / (s.airspeed || 1));
   s.gamma = Math.asin(Math.max(-1, Math.min(1, t[2])));
-  if (Math.hypot(t[0], t[1]) > 1e-3) s.heading = wrapAngle(Math.atan2(t[0], t[1]));
   s.vz = vPilot[2];
   s.groundSpeed = Math.hypot(vPilot[0], vPilot[1]);
 
-  const lineAxis = unit(toWorld(s.q, sub(canopy, pilot)));
-  const pathUp = unit(sub([0, 0, 1], scale(t, t[2])));
-  s.bank = Math.atan2(dot(lineAxis, cross(t, pathUp)), dot(lineAxis, pathUp));
-  s.bankRate = Math.atan2(Math.sin(s.bank - prevBank), Math.cos(s.bank - prevBank)) / dt;
+  // Heading and bank are taken about the path; falling nearly straight down (a full stall) the
+  // path has no horizontal direction left, so they're taken about the chord's instead.
   const fwd = toWorld(s.q, [1, 0, 0]), right = toWorld(s.q, [0, -1, 0]), up = toWorld(s.q, [0, 0, 1]);
+  const chordLevel: Vec = Math.hypot(fwd[0], fwd[1]) > 1e-3 ? unit([fwd[0], fwd[1], 0]) : unit([up[0], up[1], 0]);
+  const ref = unit(add(scale(t, 1 - smoothstep(0.85, 0.97, Math.abs(t[2]))), scale(chordLevel, smoothstep(0.85, 0.97, Math.abs(t[2])))));
+  if (Math.hypot(ref[0], ref[1]) > 1e-3) s.heading = wrapAngle(Math.atan2(ref[0], ref[1]));
+  const lineAxis = unit(toWorld(s.q, sub(canopy, pilot)));
+  const pathUp = unit(sub([0, 0, 1], scale(ref, ref[2])));
+  s.bank = Math.atan2(dot(lineAxis, cross(ref, pathUp)), dot(lineAxis, pathUp));
+  s.bankRate = Math.atan2(Math.sin(s.bank - prevBank), Math.cos(s.bank - prevBank)) / dt;
   s.yaw = wrapAngle(Math.atan2(fwd[0], fwd[1]));
   s.pitch = Math.asin(Math.max(-1, Math.min(1, fwd[2])));
   s.roll = Math.atan2(-right[2], up[2]);
@@ -696,6 +718,7 @@ function fly(s: GliderState, c: Controls, polar: Polar, env: Environment, dt: nu
     s.pitch = 0;
     s.gamma = 0;
     s.stalled = false;
+    s.deflation = 0;
     s.collapse = 0;
     s.inSpiral = false;
     s.load = 1;

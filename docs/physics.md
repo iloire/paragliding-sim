@@ -294,14 +294,24 @@ tight. Rush the rhythm (3 s) and the swing never builds.
 ### Stall
 
 A strip stalls past its own stall angle (lower with more brake). Past the stall each strip flies
-like a **flat plate**: lift `1.1·sin 2α`, drag `1.8·sin²α`, so a stalled canopy can still glide
-its way out instead of parachuting forever. Holding both brakes past 90 % keeps pulling the
-trailing edge down over 1.2 s, which deepens the stall. The glider counts as **stalled** when
-most of the canopy is past its stall angle for 0.4 s.
+like a **flat plate**: lift `1.1·sin 2α`, drag `1.8·sin²α`. Holding both brakes past 90 % keeps
+pulling the trailing edge down over 1.2 s, which deepens the stall. The glider counts as
+**stalled** when most of the canopy is past its stall angle for 0.4 s.
 
-On the EN-B, full brakes stall the wing after about a second, and at 3 s it's sinking at
-4.9 m/s. Hands up, the stalled canopy's centre of pressure runs aft, it noses forward, reattaches
-and surges, and it's flying again within about 1.5 s.
+**Full stall.** Stalled with both brakes still held past 70 %, the inlets no longer face the air
+and the canopy **deflates** over 0.7 s (`deflation` 0 → 1). A deflated canopy keeps 15 % of its
+lift and shows 70 % of its drag area, its centre of pressure moves to the middle (a sack has no
+profile), and it no longer weathervanes into the airflow. So the lift goes, the canopy falls back
+behind the pilot, the lines unload (about 0.25–0.4 G) and the pilot drops into them. It settles
+with the canopy overhead in a horseshoe, sinking **9–10 m/s** with almost no forward speed, even
+drifting slightly backwards. Brakes up, it refills over 1 s, the centre of pressure runs aft again,
+the wing pitches forward and picks up speed: about 3.5 s and 30 m from hands-up to flying.
+
+Without the deflation the stalled flat plate still had an L/D of about 1.7, and holding full
+brakes settled into a mushy 28 km/h glide sinking 4.9 m/s — nothing like a real stall.
+
+Falling straight down, the path has no horizontal direction, so heading and bank are measured
+about the chord's direction once the path is steeper than about 60°.
 
 ### Gusts
 

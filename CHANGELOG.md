@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-18 12:52 UTC — Full stalls drop you
+
+- Holding both brakes through a stall now deflates the canopy: the wing loses its lift and falls back behind you, the lines go soft, and you drop at 9–10 m/s with almost no forward speed instead of mushing along at 28 km/h and −5 m/s. The canopy is drawn crumpled into a horseshoe and flapping. Hands up, it refills, pitches forward and flies again after about 3.5 s and 30 m.
+- Falling straight down no longer reads as 180° of bank or rolls the cockpit camera over: heading and bank are taken from the canopy's chord when the path is near vertical.
+
 ## 2026-10-18 12:46 UTC — Time warp
 
 - **T** (or "Time warp" in the Flight panel) cycles the sim through 1×, 2× and 4×, for the long glides and climbs. A small 2× / 4× tag in the instrument's top-right corner shows while it is on. Warp drops back to 1× on its own at a stall, collapse, crash or landing. Flight time, the thermal track, L/D and the IGC log all run on sim time.
