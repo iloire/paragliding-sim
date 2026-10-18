@@ -59,7 +59,7 @@ You start in the air above the launch, facing into the wind.
 | **R** | Restart, in the air above the launch |
 | **C** · **L** | Camera (orbit, chase, pilot) · lift map |
 | **M** · **N** | Site picker · next launch |
-| **T** | Time warp: 1× · 2× · 4× |
+| **T** | Time warp: 1× · 2× · 4× · 8× |
 | **H** | All controls |
 
 A gamepad works too (the triggers are the brakes). So does a phone held sideways: drag a thumb on

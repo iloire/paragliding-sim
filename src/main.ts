@@ -27,7 +27,7 @@ const STEP = 1 / 120;
 const START_HEIGHT = 120;
 const IGC_INTERVAL = 1;
 /** Time warp steps T cycles through; anything that needs the pilot drops it back to 1×. */
-const WARPS = [1, 2, 4];
+const WARPS = [1, 2, 4, 8];
 /** Solar time a flight starts at without ?time= — the thermals' peak, which the weather sliders describe. */
 const DEFAULT_HOUR = 13;
 

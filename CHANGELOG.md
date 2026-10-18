@@ -7,7 +7,7 @@
 
 ## 2026-10-18 12:46 UTC — Time warp
 
-- **T** (or "Time warp" in the Flight panel) cycles the sim through 1×, 2× and 4×, for the long glides and climbs. A small 2× / 4× tag in the instrument's top-right corner shows while it is on. Warp drops back to 1× on its own at a stall, collapse, crash or landing. Flight time, the thermal track, L/D and the IGC log all run on sim time.
+- **T** (or "Time warp" in the Flight panel) cycles the sim through 1×, 2×, 4× and 8×, for the long glides and climbs. A small 2× / 4× / 8× tag in the instrument's top-right corner shows while it is on. Warp drops back to 1× on its own at a stall, collapse, crash or landing. Flight time, the thermal track, L/D and the IGC log all run on sim time.
 
 ## 2026-10-18 12:05 UTC — Compact site picker on phones
 
