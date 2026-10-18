@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-18 11:42 UTC — Gran Canaria
+
+- New region: **Gran Canaria**, with the Los Giles ridge soaring site on the north coast above Las Palmas and La Isleta. The whole island is in (54 km, IGN MDT05 + PNOA, highest point 1943 m at Pico de las Nieves), with 5 m detail tiles around the two launches. It starts in a 22 km/h NNE trade wind under a 1000 m inversion. `?region=gran-canaria&launch=los-giles`.
+
 ## 2026-10-18 11:01 UTC — One site selector
 
 - The Launch dropdown and the Sites… button in the Flight panel are now one row, e.g. *Lanzarote · Macher (M)*, that opens the site picker. Before, the dropdown and the picker could show different launches.

@@ -164,7 +164,7 @@ The GoatCounter account (code `paragliding-sim`) was created by hand on goatcoun
 
 - **Height**: IGN WCS `Elevacion<EPSG>_5` (MDT05, 5 m) in the region's `crs` — `4083` (REGCAN95 / UTM 28N)
   for the Canaries, `25830` (ETRS89 / UTM 30N) for the mainland — resampled to 2048² (~20.5 m over
-  Lanzarote's 42 km bbox, ~14.6 m over Loarre's 30 km, ~11.7 m over the 24 km Pyrenean ones), 3×3
+  Lanzarote's 42 km bbox, ~26 m over Gran Canaria's 54 km, ~14.6 m over Loarre's 30 km, ~11.7 m over the 24 km Pyrenean ones), 3×3
   smoothed to hide 1 m terracing, written as Int16 decimetres. Sea (nodata or ≤ 0 m) becomes −15 m.
   IGN offers no `25831` coverage, so Castejón, Àger and Organyà (all in zone 31) use zone 30 extended
   east: < 0.2 % scale error, and grid north sits ~3° off true north there.

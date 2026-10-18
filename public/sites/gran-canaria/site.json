@@ -1,0 +1,21 @@
+{
+  "name": "Gran Canaria",
+  "country": "Spain",
+  "proj4": "+proj=utm +zone=28 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs",
+  "crs": "EPSG:4083",
+  "bbox": [414000, 3065000, 468000, 3119000],
+  "heightmap": { "file": "height.bin", "size": 2048 },
+  "ortho": { "file": "ortho.jpg", "size": 4096 },
+  "detail": { "dir": "detail", "tileM": 3000, "orthoSize": 2048, "radiusM": 5000 },
+  "launches": [
+    { "id": "los-giles", "name": "Los Giles", "lat": 28.1273, "lon": -15.4758 },
+    { "id": "la-isleta", "name": "La Isleta", "lat": 28.1667, "lon": -15.436 }
+  ],
+  "weather": {
+    "windSpeedKmh": 22,
+    "windFromDeg": 20,
+    "inversionM": 1000,
+    "thermalStrength": 1.2,
+    "turbulence": 0.3
+  }
+}

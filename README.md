@@ -35,6 +35,7 @@ It runs in a desktop browser, or on a phone held sideways. Nothing to install.
 | **Castejón de Sos** | Rials, Chía, Pedras Blancas, Liri |
 | **Àger** | Sant Alís, Àger |
 | **Organyà** | Organyà, Santa Fe, Prats, Narieda |
+| **Gran Canaria** | Los Giles, La Isleta |
 
 **M** opens the site picker. **N** goes to the next launch in the region.
 
