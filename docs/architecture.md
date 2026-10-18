@@ -141,7 +141,8 @@ link to the setup.
 
 The site picker (**M**, `src/game/picker.ts`) lists Country › Region › Launch. A launch in the
 loaded region switches in place; one in another region sets the URL and reloads, since the
-terrain, wind field and lift map are all built for one region. The roadmap (wind wedges, map
+terrain, wind field and lift map are all built for one region. It is the only launch selector:
+the Flight folder's top row names the loaded region and launch and opens it. The roadmap (wind wedges, map
 picker, sites outside Spain) is in [plan-sites.md](plan-sites.md).
 
 ## Analytics (`src/game/analytics.ts`)

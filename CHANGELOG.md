@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-18 11:01 UTC — One site selector
+
+- The Launch dropdown and the Sites… button in the Flight panel are now one row, e.g. *Lanzarote · Macher (M)*, that opens the site picker. Before, the dropdown and the picker could show different launches.
+
 ## 2026-10-18 11:00 UTC — Play counter
 
 - The live sim counts its players with GoatCounter: visits by country, browser and screen size, takeoffs per launch, and how flights end (landed, crashed or in the water) with their length. No cookies and no personal data, so there is no consent banner. Local dev builds never count.
