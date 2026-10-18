@@ -176,8 +176,10 @@ Best glide falls at about trim speed for all three, as it does on most real wing
 The canopy's chord sits at a **rigging angle** to the lines, fixed by the line lengths. It's
 solved, not tuned: for hands-up and each speed-bar setting, `Rig.solve` finds the rigging and the
 body's tilt at which the pitch moment about the centre of mass vanishes and the lift carries the
-weight at the polar's speed. A drag scale solved the same way absorbs what the arc costs, so a
-straight glide at trim matches the polar (the test checks the glide ratio).
+weight at the polar's speed. Two drag scales solved the same way absorb what the arc costs, one
+at trim and one on full bar, blended by lift coefficient between them, so straight glides match
+the polar's speed and sink across the whole bar travel (the tests check the glide ratio at trim
+and the extra sink on full bar).
 
 A brake pulls its strips' trailing edge down, the outer strips most: the chord turns nose-up a
 little, the profile cambers (more lift at the same angle), it drags a bit more, and near the tip
@@ -192,10 +194,31 @@ looked up. The brake numbers were tuned so they land near the polar's target spe
 | Hands up | 38.0 km/h, 1.10 m/s | 38.0 km/h, 1.10 m/s |
 | 50 % brake | 32.6 km/h, 1.00 m/s | 31.9 km/h, 1.12 m/s |
 | 80 % brake | 28.0 km/h, 1.04 m/s | 29.6 km/h, 1.20 m/s |
-| Full bar | 52.0 km/h, 2.11 m/s | 52.2 km/h, 1.87 m/s |
+| Half bar | 45.0 km/h, 1.47 m/s | 45.2 km/h, 1.46 m/s |
+| Full bar | 52.0 km/h, 2.11 m/s | 52.0 km/h, 2.11 m/s |
 
 Brake effects are scaled by each wing's lift range from trim to the stall, so full brake brings
 every wing near its own stall, not past it.
+
+### Flying the speed bar
+
+Full bar takes about 3° off the angle of attack. Stamped in at once, that is a step into the pitch
+pendulum's slow speed-for-height mode: the canopy dives (−4.9 m/s on the EN-B), swings back up
+until the glider almost climbs, and keeps going up and down for a minute; releasing the bar does
+the same in reverse, with a +2 m/s zoom. A pilot doesn't fly it that way, so the sim flies the bar
+for the player, the way a pilot's legs do (`BAR_*` in `glider.ts`):
+
+- **Feeding it in:** the bar the canopy feels (`GliderState.bar`) runs at most 30 % of its travel
+  ahead of the speed the wing has already reached, and when letting go at most 5 % behind.
+- **Flying it actively:** while the bar is in, it gets more bar when the glide is flatter than the
+  polar's for the bar the player asks for and less when it's steeper. The sink steps to the bar's
+  sink straight away and stays there while the speed builds; there's no dive and no swing back.
+- **Letting go:** the wing is allowed a small zoom, in proportion to the speed it still has to lose,
+  so it trades the speed for a little height instead of only bleeding it into drag.
+
+On the EN-B, full bar takes the sink from 1.1 to 1.7 m/s at once, to 2.1 m/s (never past 2.2) as
+the wing reaches 52 km/h in about 8 s. Letting go eases the sink to about 0.3 m/s for a moment
+and the wing is back at trim within about 6 s.
 
 ### The pitch pendulum
 

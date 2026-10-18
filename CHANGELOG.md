@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-18 11:20 UTC — Speed bar flown like a pilot
+
+- Pushing the speed bar no longer dives the glider to −4–6 m/s and then swings it back up nearly to a climb. The pilot feeds the bar in as the wing picks up speed and flies it actively, so the sink steps to the bar's rate (EN-B: 1.1 → 2.1 m/s on full bar, about +1 m/s) and stays there while the speed builds. Letting go pitches the wing back for a moment and it returns to trim within about 6 s, without the old +2 m/s zoom.
+- Glides on bar now match the polar: the drag scale is solved at full bar as well as at trim. The EN-B was 0.2 m/s short of its full-bar sink.
+
 ## 2026-10-18 04:20 UTC — Orbit camera by default
 
 - The game starts in the orbit camera, off the pilot's right shoulder, so the wing and harness are in view and the mouse can look around them. **C** still cycles orbit → chase → pilot. A reset or air start puts the orbit camera back behind the shoulder.

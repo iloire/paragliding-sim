@@ -87,6 +87,27 @@ describe('glider', () => {
     expect(s.airspeed).toBeLessThan(polar.trim - 3);
   });
 
+  it('sinks about 1 m/s more on full bar, steadily, and gives it back when released', () => {
+    const s = createGlider(0, 0, 3000, 0, 'flying', polar.trim);
+    const vzOn: number[] = [], vzOff: number[] = [];
+    for (let i = 0; i < 120 * 50; i++) {
+      // The bar ramps in and out over 0.4 s, as the keyboard pushes it.
+      const speedBar = i < 120 * 25 ? Math.min(i / 48, 1) : Math.max(1 - (i - 120 * 25) / 48, 0);
+      stepGlider(s, { ...hands, speedBar }, polar, flatWorld(), 1 / 120);
+      (i < 120 * 25 ? vzOn : vzOff).push(s.vz);
+    }
+    const trimSink = polar.sink(polar.trim), barSink = polar.sink(polar.top);
+    expect(barSink - trimSink).toBeCloseTo(1, 0);
+    // No dive and no swing back up: from the first second on, it sinks at the bar's rate or near it.
+    for (const vz of vzOn.slice(120)) expect(-vz).toBeGreaterThan(trimSink + 0.4);
+    expect(Math.min(...vzOn)).toBeGreaterThan(-barSink - 0.2);
+    expect(vzOn.at(-1)).toBeCloseTo(-barSink, 1);
+    expect(s.airspeed).toBeLessThan(polar.trim + 1);
+    // Letting go, the wing pitches back and trades its speed for a little height, but never climbs.
+    expect(Math.max(...vzOff)).toBeLessThan(0);
+    expect(vzOff.at(-1)).toBeCloseTo(-trimSink, 1);
+  });
+
   it('winds into a spiral dive on a held deep brake, and comes out when released', () => {
     const s = createGlider(0, 0, 3000, 0, 'flying', polar.trim);
     run(s, { ...hands, brakeRight: 0.8 }, flatWorld(), 16);

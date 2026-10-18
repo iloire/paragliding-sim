@@ -75,6 +75,8 @@ export interface GliderState {
   stallTimer: number;
   /** How long both brakes have been held past 90 % (s). */
   deepTimer: number;
+  /** How far the bar is actually in (0..1): the pilot's push, fed in as the wing picks up speed. */
+  bar: number;
   /** −1 = left side collapsed, 1 = right side, 0 = open. */
   collapse: -1 | 0 | 1;
   collapseTimer: number;
@@ -162,6 +164,18 @@ const DEEP_HOLD = 1.2;
 /** A folded side keeps this share of its lift, and drags this much more. */
 const FOLD_LIFT = 0.3;
 const FOLD_CD = 0.08;
+/**
+ * The pilot on the speed bar. He feeds it in no more than BAR_LEAD (share of its travel) ahead of
+ * the speed the wing has reached, and lets it out no more than BAR_RELEASE_LEAD behind. While the
+ * bar is in he flies it actively: BAR_DAMP more bar per radian the glide is flatter than the polar's
+ * for the bar he wants, less when it's steeper, so the sink steps to the bar's and stays there
+ * instead of diving and swinging back. Letting it out, he lets the wing climb BAR_ZOOM radians per
+ * share of bar of speed still to lose, trading it for height.
+ */
+const BAR_LEAD = 0.3;
+const BAR_RELEASE_LEAD = 0.05;
+const BAR_DAMP = 16;
+const BAR_ZOOM = 0.1;
 
 // ---------------------------------------------------------------- events
 const SUBSTEPS = 4;
@@ -298,8 +312,14 @@ class Rig {
   readonly tipTilt: number;
   /** A brake's incidence and camber, scaled to this wing's lift range from trim to the stall. */
   readonly brakeScale: number;
-  /** Scales the polar's drag so a straight glide at trim matches its glide ratio despite the arc. */
+  /**
+   * Scales the polar's drag so straight glides match its glide ratio despite the arc: one scale
+   * solved at trim, one on full bar, blended by lift coefficient between them.
+   */
   private dragScale = 1;
+  private dragScaleBar = 1;
+  private readonly clTrim: number;
+  private readonly clTop: number;
   private readonly cache = new Map<number, { rig: number; tilt: number; along: number }>();
 
   constructor(private readonly polar: Polar, readonly arc: number) {
@@ -307,16 +327,24 @@ class Rig {
     this.geo = geometry(arc, 0);
     this.tipTilt = (TIP_TILT * polar.rollAuthority) / REFERENCE_ROLL_AUTHORITY;
     this.brakeScale = (polar.clMax - polar.clFor(polar.trim)) / REFERENCE_LIFT_RANGE;
-    // Along the path, drag must balance the weight's component: secant on the drag scale.
+    this.clTrim = polar.clFor(polar.trim);
+    this.clTop = polar.clFor(polar.top);
+    // Along the path, drag must balance the weight's component: secant on each drag scale.
+    // Neither scale reaches the other's lift coefficient, so trim's is solved first and kept.
+    this.calibrate(0, (k) => { this.dragScale = k; this.dragScaleBar = k; });
+    this.calibrate(1, (k) => { this.dragScaleBar = k; });
+  }
+
+  private calibrate(bar: number, set: (k: number) => void): void {
     let a = 0.6, b = 1.2;
-    this.dragScale = a;
-    let fa = this.solve(0, 0).along;
-    this.dragScale = b;
-    let fb = this.solve(0, 0).along;
+    set(a);
+    let fa = this.solve(0, bar).along;
+    set(b);
+    let fb = this.solve(0, bar).along;
     for (let i = 0; i < 20 && Math.abs(fb) > 0.01; i++) {
       const c = b - (fb * (b - a)) / (fb - fa);
       a = b; fa = fb; b = c;
-      this.dragScale = b; fb = this.solve(0, 0).along;
+      set(b); fb = this.solve(0, bar).along;
     }
   }
 
@@ -334,7 +362,9 @@ class Rig {
   /** The polar's total drag at this lift, less the pilot's share, plus the brake and the stall. */
   cd(alpha: number, brake: number): number {
     const cl = Math.min(Math.max(LIFT_SLOPE * alpha + CAMBER_CL * this.brakeScale * brake, 0.05), this.polar.clMax);
-    const clean = Math.max(this.dragScale * this.polar.cdFor(cl) - CD_PILOT, 0.01);
+    const toBar = Math.min(Math.max((this.clTrim - cl) / (this.clTrim - this.clTop), 0), 1);
+    const scale = this.dragScale + (this.dragScaleBar - this.dragScale) * toBar;
+    const clean = Math.max(scale * this.polar.cdFor(cl) - CD_PILOT, 0.01);
     const stall = this.alphaStall(brake);
     const k = smoothstep(stall, stall + STALL_WIDTH, alpha);
     const attached = clean + BRAKE_CD * brake * brake + (alpha < 0 ? -alpha * 0.3 : 0);
@@ -465,7 +495,7 @@ export function createGlider(x: number, y: number, z: number, heading: number, p
     bank: 0, bankRate: 0, yaw: heading, pitch: 0, roll: 0,
     cl: 0, clRate: 0, alpha: 0,
     load: 1, vz: 0, groundSpeed: 0, runSpeed: 0,
-    phase, stalled: false, stallTimer: 0, deepTimer: 0,
+    phase, stalled: false, stallTimer: 0, deepTimer: 0, bar: 0,
     collapse: 0, collapseTimer: 0, unloadTimer: 0, inSpiral: false,
     time: 0, takeoffAt: -Infinity, event: null,
     cg: [x, y, z + CG_HEIGHT], vel: [0, 0, 0], q: [1, 0, 0, 0], omega: [0, 0, 0],
@@ -494,6 +524,7 @@ function trim(s: GliderState, polar: Polar, air: AirSample): void {
   s.vel = [path[0] * v + air.u, path[1] * v + air.v, path[2] * v + air.w];
   s.cg = add([s.x, s.y, s.z], toWorld(s.q, [0, 0, CG_HEIGHT]));
   s.airspeed = v;
+  s.bar = 0;
   s.trimPending = false;
 }
 
@@ -515,9 +546,20 @@ function fly(s: GliderState, c: Controls, polar: Polar, env: Environment, dt: nu
   const brakes = strips.map((st) => stripBrake(sideBrake(st), st));
   s.deepTimer = Math.min(c.brakeLeft, c.brakeRight) > 0.9 ? s.deepTimer + dt : 0;
   const deepStall = DEEP_STALL_INCIDENCE * smoothstep(0, DEEP_HOLD, s.deepTimer);
-  const rigging = rig.trimmed(c.speedBar).rig + deepStall;
+  // The speed bar, as the pilot flies it (see BAR_LEAD): stamped in at once, the shorter A-risers
+  // would dive the canopy, swing the pilot under it and send the glider up and down for a minute.
+  const reached = (s.airspeed - polar.trim) / (polar.top - polar.trim);
+  const releasing = c.speedBar < s.bar;
+  s.bar = releasing
+    ? Math.max(c.speedBar, Math.min(s.bar, reached - BAR_RELEASE_LEAD))
+    : Math.min(c.speedBar, Math.max(s.bar, reached + BAR_LEAD));
+  const vBar = polar.targetSpeed(0, c.speedBar);
+  const zoom = releasing ? BAR_ZOOM * Math.max(reached - c.speedBar, 0) : 0;
+  const flatter = s.gamma + polar.sink(vBar) / vBar - zoom;
+  const bar = s.bar > 0 ? Math.min(Math.max(s.bar + BAR_DAMP * flatter, 0), 1) : 0;
+  const rigging = rig.trimmed(bar).rig + deepStall;
   // Each strip's angle of attack in trimmed straight flight: where its centre of pressure sits.
-  const trimAlpha = strips.map((st) => rig.trimAlphaOf(st, c.speedBar));
+  const trimAlpha = strips.map((st) => rig.trimAlphaOf(st, bar));
   const folded = strips.map((st) => (s.collapse === -1 && st.side > 0) || (s.collapse === 1 && st.side < 0));
 
   const h = dt / SUBSTEPS;
