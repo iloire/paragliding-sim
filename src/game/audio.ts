@@ -13,7 +13,11 @@ export class FlightAudio {
   muted = false;
 
   start(): void {
-    if (this.ctx) return;
+    if (this.ctx) {
+      // iOS can create the context suspended if the first touch wasn't a tap; any later one resumes it.
+      if (this.ctx.state === 'suspended') void this.ctx.resume();
+      return;
+    }
     const ctx = new AudioContext();
     this.ctx = ctx;
     const master = ctx.createGain();

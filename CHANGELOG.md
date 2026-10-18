@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-18 02:05 UTC — Phones and tablets
+
+- **Touch controls**: a thumb pad on each half of the screen, resting wherever the thumb lands. Pull it down to brake that side (analog, a quarter of the screen height is full travel), push it up to run and for speed bar, slide it sideways to shift weight. A ring and knob show where each thumb is. A row of buttons replaces the action keys: camera, air start, reset, sites, instrument, pause.
+- On a touch screen the game waits for a tap before it starts, which unlocks the vario sound, fullscreen and the Android landscape lock. In portrait it asks you to turn the phone. The instrument starts minimal, the settings panel starts closed and the attribution moves under the instrument.
+- The pixel ratio is capped at 1.5 on touch screens (from 2): a 3x phone was rendering pixels it can't show.
+- Sound resumes if iOS created it suspended.
+
 ## 2026-10-18 04:00 UTC — Time of day and sunsets
 
 - **Time of day** panel: a solar-time slider (05:00–21:00) and Sunrise / Morning / Midday / Afternoon / Sunset presets. `?time=HH:MM` starts at that time, and the address bar follows. Without it a flight starts at 13:00, the thermals' peak, so the weather sliders behave as before.

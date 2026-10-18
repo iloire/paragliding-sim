@@ -108,6 +108,25 @@ instant ratios, so it recovers straight away on leaving lift. G and bank stay di
 The maths (glide-to, track buffer, compass) is pure and tested in `instruments.test.ts`;
 `hud.ts` only draws.
 
+## Input (`src/game/input.ts`, `touch.ts`)
+
+Keyboard, gamepad and touch all feed the same `Controls`, taking the strongest of each (brakes,
+bar) and summing weight shift, so any can be used mid-flight. Keys are digital and ramp; triggers
+and thumbs are analog and used as they are.
+
+**Touch** is on when the main pointer is coarse (`(pointer: coarse)`, phones and tablets). Each half
+of the screen is a thumb pad that rests wherever the thumb lands: pulling it down is that brake,
+pushing it up runs on the ground and is speed bar in the air, sliding it sideways shifts weight.
+A quarter of the screen height is full travel. Small offsets are ignored, and weight shift needs a
+bigger slide (`SHIFT_DEAD`) because a thumb drifts sideways while braking. The mapping is the pure
+`thumbControls`, unit-tested; `TouchPad` turns pointer events into it and draws the ring and knob.
+A row of buttons stands in for the action keys.
+
+On touch the game also waits for a tap before starting (sound, fullscreen and the Android
+landscape lock all need one), asks for landscape in portrait, starts the instrument in its
+minimal layout, closes the settings panel, and caps the pixel ratio at 1.5. The orbit camera
+can't be dragged on touch: the thumb pads take the canvas.
+
 ## Regions, launches and the URL
 
 A **region** is one terrain download (`public/sites/<id>/`); its `site.json` names it, gives its

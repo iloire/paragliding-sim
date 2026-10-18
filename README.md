@@ -38,7 +38,8 @@ You start in the air above the launch, facing into the wind (so does switching l
 or picking one from the site list on **M**).
 **A/D** brake left/right, **T** air-starts again, **R** puts you on the ground at the launch, where
 **W** runs off it into the wind. **L** shows the lift map. **Shift + A/D** is a deep brake (hold it for a spiral dive);
-**A/D with Q/E** in rhythm with the swing builds wingovers. A gamepad works too (triggers = brakes). The weather panel on the
+**A/D with Q/E** in rhythm with the swing builds wingovers. A gamepad works too (triggers = brakes), and so does a phone held sideways: pull a thumb down on either
+half of the screen to brake that side, push it up to run, slide it sideways to shift weight. The weather panel on the
 right changes wind, inversion and thermals live, and **Time of day** moves the sun: thermals are
 weak in the morning, strongest and roughest in the early afternoon, gone by the evening, and the
 Sunset preset puts the sun on the horizon. The address bar follows along, so a link like

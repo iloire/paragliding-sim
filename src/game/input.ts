@@ -1,7 +1,8 @@
-// Keyboard + gamepad → Controls. Keys are digital, so brakes ramp towards their
+// Keyboard + gamepad + touch → Controls. Keys are digital, so brakes ramp towards their
 // target instead of snapping; gamepad triggers are analog and used as-is.
 
 import type { Controls } from '../sim/glider';
+import type { TouchPad } from './touch';
 
 const RAMP = 2.5; // brake travel per second on keys
 const TURN_BRAKE = 0.7;
@@ -26,6 +27,9 @@ export class Input {
   private keyBar = 0;
   /** Set at lift-off: the held run key must be released before it works as speed bar. */
   private runLatched = false;
+
+  /** Set on touch screens; its thumbs combine with the keys and pad like a second pad. */
+  touch: TouchPad | null = null;
 
   constructor(private readonly onAction: (a: Action) => void) {
     window.addEventListener('keydown', (e) => {
@@ -77,16 +81,18 @@ export class Input {
       }
     }
 
-    if (this.runLatched && !forward && !padRun) this.runLatched = false;
+    const t = this.touch?.read();
+    const touchRun = t?.run ?? false;
+    if (this.runLatched && !forward && !padRun && !touchRun) this.runLatched = false;
     const bar = this.runLatched ? 0 : 1;
     this.keyBar = ramp(this.keyBar, forward ? bar : 0);
     padBar *= bar;
 
     const c = this.controls;
-    c.brakeLeft = Math.max(this.keyLeft, padL);
-    c.brakeRight = Math.max(this.keyRight, padR);
-    c.speedBar = Math.max(this.keyBar, padBar);
-    c.weightShift = Math.max(-1, Math.min(1, shift + padShift));
-    c.run = forward || padRun;
+    c.brakeLeft = Math.max(this.keyLeft, padL, t?.brakeLeft ?? 0);
+    c.brakeRight = Math.max(this.keyRight, padR, t?.brakeRight ?? 0);
+    c.speedBar = Math.max(this.keyBar, padBar, (t?.speedBar ?? 0) * bar);
+    c.weightShift = Math.max(-1, Math.min(1, shift + padShift + (t?.weightShift ?? 0)));
+    c.run = forward || padRun || touchRun;
   }
 }

@@ -6,6 +6,7 @@ import { CameraRig } from './game/camera';
 import { CloudLayer } from './game/clouds';
 import { Hud, type HudFrame } from './game/hud';
 import { Input, type Action } from './game/input';
+import { TouchPad } from './game/touch';
 import { clockTime, loadCatalog, parseStart, startQuery } from './game/catalog';
 import { SitePicker } from './game/picker';
 import { loadSite, type Launch } from './game/site';
@@ -27,11 +28,15 @@ const IGC_INTERVAL = 1;
 /** Solar time a flight starts at without ?time= — the thermals' peak, which the weather sliders describe. */
 const DEFAULT_HOUR = 13;
 
+/** Phones and tablets: thumb pads instead of keys, and a lighter renderer. */
+const TOUCH = matchMedia('(pointer: coarse)').matches;
+const KEY = TOUCH ? { run: 'push a thumb up', reset: 'RESET' } : { run: 'hold W', reset: 'R' };
+
 const EVENTS: Record<string, [string, boolean]> = {
   takeoff: ['Airborne — work the lift band in front of the ridge', false],
-  landed: ['Landed. Hold W to relaunch · R to reset', false],
-  crashed: ['Crashed — too fast or too hard. R to reset', true],
-  water: ['In the Atlantic. R to reset', true],
+  landed: [`Landed — ${KEY.run} to relaunch · ${KEY.reset} to reset`, false],
+  crashed: [`Crashed — too fast or too hard. ${KEY.reset} to reset`, true],
+  water: [`In the Atlantic. ${KEY.reset} to reset`, true],
   stall: ['STALL — hands up!', true],
   recovered: ['Recovered', false],
   collapse: ['COLLAPSE — weight-shift away, brake the open side, pump the folded one', true],
@@ -52,7 +57,8 @@ async function boot(): Promise<void> {
 
   const canvas = document.getElementById('view') as HTMLCanvasElement;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  // Phone screens are 3x: rendering all of it costs more fill rate than it shows.
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, TOUCH ? 1.5 : 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.5;
@@ -118,7 +124,7 @@ async function boot(): Promise<void> {
       hud.say(`Air start over ${launch.spec.name}, facing into the wind`);
     } else {
       state = createGlider(launch.x, launch.y, launch.z, launch.heading);
-      hud.say(`${launch.spec.name} launch · facing ${compass(launch.heading)} · hold W to run`, 6);
+      hud.say(`${launch.spec.name} launch · facing ${compass(launch.heading)} · ${KEY.run}`, 6);
     }
     climb = 0;
     flightTime = 0;
@@ -211,6 +217,10 @@ async function boot(): Promise<void> {
 
   const input = new Input(onAction);
   canvas.addEventListener('pointerdown', () => audio.start());
+  if (TOUCH) {
+    input.touch = new TouchPad(onAction);
+    hud.cycleLayout(); // full → minimal: the full panel covers too much of a phone
+  }
 
   const gui = new GUI({ title: 'Famara Glide' });
   const tm = gui.addFolder('Time of day');
@@ -235,6 +245,7 @@ async function boot(): Promise<void> {
   fl.add({ airstart: () => reset(true) }, 'airstart').name('Air start (T)');
   fl.add({ reset: () => reset() }, 'reset').name('Reset to launch (R)');
   fl.add({ igc: downloadIgc }, 'igc').name('Download IGC');
+  if (TOUCH) gui.close();
 
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -263,7 +274,23 @@ async function boot(): Promise<void> {
 
   setTime();
   reset(true);
-  hud.ready();
+  if (TOUCH) tapToFly();
+  else hud.ready();
+
+  /** Phones only unlock sound, fullscreen and the orientation lock from a tap, so ask for one. */
+  function tapToFly(): void {
+    const loading = document.getElementById('loading');
+    const line = loading?.querySelector('.loading-line');
+    if (!loading || !line) { hud.ready(); return; }
+    line.textContent = 'Tap to fly — pull a thumb down to brake, push up to run, slide sideways to shift weight';
+    loading.addEventListener('click', () => {
+      audio.start();
+      void document.documentElement.requestFullscreen?.().catch(() => {});
+      const orientation = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
+      void orientation.lock?.('landscape').catch(() => {}); // Android in fullscreen only
+      hud.ready();
+    }, { once: true });
+  }
 
   let last = performance.now();
   let acc = 0;
