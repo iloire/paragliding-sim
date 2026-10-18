@@ -153,8 +153,12 @@ const CAMBER_CL = 0.132;
 const BRAKE_CD = 0.005;
 /** Past its stall angle a strip's lift falls away over this many radians, to this share, and its drag jumps. */
 const STALL_WIDTH = 0.12;
-/** Past the stall the profile flies like a flat plate: lift FLAT_CL·sin 2α, drag FLAT_CD·sin²α. */
-const FLAT_CL = 1.1;
+/**
+ * Past the stall the profile flies like a flat plate: lift FLAT_CL·sin 2α, drag FLAT_CD·sin²α.
+ * (With more lift than this, a spiral's stalled inner half carried enough of it to keep the spiral
+ * going on a light brake, at the same depth whatever the brake.)
+ */
+const FLAT_CL = 0.8;
 const FLAT_CD = 1.8;
 /**
  * A side's brake pulled past DEEP_BRAKE keeps its strips' profile cambered past their stall: up
@@ -163,7 +167,7 @@ const FLAT_CD = 1.8;
  * past its stall, so this is what lets more brake wind the spiral tighter.
  */
 const DEEP_BRAKE = 0.7;
-const STALL_CAMBER_CL = 1.6;
+const STALL_CAMBER_CL = 2.5;
 const STALL_CAMBER_FADE = 0.3;
 /** A strip's lift limit, above the polar's: the arc tilts lift away from vertical, so each strip works harder. */
 const STRIP_CL_MAX = 1.12;

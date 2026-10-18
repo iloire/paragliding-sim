@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-18 15:25 UTC — No spiral without the deep brake
+
+- A spiral now needs the deep brake to keep going. Before, a 60–70 % turn that a gust or some weight shift tipped steeper locked into a spiral at about 65°, 2 G and 8–10 m/s and stayed there, so you could spiral down without Shift. Now it comes back out by itself within a few seconds, and easing the brake back to 60 % unwinds even a full-brake spiral.
+- Deep spirals go further: on the EN-B, 80 % brake settles at about 87°/s, 2.6 G and 11 m/s down, 90 % at 150°/s, 4.8 G and 17 m/s, and full brake at 178°/s, 5.9 G and 19 m/s. The EN-C reaches 6.9 G and 22 m/s at full brake.
+- The flare zooms a little more again (+0.8 to +1.6 m/s), and the wing gets back to flying speed a bit sooner after a full stall.
+
 ## 2026-10-18 15:10 UTC — Spirals wind tighter on more brake
 
 - In a spiral dive, more inner brake now means a tighter spiral. On the EN-B, 80 % brake settles at about 105°/s, 3.2 G and 13 m/s down; 90 % at 145°/s, 4.6 G and 17 m/s; full brake at 165°/s, 5.3 G and 18 m/s. Before, anything past 80 % settled at the same 60°/s, 1.9 G and 7.5 m/s, so pulling more did nothing. Ease the brake off to bring the G down, and come out gradually: letting go at 5 G throws you into a big climb and swing.

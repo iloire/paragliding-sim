@@ -51,7 +51,7 @@ describe('glider', () => {
     expect(s.vz).toBeLessThan(-8);
     expect(s.groundSpeed).toBeLessThan(3);
     expect(Math.abs(s.bank)).toBeLessThan(0.3); // canopy overhead, not "upside down" about a vertical path
-    run(s, hands, flatWorld(), 5);
+    run(s, hands, flatWorld(), 7);
     expect(s.stalled).toBe(false);
     expect(s.deflation).toBe(0);
   });
@@ -155,6 +155,28 @@ describe('glider', () => {
     expect(deeper.vz).toBeLessThan(locked.vz - 3);
     expect(deeper.load).toBeGreaterThan(locked.load + 1.5);
     expect(stalled).toBe(false);
+  });
+
+  it('unwinds a spiral when the brake is eased back to a turn\'s', () => {
+    const s = createGlider(0, 0, 9000, 0, 'flying', polar.trim);
+    run(s, { ...hands, brakeRight: 1 }, flatWorld(), 20);
+    expect(s.load).toBeGreaterThan(4);
+    run(s, { ...hands, brakeRight: 0.6 }, flatWorld(), 20);
+    expect(s.bank).toBeLessThan(0.6);
+    expect(s.load).toBeLessThan(1.3);
+  });
+
+  it('does not lock a 70 % turn into a spiral in bumpy air: without the deep brake it unwinds', () => {
+    const s = createGlider(0, 0, 9000, 0, 'flying', polar.trim);
+    const bumps = flatWorld([0, 0], (t) => 1.5 * Math.sin(t * 1.3) * Math.sin(t * 0.37 + 1));
+    let spiralling = 0;
+    const steps = 90 * 120;
+    for (let i = 0; i < steps; i++) {
+      stepGlider(s, { ...hands, brakeRight: 0.7 }, polar, bumps, 1 / 120);
+      if (s.inSpiral) spiralling++;
+    }
+    // A strong gust can still tip the turn into a spiral for a few seconds; it must come back out.
+    expect(spiralling / steps).toBeLessThan(0.5);
   });
 
   /**

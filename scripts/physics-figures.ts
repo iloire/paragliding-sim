@@ -258,7 +258,7 @@ function spiralFigure(): void {
     vRules: [{ at: 16, label: 'full brake' }, { at: 24, label: 'released' }],
     panels: [
       { yLabel: 'Bank (°)', series: per((s) => s.bank * DEG), y: [-70, 95], height: 150 },
-      { yLabel: 'Load factor (G)', series: per((s) => s.load), y: [0, 6], height: 120 },
+      { yLabel: 'Load factor (G)', series: per((s) => s.load), y: [0, 7.5], height: 120 },
       { yLabel: 'Vertical speed (m/s)', series: per((s) => s.vz), height: 120 },
     ],
   }));
