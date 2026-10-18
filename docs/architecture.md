@@ -126,8 +126,12 @@ A row of buttons stands in for the action keys.
 
 On touch the game also waits for a tap before starting (sound, fullscreen and the Android
 landscape lock all need one), asks for landscape in portrait, starts the instrument in its
-minimal layout, closes the settings panel, and caps the pixel ratio at 1.5. The orbit camera
-can't be dragged on touch: the thumb pads take the canvas.
+minimal layout, closes the settings panel, and caps the pixel ratio at 1.5. The thumb pads take
+the canvas, so `OrbitControls` never sees a touch. Instead a second finger in a half that already
+has a thumb releases that brake and turns the gesture into a camera drag (`CameraRig.drag`, which
+switches to the orbit camera). It stays a drag until the last of those fingers lifts, so the
+camera can't land you in a sudden brake. The instrument is zoomed to 72 %, and the terrain credit
+shrinks to "© IGN" in the bottom-right corner, with taps passing through it to the pad.
 
 ## Regions, launches and the URL
 

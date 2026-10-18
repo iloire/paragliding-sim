@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-18 11:45 UTC — Two-finger camera orbit on phones
+
+- **Orbit with two fingers:** on a touch screen, put a second finger down in the same half as a thumb and drag to swing the camera round the pilot. That brake lets go while you drag, and the camera switches to orbit if it was on chase or pilot view.
+- **Smaller instrument on phones:** the panel is zoomed to 72 % in both the minimal and the full layout.
+- **Terrain credit out of the way:** on phones it is now a short "© IGN (CC BY 4.0)" in the bottom-right corner, beside the buttons, instead of a line across the view. Taps go through it to the thumb pad.
+
 ## 2026-10-18 11:42 UTC — Gran Canaria
 
 - New region: **Gran Canaria**, with the Los Giles ridge soaring site on the north coast above Las Palmas and La Isleta. The whole island is in (54 km, IGN MDT05 + PNOA, highest point 1943 m at Pico de las Nieves), with 5 m detail tiles around the two launches. It starts in a 22 km/h NNE trade wind under a 1000 m inversion. `?region=gran-canaria&launch=los-giles`.

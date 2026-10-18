@@ -221,7 +221,7 @@ async function boot(): Promise<void> {
   const input = new Input(onAction);
   canvas.addEventListener('pointerdown', () => audio.start());
   if (TOUCH) {
-    input.touch = new TouchPad(onAction);
+    input.touch = new TouchPad(onAction, (dx, dy) => rig.drag(dx, dy));
     hud.cycleLayout(); // full → minimal: the full panel covers too much of a phone
   }
 

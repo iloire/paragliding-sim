@@ -2,6 +2,7 @@
 // wherever it lands: pulling it down pulls that brake (like the real handle), pushing it
 // up runs on the ground and is speed bar in the air, sliding it sideways shifts weight.
 // Both thumbs down is both brakes, both all the way down a flare, one deep a spiral.
+// A second finger in the same half lets go of that brake and drags the camera round instead.
 
 import type { Controls } from '../sim/glider';
 import type { Action } from './input';
@@ -38,13 +39,17 @@ const BUTTONS: [Action, string][] = [
 ];
 
 interface Touch { id: number; x0: number; y0: number; x: number; y: number; ring: HTMLElement; knob: HTMLElement }
+type Side = 'left' | 'right';
 
 /** The thumb pads and action buttons, laid over the canvas on touch screens. */
 export class TouchPad {
   private readonly layer = document.createElement('div');
   private readonly thumbs: { left: Touch | null; right: Touch | null } = { left: null, right: null };
+  /** The fingers dragging the camera, by pointer id, at their last position; one side at a time. */
+  private orbit: { side: Side; fingers: Map<number, { x: number; y: number }> } | null = null;
 
-  constructor(onAction: (a: Action) => void) {
+  /** `onOrbit` gets each camera drag in screen pixels. */
+  constructor(onAction: (a: Action) => void, onOrbit: (dx: number, dy: number) => void) {
     this.layer.id = 'touch';
     const nav = document.createElement('nav');
     nav.id = 'touch-buttons';
@@ -57,14 +62,32 @@ export class TouchPad {
     document.body.append(this.layer, nav);
 
     this.layer.addEventListener('pointerdown', (e) => {
-      const side = e.clientX < window.innerWidth / 2 ? 'left' : 'right';
-      if (this.thumbs[side]) return;
+      const side: Side = e.clientX < window.innerWidth / 2 ? 'left' : 'right';
       this.layer.setPointerCapture(e.pointerId);
+      const thumb = this.thumbs[side];
+      if (thumb || this.orbit?.side === side) {
+        if (!this.orbit) this.orbit = { side, fingers: new Map() };
+        if (thumb) {
+          this.orbit.fingers.set(thumb.id, { x: thumb.x, y: thumb.y });
+          this.release(side);
+        }
+        this.orbit.fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        return;
+      }
       const ring = this.mark('touch-ring'), knob = this.mark('touch-knob');
       this.thumbs[side] = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, ring, knob };
       this.place(this.thumbs[side]);
     });
     this.layer.addEventListener('pointermove', (e) => {
+      const f = this.orbit?.fingers.get(e.pointerId);
+      if (f && this.orbit) {
+        // Each finger moves the camera by its share, so two fingers dragging together count once.
+        const n = this.orbit.fingers.size;
+        onOrbit((e.clientX - f.x) / n, (e.clientY - f.y) / n);
+        f.x = e.clientX;
+        f.y = e.clientY;
+        return;
+      }
       const t = this.find(e.pointerId);
       if (!t) return;
       t.x = e.clientX;
@@ -72,13 +95,9 @@ export class TouchPad {
       this.place(t);
     });
     const lift = (e: PointerEvent) => {
-      for (const side of ['left', 'right'] as const) {
-        const t = this.thumbs[side];
-        if (t?.id !== e.pointerId) continue;
-        t.ring.remove();
-        t.knob.remove();
-        this.thumbs[side] = null;
-      }
+      // The last finger off ends the drag; it never falls back to a brake.
+      if (this.orbit?.fingers.delete(e.pointerId) && this.orbit.fingers.size === 0) this.orbit = null;
+      for (const side of ['left', 'right'] as const) if (this.thumbs[side]?.id === e.pointerId) this.release(side);
     };
     this.layer.addEventListener('pointerup', lift);
     this.layer.addEventListener('pointercancel', lift);
@@ -95,6 +114,12 @@ export class TouchPad {
 
   private offset(t: Touch | null): Thumb | null {
     return t ? { dx: (t.x - t.x0) / this.travel, dy: (t.y - t.y0) / this.travel } : null;
+  }
+
+  private release(side: Side): void {
+    this.thumbs[side]?.ring.remove();
+    this.thumbs[side]?.knob.remove();
+    this.thumbs[side] = null;
   }
 
   private find(id: number): Touch | null {

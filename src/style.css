@@ -156,6 +156,7 @@ html, body {
 }
 #credits a { color: var(--ink-dim); }
 #sha { margin-left: 8px; opacity: 0.7; }
+.credit-short { display: none; }
 
 #picker {
   position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -213,11 +214,18 @@ html, body {
 #rotate { display: none; }
 
 @media (pointer: coarse) {
-  #instrument { top: max(10px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left)); z-index: 2; pointer-events: none; }
+  /* Zoomed rather than restyled, so the full layout shrinks the same way as the minimal one. */
+  #instrument { top: max(8px, env(safe-area-inset-top)); left: max(8px, env(safe-area-inset-left)); z-index: 2; pointer-events: none; zoom: 0.72; }
   #help { display: none; }
   #message { top: 36%; font-size: 20px; }
-  /* The action buttons take the bottom edge; the attribution goes under the instrument. */
-  #credits { top: calc(max(10px, env(safe-area-inset-top)) + 96px); bottom: auto; left: max(10px, env(safe-area-inset-left)); right: auto; z-index: 2; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); }
+  /* Shortened into the bottom-right corner, beside the action buttons. Taps go through to the
+     thumb pad under it, so braking in that corner can't open the IGN site mid-flight. */
+  #credits {
+    bottom: max(6px, env(safe-area-inset-bottom)); right: max(8px, env(safe-area-inset-right));
+    z-index: 2; font-size: 9px; opacity: 0.75; pointer-events: none; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  }
+  .credit-long { display: none; }
+  .credit-short { display: inline; }
 }
 @media (pointer: coarse) and (orientation: portrait) {
   #rotate {

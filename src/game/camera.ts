@@ -32,6 +32,18 @@ export class CameraRig {
     return this.mode;
   }
 
+  /** Orbit by a screen drag in pixels, as OrbitControls' own drag does; switches to orbit if needed. */
+  drag(dx: number, dy: number): void {
+    while (this.mode !== 'orbit') this.next();
+    const per = (2 * Math.PI) / window.innerHeight;
+    const offset = this.camera.position.clone().sub(this.orbit.target);
+    const sph = new THREE.Spherical().setFromVector3(offset);
+    sph.theta -= dx * per;
+    sph.phi = THREE.MathUtils.clamp(sph.phi - dy * per, 0.05, Math.PI - 0.05);
+    this.camera.position.copy(this.orbit.target).add(offset.setFromSpherical(sph));
+    this.orbit.update();
+  }
+
   /** Jump straight to the camera's position (after a reset) instead of flying there. */
   snap(pilot: THREE.Vector3, s: GliderState): void {
     this.lastTarget.copy(pilot);
