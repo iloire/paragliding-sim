@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-18 11:40 UTC — Legs push the speed bar
+
+- You can see the pilot push the bar: at trim the bent knees make two bumps in the top of the cocoon; on bar the legs straighten, the bumps flatten and ride forward, and the pod's nose goes forward with the feet (45 cm on full bar). It follows the pilot's actual push, fed in as the wing picks up speed.
+
 ## 2026-10-18 11:20 UTC — Speed bar flown like a pilot
 
 - Pushing the speed bar no longer dives the glider to −4–6 m/s and then swings it back up nearly to a climb. The pilot feeds the bar in as the wing picks up speed and flies it actively, so the sink steps to the bar's rate (EN-B: 1.1 → 2.1 m/s on full bar, about +1 m/s) and stays there while the speed builds. Letting go pitches the wing back for a moment and it returns to trim within about 6 s, without the old +2 m/s zoom.

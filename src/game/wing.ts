@@ -362,8 +362,9 @@ export function createGlider(): GliderModel {
   pilot.add(harness);
   const cocoon = new THREE.Mesh(loft([
     sec(-1.44, 0.03, 0.72, 0.78), sec(-1.41, 0.13, 0.62, 0.86), sec(-1.35, 0.2, 0.56, 0.91),
-    sec(-1.24, 0.245, 0.53, 0.95), sec(-1.05, 0.265, 0.51, 0.98), sec(-0.7, 0.275, 0.5, 1.01),
-    sec(-0.38, 0.28, 0.5, 1.05), sec(-0.22, 0.28, 0.5, 1.06),
+    sec(-1.24, 0.245, 0.53, 0.95), sec(-1.05, 0.265, 0.51, 0.98), sec(-0.9, 0.27, 0.505, 0.995),
+    sec(-0.8, 0.272, 0.5, 1.0), sec(-0.7, 0.275, 0.5, 1.01), sec(-0.6, 0.277, 0.5, 1.022),
+    sec(-0.5, 0.278, 0.5, 1.035), sec(-0.38, 0.28, 0.5, 1.05), sec(-0.3, 0.28, 0.5, 1.055), sec(-0.22, 0.28, 0.5, 1.06),
   ], paintHull), harnessMatHull);
   const fairing = new THREE.Mesh(loft([
     sec(-0.22, 0.28, 0.5, 1.06), sec(-0.17, 0.29, 0.5, 0.99), sec(0.2, 0.29, 0.5, 0.98),
@@ -377,6 +378,28 @@ export function createGlider(): GliderModel {
     sec(1.38, 0.1, 0.56, 0.9), sec(1.44, 0.08, 0.6, 0.88), sec(1.46, 0.03, 0.66, 0.84),
   ], (_s, _z, fy) => (fy < 0.2 ? HULL.band : HULL.blue).clone()), harnessMatHull);
   harness.add(cocoon, fairing, keel);
+  // The speed bar sits on the footplate inside the cocoon. At trim the bent knees push two bumps
+  // up in the pod's top; pushing the bar straightens the legs, the bumps flatten and ride forward,
+  // and the pod in front of the knees goes forward with the feet, BAR_REACH on full bar.
+  const BAR_REACH = 0.45, KNEE_BUMP = 0.08, KNEE_Z = -0.42;
+  const cocoonPos = cocoon.geometry.attributes.position as THREE.BufferAttribute;
+  const cocoonRest = Float32Array.from(cocoonPos.array as Float32Array);
+  let legPush = 0, drawnPush = -1;
+  function drawLegs(push: number): void {
+    if (Math.abs(push - drawnPush) < 0.002) return;
+    drawnPush = push;
+    const kneeZ = KNEE_Z - 0.5 * BAR_REACH * push;
+    for (let i = 0; i < cocoonPos.count; i++) {
+      const x = cocoonRest[i * 3], y = cocoonRest[i * 3 + 1] + SEAT.y, z = cocoonRest[i * 3 + 2] + SEAT.z;
+      const bump = KNEE_BUMP * (1 - push) * THREE.MathUtils.smoothstep(y, 0.85, 1.0)
+        * Math.exp(-(((Math.abs(x) - 0.12) / 0.08) ** 2) - ((z - kneeZ) / 0.12) ** 2);
+      cocoonPos.setY(i, y + bump - SEAT.y);
+      cocoonPos.setZ(i, z - BAR_REACH * push * THREE.MathUtils.smoothstep(-z, -KNEE_Z, 1.05) - SEAT.z);
+    }
+    cocoonPos.needsUpdate = true;
+    cocoon.geometry.computeVertexNormals();
+  }
+  drawLegs(0);
   const deck = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.025, 0.2), new THREE.MeshStandardMaterial({ color: 0x101114, roughness: 0.4, emissive: 0x0d1a12, emissiveIntensity: 0.6 }));
   deck.position.set(0, 1.06 - SEAT.y, -0.48 - SEAT.z);
   deck.rotation.x = 0.25;
@@ -543,6 +566,8 @@ export function createGlider(): GliderModel {
     cocoon.scale.z = 1 - 0.85 * g;
     deck.visible = flyBlend > 0.5;
     for (const m of [...thighs, ...shins, ...knees, ...boots]) m.visible = flyBlend < 0.85;
+    legPush += ((flying ? s.bar : 0) - legPush) * (1 - Math.exp(-dt * 8));
+    drawLegs(legPush);
 
     // Hands follow the brake handles (which hang from the swinging canopy).
     group.updateMatrixWorld(true);
