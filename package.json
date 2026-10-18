@@ -1,7 +1,8 @@
 {
   "name": "paragliding-sim",
   "version": "1.0.0",
-  "description": "Paragliding simulator prototype at the real Famara take-off, Lanzarote — browser demo (three.js)",
+  "description": "Browser paragliding simulator over real terrain in Lanzarote and the Pyrenees (three.js)",
+  "homepage": "https://iloire.github.io/paragliding-sim/",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

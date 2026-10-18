@@ -2,13 +2,15 @@
 
 [![CI](https://github.com/iloire/paragliding-sim/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/iloire/paragliding-sim/actions/workflows/ci.yml)
 
+### ▶ Fly it now: **[https://iloire.github.io/paragliding-sim/](https://iloire.github.io/paragliding-sim/)**
+
 A browser paragliding simulator over real terrain, for pilots who want the air to behave like it
 does at their sites. It is the prototype of a planned Unreal Engine game: it tests the flight feel
 and the lift model cheaply first.
 
-**▶ Fly it: [iloire.github.io/paragliding-sim](https://iloire.github.io/paragliding-sim/)** (desktop browser, or a phone held sideways)
+It runs in a desktop browser, or on a phone held sideways. Nothing to install.
 
-![Ridge soaring the Risco de Famara in a 24 km/h north-westerly](docs/screenshots/famara-ridge.png)
+[![Ridge soaring the Risco de Famara in a 24 km/h north-westerly](docs/screenshots/famara-ridge.png)](https://iloire.github.io/paragliding-sim/)
 
 ## What's in it
 
