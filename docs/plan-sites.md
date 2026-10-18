@@ -59,8 +59,10 @@ fly — other Canary islands first, then sites abroad — and a way to pick betw
    list picker on **M**.~~ ✅
 2. `windFrom` per launch; wind wedges and "works today" in the picker.
 3. Map picker.
-4. `source` + `attribution` per region, credits from the region; a second Canary island
-   (Tenerife or La Palma, both IGN) to prove it.
+4. ~~First region off the Canaries: **Loarre** (Huesca), IGN in UTM 30N, with `plainM` for an
+   inland horizon instead of the sea.~~ ✅
+   Still to do: `source` + `attribution` per region and credits from the region (needed once a
+   non-IGN region lands); another Canary island (Tenerife or La Palma).
 5. Copernicus provider for the first site outside Spain (Ölüdeniz, Bassano or Annecy); terrain
    storage out of plain git.
 6. Editor page, only if needed.

@@ -34,3 +34,18 @@ describe('Heightmap detail tiles', () => {
     expect(site.heightAt(2500, 3500)).toBeCloseTo(250, 0);
   });
 });
+
+describe('Heightmap beyond the site edge', () => {
+  it('is open sea for an island', () => {
+    const site = Heightmap.fromFunction(16, 6000, ramp);
+    expect(site.isWater(-100, 3000)).toBe(true);
+    expect(site.groundAt(-100, 3000)).toBe(0);
+  });
+
+  it('is a dry plain at its own height inland', () => {
+    const site = Heightmap.fromFunction(16, 6000, ramp);
+    site.outside = 550;
+    expect(site.isWater(-100, 3000)).toBe(false);
+    expect(site.groundAt(7000, 3000)).toBe(550);
+  });
+});

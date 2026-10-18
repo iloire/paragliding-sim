@@ -18,9 +18,8 @@ const LEVEL_DIST = [Infinity, 4500, 1500];
 /** A tile only drops a level once the camera is this much further than the threshold. */
 const HYSTERESIS = 1.2;
 const SKIRT_M = 80;
-/** Land within this distance of the bbox edge slopes into the sea instead of ending in a wall. */
+/** Land within this distance of the bbox edge slopes down to what lies beyond (sea or plain) instead of ending in a wall. */
 const EDGE_FADE_M = 700;
-const SEA_FLOOR = -15;
 
 export interface TerrainUniforms {
   liftMap: { value: THREE.Texture };
@@ -88,7 +87,7 @@ function buildPatch(terrain: Heightmap, x0: number, y0: number, size: number, se
       const x = x0 + (i - 1) * step, y = y0 + (j - 1) * step;
       const z = terrain.heightAt(x, y);
       const fade = Math.min(Math.max(Math.min(x, y, e - x, e - y) / EDGE_FADE_M, 0), 1);
-      h[j * w + i] = z > 0 ? z * fade + SEA_FLOOR * (1 - fade) : z;
+      h[j * w + i] = z > 0 ? z * fade + terrain.outside * (1 - fade) : z;
     }
   }
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-18 03:30 UTC — Loarre, the first mainland region
+
+- New region `loarre` (Huesca Pre-Pyrenees): a 30 km IGN bbox in ETRS89 / UTM 30N with the Loarre (1277 m, S–SW) and Tiacuto launches from ParaglidingEarth, plus detail tiles around both. Default weather is a light southerly thermal day with the inversion at 2600 m.
+- Inland regions: `plainM` in `site.json` puts flat land at that height beyond the bbox instead of open sea, in the physics (no ditching off the edge) and on screen (the edge slopes down to a farmland-coloured plane).
+- Picking a launch in another region no longer carries the current wind across; the new region starts with its own weather.
+- The inversion slider goes up to 4000 m, for mountain sites.
+
 ## 2026-10-18 03:10 UTC — Site picker and deep links
 
 - Sites are now regions: `public/sites/famara/` is `public/sites/lanzarote/`, and `public/sites/index.json` lists the regions the game offers. `site.json` gains `country`.

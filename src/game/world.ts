@@ -1,4 +1,4 @@
-// Scene dressing: the sea, the sky, the sun, and the lift map the terrain paints
+// Scene dressing: the sea (or an inland plain), the sky, the sun, and the lift map the terrain paints
 // (the terrain itself is in terrain-view.ts). Sim frame (x east, y north, z up) maps to
 // three.js as X = x − e/2, Y = z, Z = e/2 − y, so the site is centred on the origin.
 
@@ -15,13 +15,17 @@ export function toScene(extent: number, x: number, y: number, z: number, out = n
   return out.set(x - extent / 2, z, extent / 2 - y);
 }
 
-export function createSea(): THREE.Mesh {
+/** What surrounds the site out to the horizon: sea at 0 m, or dry farmland at `plainM`. */
+export function createSurround(plainM?: number): THREE.Mesh {
   const geometry = new THREE.PlaneGeometry(400000, 400000);
   geometry.rotateX(-Math.PI / 2);
-  const material = new THREE.MeshStandardMaterial({ color: 0x0a2a3d, roughness: 0.32, metalness: 0 });
-  const sea = new THREE.Mesh(geometry, material);
-  sea.position.y = 0;
-  return sea;
+  const material = plainM === undefined
+    ? new THREE.MeshStandardMaterial({ color: 0x0a2a3d, roughness: 0.32, metalness: 0 })
+    : new THREE.MeshStandardMaterial({ color: 0x8c7a5c, roughness: 1, metalness: 0 });
+  const surround = new THREE.Mesh(geometry, material);
+  // A plain sits a metre low so the terrain's faded edge meets it without z-fighting.
+  surround.position.y = plainM === undefined ? 0 : plainM - 1;
+  return surround;
 }
 
 export function createSkyAndLight(scene: THREE.Scene, renderer: THREE.WebGLRenderer): THREE.DirectionalLight {

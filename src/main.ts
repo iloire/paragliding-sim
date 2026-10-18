@@ -11,7 +11,7 @@ import { SitePicker } from './game/picker';
 import { loadSite, type Launch } from './game/site';
 import { createGlider as createGliderModel } from './game/wing';
 import { TerrainView } from './game/terrain-view';
-import { createLiftMap, createSea, createSkyAndLight, toScene } from './game/world';
+import { createLiftMap, createSkyAndLight, createSurround, toScene } from './game/world';
 import { compass, glideTo, TurnTrack } from './sim/instruments';
 import { createGlider, stepGlider, type Environment, type GliderState } from './sim/glider';
 import { buildIgc, type Fix } from './sim/igc';
@@ -68,7 +68,7 @@ async function boot(): Promise<void> {
   const liftMap = createLiftMap(wind);
   const terrainView = new TerrainView(terrain, ortho, site.detailTileM, site.detailTiles, liftMap.texture,
     renderer.capabilities.getMaxAnisotropy());
-  scene.add(terrainView.group, createSea());
+  scene.add(terrainView.group, createSurround(site.spec.plainM));
   const clouds = new CloudLayer(extent);
   scene.add(clouds.group);
 
@@ -141,7 +141,7 @@ async function boot(): Promise<void> {
 
   function pickSite(regionId: string, launchId: string): void {
     if (regionId === region.id) setLaunch(launchId);
-    else location.search = startQuery(regionId, launchId, weather.windFromDeg, weather.windSpeedKmh); // new terrain: reload
+    else location.search = startQuery(regionId, launchId); // new terrain: reload, with that region's own weather
   }
 
   let pausedBeforePicker = false;
@@ -194,7 +194,7 @@ async function boot(): Promise<void> {
   const wx = gui.addFolder('Weather');
   wx.add(weather, 'windSpeedKmh', 0, 45, 1).name('Wind km/h').onChange(refreshWeather);
   wx.add(weather, 'windFromDeg', 0, 359, 5).name('Wind from °').onFinishChange(refreshWeather);
-  wx.add(weather, 'inversionM', 300, 2500, 50).name('Inversion m').onFinishChange(refreshWeather);
+  wx.add(weather, 'inversionM', 300, 4000, 50).name('Inversion m').onFinishChange(refreshWeather);
   wx.add(weather, 'thermalStrength', 0, 4, 0.1).name('Thermals m/s').onChange(refreshWeather);
   wx.add(weather, 'turbulence', 0, 1, 0.05).name('Turbulence').onChange(refreshWeather);
   const fl = gui.addFolder('Flight');

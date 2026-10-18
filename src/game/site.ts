@@ -27,6 +27,8 @@ export interface SiteSpec {
   proj4: string;
   crs: string;
   bbox: [number, number, number, number];
+  /** Inland regions: height (m) of the flat land assumed beyond the bbox. Omitted = open sea. */
+  plainM?: number;
   heightmap: { file: string; size: number };
   ortho: { file: string; size: number };
   /** Native-resolution tiles near the launches, written by scripts/fetch-terrain.ts. */
@@ -80,6 +82,7 @@ export async function loadSite(id: string, spec: SiteSpec): Promise<Site> {
   const buffer = await (await fetch(`${base}${spec.heightmap.file}`)).arrayBuffer();
   const [x0, y0, x1] = spec.bbox;
   const terrain = Heightmap.fromInt16Dm(buffer, spec.heightmap.size, x1 - x0);
+  if (spec.plainM !== undefined) terrain.outside = spec.plainM;
   const detailTiles = spec.detail ? await loadDetail(terrain, `${base}${spec.detail.dir}/`, spec.detail.tileM) : [];
   const proj = proj4('EPSG:4326', spec.proj4);
 

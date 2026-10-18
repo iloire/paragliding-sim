@@ -33,8 +33,10 @@ export function parseStart(search: string, regions: Region[]): Start {
   return { region, launchId: launch.id, wind };
 }
 
-export function startQuery(regionId: string, launchId: string, windFromDeg: number, windKmh: number): string {
-  return `?region=${encodeURIComponent(regionId)}&launch=${encodeURIComponent(launchId)}&wind=${Math.round(windFromDeg)}/${Math.round(windKmh)}`;
+/** Without a wind, the region's own default weather applies. */
+export function startQuery(regionId: string, launchId: string, windFromDeg?: number, windKmh?: number): string {
+  const wind = windFromDeg !== undefined && windKmh !== undefined ? `&wind=${Math.round(windFromDeg)}/${Math.round(windKmh)}` : '';
+  return `?region=${encodeURIComponent(regionId)}&launch=${encodeURIComponent(launchId)}${wind}`;
 }
 
 /** Regions grouped by country, both in alphabetical order, for the picker. */

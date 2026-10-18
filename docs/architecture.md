@@ -120,8 +120,10 @@ picker, sites outside Spain) is in [plan-sites.md](plan-sites.md).
 
 `npm run fetch-terrain -- lanzarote` reads `public/sites/lanzarote/site.json` and downloads:
 
-- **Height**: IGN WCS `Elevacion4083_5` (MDT05, 5 m, REGCAN95 / UTM 28N) resampled to 2048² (~20.5 m over the 42 km bbox that covers the whole flyable island),
-  3×3 smoothed to hide 1 m terracing, written as Int16 decimetres. Sea (nodata or ≤ 0 m) becomes −15 m.
+- **Height**: IGN WCS `Elevacion<EPSG>_5` (MDT05, 5 m) in the region's `crs` — `4083` (REGCAN95 / UTM 28N)
+  for the Canaries, `25830` (ETRS89 / UTM 30N) for Loarre — resampled to 2048² (~20.5 m over Lanzarote's
+  42 km bbox, ~14.6 m over Loarre's 30 km), 3×3 smoothed to hide 1 m terracing, written as Int16 decimetres.
+  Sea (nodata or ≤ 0 m) becomes −15 m.
 - **Orthophoto**: IGN WMS `pnoa-ma`, 4096² JPEG over the same bbox.
 - **Detail tiles** (`detail` in `site.json`): the bbox cut into `tileM` squares; a tile is fetched
   if it has ≥ 1 % land and its centre is within `radiusM` (per axis) of a launch. Each gets the DEM
@@ -135,3 +137,9 @@ comes from the DEM. The Famara beach landing (29.114, −13.56) was placed on th
 behind Playa de Famara on the DEM; check it against the local landing before trusting it.
 
 Both are © Instituto Geográfico Nacional, CC BY 4.0 — the attribution is on screen.
+
+**Beyond the bbox.** An island region is surrounded by open sea: the heightmap returns the sea
+floor outside it and the terrain's last 700 m slope down into the water. An inland region sets
+`plainM` in `site.json` (Loarre: 550 m, the Hoya de Huesca farmland): outside the bbox is then
+dry ground at that height, the terrain edge slopes down to it, and a flat land-coloured plane
+replaces the sea out to the horizon.

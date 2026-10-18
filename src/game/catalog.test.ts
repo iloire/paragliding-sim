@@ -38,6 +38,13 @@ describe('parseStart', () => {
   });
 });
 
+describe('startQuery', () => {
+  it('leaves the wind out when none is given, so the region uses its own weather', () => {
+    expect(startQuery('loarre', 'tiacuto')).toBe('?region=loarre&launch=tiacuto');
+    expect(parseStart(startQuery('tenerife', 'taucho'), REGIONS).wind).toBeUndefined();
+  });
+});
+
 describe('byCountry', () => {
   it('groups regions by country, both alphabetical', () => {
     expect(byCountry(REGIONS).map(([c, rs]) => [c, rs.map((r) => r.id)])).toEqual([

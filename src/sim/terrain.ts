@@ -7,6 +7,8 @@ export const SEA_FLOOR_M = -15;
 
 export class Heightmap {
   readonly pixel: number;
+  /** Ground beyond the site's edge: the sea floor for an island, a plain's height inland. */
+  outside = SEA_FLOOR_M;
   private detailTile = 0;
   private readonly detail = new Map<number, Heightmap>();
 
@@ -54,13 +56,13 @@ export class Heightmap {
     return new Heightmap(size, extent, data, x0, y0);
   }
 
-  /** Terrain elevation (bilinear). Outside the site it is open sea. */
+  /** Terrain elevation (bilinear). Outside the site it is `outside`: open sea, or a plain. */
   heightAt(x: number, y: number): number {
     const tile = this.detailAt(x, y);
     if (tile) return tile.heightAt(x, y);
     x -= this.x0;
     y -= this.y0;
-    if (x < 0 || y < 0 || x > this.extent || y > this.extent) return SEA_FLOOR_M;
+    if (x < 0 || y < 0 || x > this.extent || y > this.extent) return this.outside;
     const n = this.size;
     const u = Math.min(Math.max(x / this.pixel - 0.5, 0), n - 1);
     const v = Math.min(Math.max((this.extent - y) / this.pixel - 0.5, 0), n - 1);

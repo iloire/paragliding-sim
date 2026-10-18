@@ -1,0 +1,22 @@
+{
+  "name": "Loarre",
+  "country": "Spain",
+  "proj4": "+proj=utm +zone=30 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs",
+  "crs": "EPSG:25830",
+  "bbox": [690000, 4670000, 720000, 4700000],
+  "plainM": 550,
+  "heightmap": { "file": "height.bin", "size": 2048 },
+  "ortho": { "file": "ortho.jpg", "size": 4096 },
+  "detail": { "dir": "detail", "tileM": 3000, "orthoSize": 2048, "radiusM": 5000 },
+  "launches": [
+    { "id": "loarre", "name": "Loarre", "lat": 42.3322, "lon": -0.6093 },
+    { "id": "tiacuto", "name": "Tiacuto", "lat": 42.27, "lon": -0.4144 }
+  ],
+  "weather": {
+    "windSpeedKmh": 12,
+    "windFromDeg": 200,
+    "inversionM": 2600,
+    "thermalStrength": 2.5,
+    "turbulence": 0.35
+  }
+}

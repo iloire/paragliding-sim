@@ -8,8 +8,10 @@ that depends on the wind angle against the Risco de Famara, a soaring band that 
 inversion that kills it, thermals that mark themselves with cumulus. The glider is a rigid body —
 an arched canopy of six strips 7.5 m above the pilot — so turns, spirals, wingovers with a light
 top, stalls and gust collapses come out of the physics. The
-terrain and aerial photo are the real IGN data. The map covers the island's flyable sites: Famara,
-Mala, Mirador del Río, Tenesar, El Cuchillo, Macher and Playa Quemada (**N** cycles through them).
+terrain and aerial photo are the real IGN data. The Lanzarote map covers the island's flyable sites:
+Famara, Mala, Mirador del Río, Tenesar, El Cuchillo, Macher and Playa Quemada (**N** cycles through
+them). The first mainland region is **Loarre** in the Huesca Pre-Pyrenees (Loarre and Tiacuto
+launches), a south-facing thermal site; **M** picks between regions.
 
 This is the **browser prototype** of a planned Unreal Engine game — it proves the flight feel and
 the lift model cheaply first. The plan lives in the notes vault (`Projects/paragliding-simulator/plan.md`).
