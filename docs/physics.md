@@ -8,8 +8,6 @@ Most charts here come from **running the real sim code** (`npm run physics-figur
 [Regenerating the figures](#regenerating-the-figures)), so they show what the model does, not what
 we hoped it does. The concept diagrams are drawn by hand.
 
-![Spiral dive over the Risco de Famara: 77° bank, 3.2 G, −10 m/s](screenshots/spiral-dive.png)
-
 **Contents**
 
 1. [The big picture](#1-the-big-picture)
@@ -36,9 +34,8 @@ in steps of exactly 1/120 s until the accumulator is spent (capped at 0.25 s, so
 doesn't fast-forward the flight). A fixed step means the same inputs always produce the same
 flight, on a 60 Hz laptop or a 144 Hz monitor, and the tests can assert exact behaviour.
 
-One step is ten small stages, in this order:
-
-![One flight-model step, in order](physics/sim-step.svg)
+Each step is split into four sub-steps (480 Hz) for the rigid body
+([§3](#3-forces-and-the-equations-of-motion)).
 
 **Coordinate frame.** x points east, y north, z up, in metres, with the origin at the site's
 south-west corner. Heading is a compass bearing in radians (0 = north, clockwise). The renderer
@@ -52,103 +49,79 @@ that has to move to the Unreal build unchanged, and it is the part the unit test
 
 ## 2. How the pilot and paraglider are modelled
 
-A real paraglider is two bodies, the canopy and the pilot, joined by about 7 m of lines. The
-pilot carries most of the mass and hangs well below the wing. That gives two behaviours that
-define how a paraglider flies:
+A real paraglider is a canopy and a pilot joined by about 7 m of lines. The pilot carries most of
+the mass and hangs well below the wing. The sim models it as **one rigid body**, canopy, lines and
+pilot together, with a full attitude (a quaternion) and angular velocity:
 
-- **Pendulum stability.** The low-slung pilot always pulls the system back towards hanging
-  straight under the wing, in pitch and in roll.
-- **Lag and overshoot.** Change the brakes and the wing moves first; the pilot follows and
-  swings past. That's why a paraglider surges, dives and pitches back instead of snapping to a
-  new speed.
+| What | How the sim represents it |
+|---|---|
+| The pilot | A point of 89 kg at the bottom of the lines, with his own drag (0.5 m²) |
+| The canopy | 6 kg (its weight) plus ~5 kg of air in its cells (inertia only), 7.5 m above the pilot |
+| The canopy's aerodynamics | **Six strips** along an arched span (11 m of arc, 24 m², ~108° of arc on the EN-B). Each has its own position, tilt and brake |
+| Mass and inertia | 100 kg inertial, 95 kg weight; centre of mass 0.8 m above the pilot; inertia from where the masses sit |
+| Wing class (EN-A/B/C) | The speed polar (§4), plus spiral tendency (how deep the arc is) and roll authority (how far a brake curls the tip) |
+| The load the pilot feels | The force the lines must put on him to give him his acceleration, along the lines, over his weight |
 
-The sim does **not** solve the two-body problem: no canopy rigid body, no line tension, no
-pilot body. It treats the whole system as **one point mass** and layers the two pendulum
-behaviours on top as tuned spring–damper systems:
+Because the mass is at the bottom and the lift at the top, the **pendulum is the geometry
+itself**: nothing in the code says "swing". Surges, the canopy pitching back on a hard flare, the
+pilot swinging out in a turn and back under the wing when he lets go all come from forces on a
+rigid body.
 
-| What | How the sim represents it | Where |
-|---|---|---|
-| Glider + pilot mass | One point of **95 kg all-up**, no rotational inertia | `LIFT_K` in `polar.ts` |
-| The wing's aerodynamics | Lift and drag from **CL** and **CD** on a **24 m²** wing in sea-level air (ρ = 1.2 kg/m³) | `polar.ts` |
-| Wing class (EN-A/B/C) | Six numbers from the speed polar, plus spiral tendency and roll authority | `wings.json` |
-| Pitch pendulum | CL follows its target through a damped second-order response | `fly()` → `PITCH` |
-| Roll pendulum | Bank is a damped oscillator driven by brakes and weight shift, restored by `sin(bank)` | `fly()` → `ROLL` |
-| The pilot | **Inputs only**: brakes, speed bar, weight shift, running. No body in the physics. | `Controls` |
-| Canopy deformation | Visual only. Collapse and stall are *states* that change CL and CD. | `GliderState` |
-
-![The two pendulums the sim models](physics/pendulum.svg)
-
-All the forces scale with one constant:
-
-```
-K = ρ·S / (2·m) = 1.2 × 24 / (2 × 95) = 0.1516 per metre
-L = K·V²·CL      (lift per unit mass, m/s²)
-D = K·V²·CD      (drag per unit mass, m/s²)
-```
-
-Because everything is per unit mass, a heavier pilot would only change `K`. The all-up weight is
-fixed today (see [Limits](#12-limits-and-known-gaps)).
-
-**The state** the sim carries for the glider (`GliderState`): position x, y, z; airspeed V;
-flight-path angle γ; heading ψ; bank μ and its rate; CL and its rate; load factor; plus flags
-for phase (ground, flying, crashed, water), stall, collapse side and spiral.
+**The state** (`GliderState`): the body's centre of mass, velocity, attitude and angular velocity;
+derived values for the HUD and the 3D model (pilot position, airspeed, flight-path angle, heading,
+bank of the lines about the path, body yaw/pitch/roll, load, mean CL and angle of attack); and
+flags for phase, stall, collapse side and spiral.
 
 ---
 
 ## 3. Forces and the equations of motion
 
-The model works in **wind axes**: speed and angles are measured along the flight path *through
-the air*, not over the ground. Three forces act on the mass:
+Each strip sees **its own airflow**: the body's velocity plus its rotation at that point
+(`v + ω × r`), minus the wind there. From the flow in its own plane (chord and its tilted normal)
+it gets an angle of attack, and from that lift (across the flow) and drag (against it), with
+coefficients derived from the polar (§4). Flow along the span adds a small drag: the arched
+canopy acting as a fin.
 
 ![Forces on the glider, side view](physics/forces.svg)
 
-Newton's second law resolved along the path, across it, and sideways gives the three equations
-the sim integrates every step:
+The forces and their moments about the centre of mass (the strips, the pilot's drag and weight at
+his point, the canopy's weight at its own) drive Newton for the centre of mass and Euler's
+equations for the rotation:
 
 ```
-dV/dt = −D − g·sin γ                  along the path: drag slows, diving (γ < 0) speeds up
-dγ/dt = (L·cos μ − g·cos γ) / V       across it: spare lift curves the path upward
-dψ/dt = L·sin μ / (V·cos γ)           sideways: tilted lift turns the heading
+m · dv/dt = Σ F
+I · dω/dt = Σ (r × F) − ω × (I·ω)
 ```
 
-Banking tilts the lift vector. The vertical part, `L·cos μ`, has to hold you up. The
-horizontal part, `L·sin μ`, is what turns you:
+Banking is the body rolling: every strip's lift tilts with it, and the horizontal part turns you.
 
 ![Bank tilts the lift, rear view](physics/bank.svg)
 
 ### Why nothing is scripted
 
-None of the manoeuvres has its own code path. They all fall out of these three lines:
-
-- **Glide.** With L·cos μ = g·cos γ, the path stays straight and V settles where drag balances
-  the gravity component along the path.
-- **Flare.** More CL → L > g·cos γ → γ rises → g·sin γ now slows the glider. Speed becomes
-  height.
-- **Surge.** Less CL → γ drops → the glider dives and g·sin γ speeds it up.
-- **Spiral.** At high bank only a small part of L holds you up, so γ falls, V grows, L grows with
-  V², and the turn tightens. Extra drag at high G (`SPIRAL_DRAG`) makes it settle instead of
-  accelerating forever.
-- **Wingover.** The roll pendulum swings the bank through large angles, and energy moves
-  between height and speed on every swing.
+- **Damping comes from the strips.** Rolling, the descending half meets the air at a higher angle
+  and lifts more; yawing, the advancing half drags more. Roll and yaw damping, and roll into a
+  turn from the yaw rate, fall out of each strip having its own airflow.
+- **Pitch stability is a centre of pressure.** Each strip's lift and drag act at a point on its
+  chord that moves aft as the angle of attack rises above trim, and far aft past the stall. Real
+  forces at a real point can't create energy; an earlier attempt that used pseudo-moments did,
+  and pumped energy into spins.
+- **Pitch damping** resists the canopy pitching *relative to its airflow*: the body's pitch rate
+  minus the rotation of its flight path, so a steady turn or a pull-up isn't damped as if the
+  canopy were tumbling.
+- **Turns.** A brake drags its side (yaw), cambers it, and curls its tip down so that side's lift
+  leans out: the canopy is pushed towards the braked side and the glider banks. The arc's dihedral
+  (its lift passes through the arc's centre, above the centre of mass) rolls it back level.
 
 ### Integration details
 
-The step is semi-implicit Euler: the pendulums update their rates and then their values, then
-V, γ and ψ update from the new forces. At 120 Hz that is stable for all the time constants
-involved (the stiffest is the pitch spring, ω = 2.2 rad/s, a 2.9 s period). Two guards keep it sane: γ is clamped to
-±83° (`GAMMA_LIMIT`), and the heading equation divides by `max(cos γ, 0.15)` so a vertical dive
-can't blow up the turn rate.
+The physics steps at 120 Hz in four sub-steps (semi-implicit Euler; the quaternion is
+renormalised each sub-step). The body is placed in trimmed straight flight at an air start or
+lift-off. One guard: the flight path's rotation used by the pitch damper is bounded to 2 rad/s,
+so a near-vertical tumble can't feed it.
 
-Position comes from the velocity through the air **plus the wind**:
-
-```
-east  = V·cos γ·sin ψ + wind_u
-north = V·cos γ·cos ψ + wind_v
-up    = V·sin γ       + wind_w      ← this is what the vario hears
-```
-
-So a headwind slows you over the ground but not through the air, and rising air lifts you
-without the wing noticing, except through gusts ([§7](#7-stalls-gusts-and-collapses)).
+Position is the pilot's point. Vertical speed over the ground includes the air's own motion, which
+is what the vario hears.
 
 ---
 
@@ -198,138 +171,98 @@ Best glide falls at about trim speed for all three, as it does on most real wing
 
 ## 5. Pitch: brakes, speed bar and the pitch pendulum
 
-### What the controls ask for
+### Rigging, brakes and the speed bar
 
-Brakes and bar don't set CL directly. They set a **target airspeed** (`Polar.targetSpeed`):
+The canopy's chord sits at a **rigging angle** to the lines, fixed by the line lengths. It's
+solved, not tuned: for hands-up and each speed-bar setting, `Rig.solve` finds the rigging and the
+body's tilt at which the pitch moment about the centre of mass vanishes and the lift carries the
+weight at the polar's speed. A drag scale solved the same way absorbs what the arc costs, so a
+straight glide at trim matches the polar (the test checks the glide ratio).
 
-- Symmetric brakes pull it from trim down towards `1.12 × stall`, along `brake^1.3`. The first
-  part of the travel does little, the way real brakes feel.
-- The speed bar pushes it linearly from trim up to top speed.
-- Both together: brakes win. The bar's effect is scaled by `(1 − brake)`.
+A brake pulls its strips' trailing edge down, the outer strips most: the chord turns nose-up a
+little, the profile cambers (more lift at the same angle), it drags a bit more, and near the tip
+it curls the canopy down (§6). Braked speeds then **emerge** from the physics instead of being
+looked up. The brake numbers were tuned so they land near the polar's target speeds
+(`Polar.targetSpeed`):
 
 ![Target airspeed against brake and bar travel](physics/controls.svg)
 
+| EN-B | Polar | Sim |
+|---|---|---|
+| Hands up | 38.0 km/h, 1.10 m/s | 38.0 km/h, 1.10 m/s |
+| 50 % brake | 32.6 km/h, 1.00 m/s | 31.9 km/h, 1.12 m/s |
+| 80 % brake | 28.0 km/h, 1.04 m/s | 29.6 km/h, 1.20 m/s |
+| Full bar | 52.0 km/h, 2.11 m/s | 52.2 km/h, 1.87 m/s |
+
+Brake effects are scaled by each wing's lift range from trim to the stall, so full brake brings
+every wing near its own stall, not past it.
+
 ### The pitch pendulum
 
-The target speed gives a target CL (`clFor`). The wing's actual CL then chases it like a mass on
-a damped spring:
-
-```
-CL_cmd = CL_target · (1 + 0.6·(V − V_target)/V_target)          speed stability
-d²CL/dt² = ω²·(CL_cmd − CL) − 2ζω·dCL/dt                         ω = 2.2 rad/s, ζ = 0.55
-```
-
-The **speed-stability** term stands in for the pilot's weight. If the glider is faster than its
-target, the command asks for more CL, which pitches the wing up and bleeds off the speed. That
-is what damps the **phugoid**, the slow swap of speed for height that any glider has. You can
-see both in a simple brake-on, brake-off test:
+Brake and release, and the body swings: the canopy pitches back as it slows, then surges ahead
+when you let go.
 
 ![Pitch response to half brakes and release](physics/pitch-response.svg)
 
-Read it from the top. Half brakes at t = 2 s raise CL in about a second, with some overshoot.
-The glider slows and briefly **climbs** (vz > 0, energy turned into height), then oscillates
-around its new, slower speed with a period of about 4 s. On release at t = 9 s, CL drops, the
-glider dives and **surges** to 43 km/h, then settles back. A pilot "checks" this surge on a real
-wing with a dab of brake; here you can do the same.
-
 ### The flare
 
-A flare is the same physics at full brake, close to the ground:
+Full brakes from trim: CL jumps, the canopy pitches back as it slows, and the glider zooms up
+briefly (about +0.5 m/s on all three wings) while the airspeed falls from 38 to about 21 km/h.
+Hold the brakes and the speed runs out into a stall (§7). The zoom is smaller than the old point-
+mass model's +2 m/s: a canopy falling back loses its own airspeed relative to the pilot, as a real
+one does when you stab the brakes.
 
 ![Flare: full brakes from trim](physics/flare.svg)
-
-Airspeed falls from 38 to 13 km/h, and for about a second the glider goes **up**, peaking
-above 2 m/s. Hold the brakes too long and the speed runs out: vz goes strongly negative and the stall
-logic ([§7](#7-stalls-gusts-and-collapses)) takes over. Timing the flare matters, as it does on
-a real wing.
 
 ---
 
 ## 6. Roll: turns, spirals and wingovers
 
-Bank is a second pendulum, with its own spring and damper:
-
-```
-input       = (brakeR − brakeL) + deep-brake bite + 0.35·weightShift          clamped to ±2
-authority   = min((V / V_trim)², 2.2) · rollAuthority
-restoring   = sin(μ)·(1 − spiral) + 9·n·max(|μ| − 1.1, 0)²·sign(μ)                n = load factor
-d²μ/dt²     = ω²·(authority·input + collapseRoll − restoring) − 2ζω·dμ/dt     ω = 1.45 rad/s, ζ = 0.18
-```
-
-Each term is one piece of how a paraglider really turns:
-
-| Term | What it models |
-|---|---|
-| `brakeR − brakeL` | Differential brake. The braked side flies slower and drags, so the wing rolls and yaws towards it. |
-| **Deep-brake bite** | Past 70 % on one brake, extra input up to +0.8. The inner wing nearly stalls and pivots, and the turn tightens sharply. |
-| `0.35·weightShift` | Leaning in the harness. It helps, but it's weaker than the brakes. |
-| **Authority** ∝ V² | The brake's roll moment is aerodynamic, so it grows with dynamic pressure: a slow wing turns sluggishly, a fast one bites hard. The speed gained diving out of one swing powers the next. Capped at 2.2× the trim value. |
-| `sin(μ)` restoring | The pilot's weight swinging back under the wing. It grows with bank, like a pendulum. |
-| **Spiral tendency** | Above ~55° bank *and* 1.5–3 G, the restoring moment fades by `spiralTendency` (smoothstep blends in both). On a wing with tendency > 1 the restoring moment **reverses**, so the spiral holds itself. |
-| **Pendulum wall** | Past 63° (1.1 rad), a quadratic push back that grows with the load: the pilot pinned out at 3 G in a spiral is held there, but a swing with momentum behind it carries on past 90°, over the wing. |
-| ω, ζ | About a 4.3 s natural period, lightly damped (ζ 0.18) so a swing keeps most of its momentum into the next. That is the rhythm of a wingover. |
-
 ### Gentle turns
 
-Hold one brake and the bank settles where the input balances the restoring moment. Below 70 %
-brake this is close to linear. Past it, the deep-brake bite and spiral tendency kick in and the
-turn turns into a spiral:
+One brake: its side drags (the glider yaws), cambers, and its tip curls down so that side's lift
+leans outward. The canopy is pushed towards the braked side, the lines tilt, the lift tilts with
+them, and the path curves. The arc's dihedral holds the bank where the brake's push balances it.
+Weight shift moves the pilot 15 cm sideways, which rolls the body directly (about 14° on its own).
 
 ![Steady bank and sink against one held brake](physics/steady-turn.svg)
 
-At 70 % brake, after 20 s:
+At 70 % brake, after 25 s:
 
 | Wing | Bank | 360° takes | Sink |
 |---|---|---|---|
-| EN-A | 22° | 14.9 s | 1.4 m/s |
-| EN-B | 26° | 13.2 s | 1.4 m/s |
-| EN-C | 32° | 11.1 s | 1.6 m/s |
+| EN-A | 20° | 16.8 s | 1.4 m/s |
+| EN-B | 28° | 13.6 s | 1.7 m/s |
+| EN-C | 67° (already spiralling) | 5.0 s | 9.8 m/s |
 
 ### Spiral dives
 
-Hold one brake fully and the wing winds into a spiral within about 3 s. Extra drag that grows
-with G (`SPIRAL_DRAG`, the yawed and braked wing plus the pilot) stops the speed from running
-away, so the spiral settles:
+Hold a deep brake and a wing willing to spiral winds in: steeper bank, faster, higher G, more
+sink, until the drag of the faster, steeper wing balances it. On release the stored speed comes
+out as a big zoom climb, then the pendulum swings it back to level.
 
 ![Spiral dive and exit for the three wing classes](physics/spiral.svg)
 
+80 % brake held for 16 s:
+
 | Wing | Bank | Load | Airspeed | Sink |
 |---|---|---|---|---|
-| EN-A | 76° | 3.0 G | 47 km/h | 8.9 m/s |
-| EN-B | 78° | 3.2 G | 51 km/h | 10.6 m/s |
-| EN-C | 81° | 3.4 G | 55 km/h | 12.8 m/s |
+| EN-A | 25° (a steep turn: the school wing resists spiralling) | 1.1 G | 37 km/h | 1.4 m/s |
+| EN-B | 80° | 3.0 G | 75 km/h | 12.5 m/s |
+| EN-C | 59° | 1.8 G | 59 km/h | 6.2 m/s |
 
-Release the brake at t = 12 s and **all three come out on their own** within about 2 s. They
-overshoot to the other side, then convert the stored speed into a climb (the vz spike at 14 s)
-and swing back to level over a few phugoid cycles. A higher spiral tendency makes the spiral
-steeper and faster, but with these numbers even EN-C does not stay locked in once the brake is
-released. Tests: `glider.test.ts`, "winds into a spiral dive…".
-
-The HUD flags `spiral` when the load passes 2.2 G above about 52° bank, and clears it below
-1.4 G.
+All three come out on their own when released (EN-B within about 5 s). A full one-sided brake at
+low speed is past the spiral: the braked tip nears its stall, which is how a real spin starts.
+The HUD flags `spiral` when the load passes 2.2 G above about 52° bank, and clears it below 1.4 G.
 
 ### Wingovers
 
-A wingover is momentum plus timing. Pull the brake (and lean) on the side the wing is swinging
-towards, from level until it is about 45° up, then hands up and let it carry. Two things make
-each pull add to the last:
-
-- The pendulum is lightly damped, so most of a swing's momentum is still there for the next one.
-- Authority grows with V², so the speed gained diving out of one swing makes the next pull bite
-  harder.
+Pump brake and lean side to side **in the swing's own rhythm** (about 6 s on the EN-B) and each
+pull adds to the last: the bank passes 90°, the pilot swings up level with and over the wing, and
+at the top the line load drops below 1 G, because his momentum, not gravity, is keeping the lines
+tight. Rush the rhythm (3 s) and the swing never builds.
 
 ![Wingovers built by pumping](physics/wingover.svg)
-
-At 60 % brake, EN-B builds over about six swings to ~100°: the pilot level with the wing and
-past it. Pulling against the swing kills it (it never passes ~15°), and an off-rhythm pull
-leaves it wandering around 15–25°. Push too hard and the swing goes past **125°**, too far over
-the wing: the high side folds ([§7](#7-stalls-gusts-and-collapses)). Full-brake pumping does
-that on EN-B and EN-C (EN-C already at 85 %); the EN-A school wing tops out near 120° and can't
-be pushed over.
-
-The load at the top of these swings stays at 2–3 G. On a real wing the top of a big wingover is
-light and slow, because the canopy and the pilot are separate bodies and the lines go nearly
-slack as the pilot swings up. This model can't do that ([§12](#12-limits-and-known-gaps)).
 
 ---
 
@@ -337,45 +270,36 @@ slack as the pilot swings up. This model can't do that ([§12](#12-limits-and-kn
 
 ### Stall
 
-A timer counts up while the brakes are past 90 % **or** the airspeed is below 0.8 × stall, and
-counts down twice as fast otherwise. After 1.2 s the wing stalls:
+A strip stalls past its own stall angle (lower with more brake). Past the stall each strip flies
+like a **flat plate**: lift `1.1·sin 2α`, drag `1.8·sin²α`, so a stalled canopy can still glide
+its way out instead of parachuting forever. Holding both brakes past 90 % keeps pulling the
+trailing edge down over 1.2 s, which deepens the stall. The glider counts as **stalled** when
+most of the canopy is past its stall angle for 0.4 s.
 
-- CL is commanded to 30 % of CL max, and CD jumps to 1.0. The glider loses its forward speed and
-  drops, with a sink above 4 m/s.
-- The bank decays towards level (a stalled wing sits back over the pilot).
-- **Recovery:** hands up (brakes below 40 %) until the timer falls under 0.6 s.
+On the EN-B, full brakes stall the wing after about a second, and at 3 s it's sinking at
+4.9 m/s. Hands up, the stalled canopy's centre of pressure runs aft, it noses forward, reattaches
+and surges, and it's flying again within about 1.5 s.
 
 ### Gusts
 
-The wing feels a change in vertical air, not the air itself. A slowly rising thermal just
-carries you, but a sharp edge changes the angle of attack. The sim keeps a 1-second low-pass
-filtered copy of the vertical air (`airW`), and treats the difference as a gust:
-
-```
-gust = w_air − airW                   (airW follows w_air with τ = 1 s)
-CL_effective = CL + 2.5 · gust / V    (an up-gust raises the angle of attack, a down-gust drops it)
-```
+There is no gust filter any more. A strip's angle of attack comes from the air at the canopy, so
+a sharp down-gust drops it at once, and the canopy's pitch stability and the pendulum respond as
+they would to anything else.
 
 ### Collapses
 
-If the load factor stays **below 0.3 G for 0.15 s** (the wing is unloaded and the lines go
-slack), or the bank passes **125°** (swung too far over the wing in a wingover), one side folds.
-It's the high side of the current bank, or the left when level:
+If the **line load stays below 0.3 G for 0.15 s**, the lines are slack and one side folds: the
+high side of the current bank, or the left when level. The folded side keeps 30 % of its lift and
+drags more, so the glider turns towards it. It reopens after 2.5 s (faster if you pump that
+side's brake), and there's no collapse during the 2.5 s launch grace.
 
-- The folded wing loses 35 % of its lift and gains 0.04 of CD.
-- A roll moment of 0.55 pulls towards the folded side, so the glider turns.
-- It reopens after 2.5 s. Pumping the brake on the folded side speeds that up, up to twice as
-  fast at full pump.
-- There's no collapse during the 2.5 s launch grace, so you can't fold on take-off.
-
-A 5 m/s down-gust from still air shows the whole chain:
+A 5 m/s down-gust from still air shows the chain:
 
 ![A sharp down-gust: unload, fold, turn, reopen](physics/gust-collapse.svg)
 
-The load drops instantly from 1 G to −0.3 G, a side folds 0.15 s later, and the glider banks
-about 50° towards it. When the side reinflates at t ≈ 4.7 s the lift comes back at once, and
-the glider, now fast from the dive, pulls over 3 G. Ordinary bumps (±0.6 m/s) never come close; a
-test checks that too.
+The load drops to about −1.8 G (the canopy is pushed down towards the pilot), a side folds, the
+glider banks about 70° towards it, and when the side reinflates at t ≈ 4.7 s it pulls about 2 G.
+Ordinary bumps (±0.6 m/s) never fold it; a test checks that.
 
 ---
 
@@ -563,29 +487,31 @@ Two key poses blend with a filter of about 0.4 s:
 
 ## 11. Tuning constants
 
-The constants that shape the feel. All are in `src/sim/glider.ts` unless noted. Change one,
-then run `npm test` (the tests pin the envelope) and `npm run physics-figures` to see the
-effect.
+The constants that shape the feel, all in `src/sim/glider.ts` unless noted. The geometry ones are
+physical. The aerodynamic ones were tuned together with a search scored on the tests' envelope
+(turns, spiral and exit, wingovers, braked speeds, stall and flare), because they interact.
+Change one, then run `npm test` and `npm run physics-figures`.
 
 | Constant | Value | Effect |
 |---|---|---|
 | `LIFT_K` (`polar.ts`) | 0.1516 /m | ρS/2m: 24 m², 95 kg, sea level |
-| `TRIM_SINK_PENALTY` (`polar.ts`) | 0.1 m/s | Sink at trim above min sink: the polar's curvature |
-| `PITCH` | ω 2.2, ζ 0.55 | How quickly CL follows the brakes, and how much it overshoots |
-| `SPEED_STABILITY` | 0.6 | How hard the wing returns to trim speed; damps the phugoid |
-| `ROLL` | ω 1.45, ζ 0.18 | Roll period (~4.3 s) and how long it keeps swinging |
-| `WEIGHT_SHIFT_SHARE` | 0.35 | Weight shift relative to the brakes |
-| `DEEP_BRAKE`, `DEEP_BRAKE_GAIN` | 0.7, 0.8 | Where one brake starts to bite, and how hard |
-| `AUTHORITY_MAX` | 2.2 | Cap on the V²-dependent roll authority |
-| `BANK_WALL`, `BANK_WALL_GAIN` | 1.1 rad, 9 per G | Where the pendulum wall starts, and how stiff it is per G of load |
-| `SPIRAL_DRAG` | 0.04 per G above 1 | How deep a spiral settles |
-| `TURN_DRAG` | 0.02 × brake difference | Drag cost of turning |
+| `PILOT_MASS`, `CANOPY_MASS`, `CANOPY_INERTIAL` | 89, 6, 11 kg | Weight at the bottom and top; the canopy's inertia includes its trapped air |
+| `LINE_LENGTH` | 7.5 m | Pilot to canopy: the pendulum's length |
+| `SPAN`, `CHORD`, `STRIPS` | 11 m, 2.4 m, 6 | Canopy size and how finely it's sliced |
+| `ARC`, `ARC_PER_SPIRAL_TENDENCY` | 1.879 rad, 0.15 | How deep the arc is on the EN-B, and how much flatter a spiral-prone wing's is |
+| `LIFT_SLOPE` | 5 /rad | Lift-curve slope of a strip |
+| `STRIP_CL_MAX` | 1.12 × the polar's | A strip's lift limit (the arc tilts lift, so strips work harder) |
+| `FLAT_CL`, `FLAT_CD` | 1.1, 1.8 | Flat-plate lift and drag past the stall |
+| `BRAKE_INCIDENCE`, `CAMBER_CL`, `BRAKE_CD` | 0.065 rad, 0.132, 0.005 | What a full brake does to a strip: nose-up, camber, drag (scaled per wing) |
+| `BRAKE_SHARE` | 0.6 / 1 / 1.4 | How much of a side's brake reaches its inner, middle and tip strips |
+| `TIP_TILT` | 0.049 rad | How far a full brake curls the tip down (× roll authority / 0.7) |
+| `CP_ALPHA`, `CP_STALL` | 3 chords/rad, 0.72 chords | How far aft the centre of pressure moves with angle of attack, and past the stall |
+| `CM_Q` | 30 | Pitch damping relative to the airflow |
+| `CD_CROSS` | 0.047 | Drag of flow along the span (the arc as a fin) |
+| `DEEP_STALL_INCIDENCE`, `DEEP_HOLD` | 0.2 rad, 1.2 s | How held deep brakes deepen the stall |
+| `WEIGHT_SHIFT_M` | 0.15 m | How far the pilot leans |
+| `COLLAPSE_LOAD`, `COLLAPSE_SECONDS` | 0.3 G, 2.5 s | When slack lines fold a side, and how long it stays folded |
 | `SPIRAL_LOAD` | 2.2 G | Threshold for the HUD's spiral flag |
-| `GUST_CL`, `GUST_TAU` | 2.5, 1 s | Gust sensitivity, and what counts as "sudden" |
-| `COLLAPSE_LOAD`, `COLLAPSE_SECONDS` | 0.3 G, 2.5 s | When a side folds and how long it stays folded |
-| `OVER_WING` | 2.2 rad (126°) | Bank past which a wingover has gone too far over the wing and folds |
-| `STALL_CL_FACTOR`, `STALL_CD` | 0.3, 1.0 | How hard a stall bites |
-| `GAMMA_LIMIT` | 1.45 rad | Path-angle clamp |
 | `RUN_MAX`, `RUN_ACCEL` | 4.2 m/s, 2.5 m/s² | Take-off run |
 | `HARD_LANDING_SINK`, `HARD_LANDING_SPEED` | 3.5 m/s, 11 m/s | Crash thresholds |
 | `LAUNCH_GRACE` | 2.5 s | Stumble window after lift-off |
@@ -601,23 +527,21 @@ effect.
 These are choices, not bugs, unless marked. They're fine for proving the feel in a prototype,
 and worth revisiting for the Unreal build:
 
-- **One body, not two.** Pitch and roll are tuned oscillators, not the coupled canopy-and-pilot
-  dynamics. There's no line tension, no canopy inertia, and no separate pilot swing in the
-  physics. The swinging canopy in `wing.ts` is cosmetic. The visible cost is the wingover: the
-  top of the swing stays at 2–3 G instead of going light, and "too far over the wing" is a bank
-  threshold (`OVER_WING`) instead of lines going slack. The fix is planned in
-  [plan-two-body-flight-model.md](plan-two-body-flight-model.md).
-- **No yaw dynamics.** Heading follows the bank exactly (a coordinated turn), so there's no
-  sideslip, no adverse yaw, and no yaw-roll coupling such as a twist.
+- **Rigid lines.** Canopy, lines and pilot are one rigid body. The line *load* is real (the force
+  the pilot's motion needs), but the lines can't actually go slack and let the pilot fall towards
+  the canopy; slack is detected and becomes a fold. No riser twist either.
+- **No apparent-mass tensor.** The air the canopy carries is a single added inertia, not the
+  direction-dependent apparent mass of a real canopy.
+- **The flare is soft.** About +0.5 m/s, because the canopy pitches back and loses airspeed. Real
+  flares at the ground are progressive, and the sim rewards that too.
 - **Collapses and stalls are states, not shapes.** The aerodynamics don't know what the canopy
-  looks like. A fold is "−35 % lift, +drag, roll torque", and there are no cravattes, front
-  collapses or line-overs. A stall has no full-stall-to-backfly progression.
+  looks like. A fold is "one side keeps 30 % of its lift and drags more", and there are no
+  cravattes, front collapses or line-overs.
 - **Fixed air density and weight.** Sea-level air and 95 kg all-up for every wing. Higher
   launches and other wing loadings would change trim speed (∝ √(1/ρ), √m); `LIFT_K` is the
   place to add it.
-- **Hand-tuned constants.** Most numbers in [§11](#11-tuning-constants) are tuned to match
-  known envelope figures (spiral ≈ 78°/3 G/−10 m/s on EN-B, wingovers past 90°, a flare that
-  climbs), not derived from measurements.
+- **Tuned constants.** The aerodynamic numbers in [§11](#11-tuning-constants) were fitted to an
+  envelope (turns, spiral and exit, wingovers, braked speeds, stall), not measured on a real wing.
 - **Simple air.** One wind direction for the whole site, a two-layer atmosphere, no rotor
   model beyond lee sink plus turbulence, and thermals that ignore terrain shape apart from
   needing land above 30 m.
@@ -642,7 +566,7 @@ model** and commit the updated figures with the change, so this page keeps telli
 
 | Generated by the script | Drawn by hand |
 |---|---|
-| `polar`, `controls`, `pitch-response`, `flare`, `steady-turn`, `spiral`, `wingover`, `gust-collapse`, `ridge-section`, `off-angle`, `wind-gradient`, `thermal-profile`, `thermal-life`, `thermal-height` | `sim-step`, `pendulum`, `forces`, `bank`, `ridge`, `thermal`, `wing-model` (from the formulas in `wing.ts`) |
+| `polar`, `controls`, `pitch-response`, `flare`, `steady-turn`, `spiral`, `wingover`, `gust-collapse`, `ridge-section`, `off-angle`, `wind-gradient`, `thermal-profile`, `thermal-life`, `thermal-height` | `forces`, `bank`, `ridge`, `thermal`, `wing-model` (from the formulas in `wing.ts`) |
 
 The hand-drawn diagrams quote numbers from the code (for example 600 m upwind reach, 62° arc).
 If you change one of those constants, update the matching SVG text too.

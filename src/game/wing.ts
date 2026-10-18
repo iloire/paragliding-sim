@@ -9,8 +9,8 @@
 //   ground, arms on two-bone IK holding the brake handles, weight shift leaning the body.
 //
 // Rig-local frame: origin at the pilot's feet / seat base, +Y up, forward −Z.
-// The canopy hangs from a pivot at the carabiners and swings relative to the pilot:
-// it surges ahead when the wing accelerates and leads the pilot into a turn.
+// The canopy hangs from a pivot at the carabiners. The flight model swings canopy, lines and
+// pilot together as one body, so the pivot only matters for the brake handles.
 
 import * as THREE from 'three';
 import type { Controls, GliderState } from '../sim/glider';
@@ -504,13 +504,6 @@ export function createGlider(): GliderModel {
   }
 
   function update(s: GliderState, c: Controls, dt: number): void {
-    const flying = s.phase === 'flying';
-    // The canopy surges ahead when the wing speeds up and leads the pilot into turns.
-    const surge = flying ? THREE.MathUtils.clamp(s.clRate * 0.9, -0.4, 0.4) : 0;
-    const lead = flying ? THREE.MathUtils.clamp(-s.bankRate * 0.12, -0.25, 0.25) : 0;
-    canopyPivot.rotation.x += (surge - canopyPivot.rotation.x) * (1 - Math.exp(-dt * 6));
-    canopyPivot.rotation.z += (lead - canopyPivot.rotation.z) * (1 - Math.exp(-dt * 6));
-
     const targetL = s.collapse === -1 ? 1 : 0, targetR = s.collapse === 1 ? 1 : 0;
     foldL += (targetL - foldL) * (1 - Math.exp(-dt * (targetL > foldL ? 9 : 2)));
     foldR += (targetR - foldR) * (1 - Math.exp(-dt * (targetR > foldR ? 9 : 2)));

@@ -2,8 +2,8 @@
 // docs/physics.md show what the model does rather than what we think it does.
 // Run after changing the flight or air model: npm run physics-figures
 //
-// The concept diagrams in the same folder (forces, bank, pendulum, ridge, thermal,
-// sim-step) are hand-drawn SVG and are not touched by this script.
+// The concept diagrams in the same folder (forces, bank, ridge, thermal, wing-model) are
+// hand-drawn SVG and are not touched by this script.
 
 import { writeFileSync } from 'node:fs';
 import { createGlider, stepGlider, type Controls, type Environment, type GliderState } from '../src/sim/glider';
@@ -248,14 +248,14 @@ function flareFigure(): void {
 
 function spiralFigure(): void {
   const runs = (Object.keys(polars) as WingId[]).map((id) => ({
-    id, data: fly(polars[id], 30, (t) => (t < 12 ? { ...hands, brakeRight: 1 } : hands)),
+    id, data: fly(polars[id], 32, (t) => (t < 16 ? { ...hands, brakeRight: 0.8 } : hands)),
   }));
   const per = (f: (s: GliderState) => number) => runs.map((r) => series(WINGS[r.id].label, WING_COLOR[r.id], r.data, f));
   save('spiral.svg', lineChart({
-    title: 'Spiral dive: one brake held fully for 12 s, then released',
-    subtitle: 'The higher a wing\'s spiralTendency, the steeper, harder and faster it spirals. Hands up, all three unwind within a few seconds.',
-    xLabel: 'Time (s)', x: [0, 30],
-    vRules: [{ at: 12, label: 'brake released' }],
+    title: 'Spiral dive: one brake held at 80 % for 16 s, then released',
+    subtitle: 'EN-B and EN-C wind into a spiral; the EN-A school wing settles in a steep turn. Hands up, all three unwind.',
+    xLabel: 'Time (s)', x: [0, 32],
+    vRules: [{ at: 16, label: 'brake released' }],
     panels: [
       { yLabel: 'Bank (°)', series: per((s) => s.bank * DEG), y: [-40, 95], height: 150 },
       { yLabel: 'Load factor (G)', series: per((s) => s.load), y: [0, 4.5], height: 120 },
@@ -290,27 +290,19 @@ function steadyTurnFigure(): void {
 }
 
 function wingoverFigure(): void {
-  // Pump in rhythm: brake (and shift weight) on the side the wing is swinging towards, from level
-  // until it is 45° up, then hands up and let the momentum carry it. Then the same, overcooked.
-  const pump = (brake: number) => {
-    let dir = 1;
-    return fly(enb, 25, (t, s) => {
-      dir = t < 0.5 ? 1 : Math.sign(s.bankRate) || dir;
-      const pulling = t < 0.5 || Math.abs(s.bank) < 0.8 || Math.sign(s.bank) !== dir;
-      const b = pulling ? brake : 0;
-      return { ...hands, brakeRight: dir > 0 ? b : 0, brakeLeft: dir < 0 ? b : 0, weightShift: pulling ? dir : 0 };
-    });
-  };
-  const clean = pump(0.6), hard = pump(1);
-  const events = hard.filter((d) => d.event === 'collapse').map((d) => ({ at: d.t, label: 'fold' }));
+  // Brake and lean on one side, then the other: in the swing's own ~6 s rhythm, and rushed.
+  const pump = (brake: number, period: number) => fly(enb, 25, (t) => {
+    const side = Math.floor(t / (period / 2)) % 2 === 0 ? 1 : -1;
+    return { ...hands, brakeRight: side > 0 ? brake : 0, brakeLeft: side < 0 ? brake : 0, weightShift: side };
+  });
+  const rhythm = pump(0.8, 6), rushed = pump(0.8, 3);
   save('wingover.svg', lineChart({
-    title: 'Wingovers: pumping the roll pendulum in rhythm (EN-B)',
-    subtitle: 'Each well-timed pull adds to the last swing. 60 % brake builds to ~100°; full brake swings past 125° and folds a side.',
+    title: 'Wingovers: pumping the pendulum in its rhythm (EN-B)',
+    subtitle: 'In the swing\'s ~6 s rhythm each pull adds to the last, past 90°, and the top goes light. Rushed, the swing never builds.',
     xLabel: 'Time (s)', x: [0, 25],
-    vRules: events.slice(0, 3),
     panels: [
-      { yLabel: 'Bank (°)', series: [series('60 % brake', C.blue, clean, (s) => s.bank * DEG), series('full brake', C.red, hard, (s) => s.bank * DEG)], y: [-160, 160], height: 180, hRules: [{ at: 126, label: 'over the wing' }, { at: -126, label: '' }] },
-      { yLabel: 'Load factor (G)', series: [series('60 % brake', C.blue, clean, (s) => s.load), series('full brake', C.red, hard, (s) => s.load)], y: [0, 4], height: 110, hRules: [{ at: 0.3, label: 'collapse threshold 0.3 G' }] },
+      { yLabel: 'Bank (°)', series: [series('6 s rhythm', C.blue, rhythm, (s) => s.bank * DEG), series('3 s, rushed', C.red, rushed, (s) => s.bank * DEG)], y: [-120, 120], height: 180, hRules: [{ at: 90, label: 'over the wing' }, { at: -90, label: '' }] },
+      { yLabel: 'Line load (G)', series: [series('6 s rhythm', C.blue, rhythm, (s) => s.load), series('3 s, rushed', C.red, rushed, (s) => s.load)], y: [0, 3], height: 110, hRules: [{ at: 0.3, label: 'slack: a side folds' }] },
     ],
   }));
 }

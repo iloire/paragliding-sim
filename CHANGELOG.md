@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-18 01:32 UTC — Rigid-body flight model
+
+- The glider is now one rigid body: pilot (89 kg) at the bottom of 7.5 m of lines, canopy (6 kg plus its trapped air) at the top, with full attitude and angular velocity. The pendulum is the geometry, not a tuned oscillator.
+- The canopy is six strips on an arched span, each with its own airflow, angle of attack and brake. Roll and yaw damping, the arc's dihedral stability, roll into a turn and adverse yaw come out of the strips. A brake drags, cambers and curls its tip down, which banks the glider; weight shift moves the pilot sideways.
+- Coefficients and rigging are derived from each wing's polar (straight glides match it). Pitch stability is a moving centre of pressure; past the stall strips fly like a flat plate, so stalled wings recover hands-up.
+- The load is the force the lines put on the pilot: the top of a well-pumped wingover goes light (< 1 G), and slack lines fold a side. The old bank threshold for "over the wing" is gone.
+- EN-B: 70 % brake ≈ 28°; 80 % held ≈ 80° / 3 G / −12 m/s spiral that exits hands-up; wingovers in the ~6 s rhythm pass 90°. EN-A resists spirals, EN-C spirals sooner. The flare is softer (+0.5 m/s): the canopy pitches back as it slows.
+- The 3D model is posed from the body's attitude; the cosmetic canopy swing is gone. Physics doc, architecture doc, figures, README screenshot and tests updated; plan marked done.
+
 ## 2026-10-17 23:23 UTC — Wingovers: momentum and timing
 
 - Roll pendulum damping 0.28 → 0.18, so a swing keeps most of its momentum into the next.

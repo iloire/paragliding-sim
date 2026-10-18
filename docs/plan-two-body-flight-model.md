@@ -1,8 +1,9 @@
 # Plan: two-body flight model (canopy + pilot on lines)
 
-Status: first attempt made 2026-10-18, not merged. The work is on branch `two-body-wip` (`ac071f9`);
-what it taught is in [First attempt](#first-attempt-2026-10-18) below. Written 2026-10-18 after the
-wingover work in `5ab7996`.
+Status: **done, second attempt (2026-10-18).** The game now flies a rigid-body model (canopy,
+lines and pilot as one body, the canopy as six strips on its arc), described in
+[physics.md](physics.md). The first attempt, two point masses on lines, is on branch `two-body-wip`
+(`ac071f9`); what it taught is in [First attempt](#first-attempt-2026-10-18).
 
 ## Why
 
@@ -97,19 +98,19 @@ New tests, the reason for doing this:
 
 ## Steps
 
-1. **Prototype side by side:** `src/sim/glider2.ts` behind a "Flight model: classic /
-   two-body" toggle in the panel, so we can fly both. No UI changes beyond the toggle.
-2. **Integration first, aero second:** the pilot hanging under a canopy in a steady wind with
+1. ~~**Prototype side by side:** `src/sim/glider2.ts` behind a "Flight model: classic /
+   two-body" toggle in the panel, so we can fly both. No UI changes beyond the toggle.~~ Skipped: replaced in place, git is the rollback.
+2. ~~**Integration first, aero second:** the pilot hanging under a canopy in a steady wind with
    fixed CL. Check the constraint is stable at 120 Hz with 4 sub-steps, and that tension equals
-   weight in a steady glide.
-3. **Fit the aero to the polar** per wing class, then pass the steady glide test.
-4. **Brakes and speed bar:** camber, trim angle, half-span split. Pass the turn, spiral, flare
-   and stall tests.
-5. **Collapses from tension;** delete the timers where the physics now covers them. Keep a
-   minimum fold duration so it stays readable.
-6. **Wingover tests** (above), then fly it, with the gamepad if possible.
-7. **Make it the default,** delete the old model and its tuning constants, and rewrite
-   `docs/physics.md` §2, §3, §5–§7, §11 and §12 and the figures (`npm run physics-figures`).
+   weight in a steady glide.~~ ✅
+3. ~~**Fit the aero to the polar** per wing class, then pass the steady glide test.~~ ✅
+4. ~~**Brakes and speed bar:** camber, trim angle, half-span split. Pass the turn, spiral, flare
+   and stall tests.~~ ✅
+5. ~~**Collapses from tension;** delete the timers where the physics now covers them. Keep a
+   minimum fold duration so it stays readable.~~ ✅
+6. ~~**Wingover tests** (above), then fly it, with the gamepad if possible.~~ ✅
+7. ~~**Make it the default,** delete the old model and its tuning constants, and rewrite
+   `docs/physics.md` §2, §3, §5–§7, §11 and §12 and the figures (`npm run physics-figures`).~~ ✅
 
 ## Risks
 

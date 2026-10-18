@@ -5,8 +5,9 @@
 A paragliding simulator prototype at the real **Famara** take-off on Lanzarote, running in the
 browser. It is for pilots who know the site and want the air to behave like it does: ridge lift
 that depends on the wind angle against the Risco de Famara, a soaring band that tops out, an
-inversion that kills it, thermals that mark themselves with cumulus. The wing is a force-based
-model, so spirals, wingovers, flares and gust-induced collapses come out of the physics. The
+inversion that kills it, thermals that mark themselves with cumulus. The glider is a rigid body —
+an arched canopy of six strips 7.5 m above the pilot — so turns, spirals, wingovers with a light
+top, stalls and gust collapses come out of the physics. The
 terrain and aerial photo are the real IGN data. The map covers the island's flyable sites: Famara,
 Mala, Mirador del Río, Tenesar, El Cuchillo, Macher and Playa Quemada (**N** cycles through them).
 
@@ -15,7 +16,7 @@ the lift model cheaply first. The plan lives in the notes vault (`Projects/parag
 
 ![Soaring the Risco de Famara in a 24 km/h north-westerly](docs/screenshots/famara-cliff.png)
 
-![Spiral dive: 77° bank, 3.2 G, −10 m/s](docs/screenshots/spiral-dive.png)
+![Spiral dive over Lanzarote: 82° bank, 3.4 G, −13.7 m/s](docs/screenshots/spiral-dive.png)
 
 ![Above the Famara launch: native 5 m terrain and 1.5 m/px photo near the camera](docs/screenshots/terrain-detail.png)
 

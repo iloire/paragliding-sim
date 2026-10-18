@@ -20,66 +20,32 @@ Heading is a compass bearing in radians (0 = north, clockwise).
 
 The full explanation, with charts from the real model, is in [physics.md](physics.md).
 
-A point mass under lift, drag and gravity, integrated in wind axes (airspeed V, flight-path
-angle γ, heading ψ, lift-vector bank μ; L and D per unit mass):
+The paraglider is **one rigid body**: the pilot (89 kg) at the bottom of 7.5 m of lines, the
+canopy (6 kg plus the air in its cells) at the top, with full attitude and angular velocity
+(Newton for the centre of mass, Euler's equations for the rotation, 4 sub-steps per 120 Hz step).
+The pendulum is the geometry: lift at the top, mass at the bottom.
 
-```
-dV/dt = −D − g·sin γ
-dγ/dt = (L·cos μ − g·cos γ) / V
-dψ/dt = L·sin μ / (V·cos γ)
-```
-
-Nothing about the flare, the surge, a wingover or a spiral is scripted: they come out of these
-equations as speed and height trade.
-
-- **Lift and drag from the polar.** Lift per unit mass is `LIFT_K·V²·CL` (24 m², 95 kg). The drag
-  coefficient at each CL is chosen so a steady glide sinks exactly as the wing's polar says
-  (`cdFor`), so straight-line performance per wing class (`src/sim/wings.json`) is unchanged.
-- **Pitch.** Brakes and bar pick a target speed, hence a target CL. CL follows it through a damped
-  second-order response (the pitch pendulum), plus a speed-stability term that pulls the wing back
-  towards its trim speed — that damps the phugoid the way the pilot's weight does.
-- **Roll.** Bank is a pendulum (~4.3 s period, lightly damped so a swing keeps its momentum — the
-  wingover rhythm). Brake difference + weight shift drive it with an authority that grows with V²,
-  so speed from a dive powers the next swing; past 70 % one brake bites much harder. The pilot's
-  weight restores it (`sin μ`), with a wall past ~63° that stiffens with load (holds a 3 G spiral,
-  lets a wingover's momentum carry past 90°). Above ~55° at high G that restoring moment fades by the wing's
-  `spiralTendency`, so a held deep brake winds into a spiral dive.
-- **Spiral drag.** Extra drag grows with load factor (the yawed, braked wing and the pilot), so an
-  EN-B spiral settles near 75–80° bank, ~3 G, ~10 m/s sink.
-- **Gusts and collapses.** A sudden change in vertical air (against a 1 s filtered value) shifts
-  the angle of attack. If the load factor drops below 0.3 for 0.15 s, the high side folds:
-  less lift, more drag, a roll towards the folded side, reopening after ~2.5 s (faster if you
-  pump that side's brake). A sharp down-gust, a badly timed wingover, or swinging past ~125° (too
-  far over the wing) causes one.
-- **Stall.** Deep symmetric brakes held >1.2 s, or flying far below stall speed: CL collapses and
-  drag jumps, the wing drops; hands up to recover.
+- **Canopy as strips.** Six strips along an arched span, each with its own position, tilt, airflow
+  (`v + ω × r`) and brake. Lift and drag come from each strip's angle of attack; roll and yaw
+  damping, the arc's dihedral, roll into a turn and adverse yaw all fall out of that.
+- **From the polar.** Coefficients derive from the wing's speed polar; the rigging angle and a drag
+  scale are solved (pitch balance, lift = weight) so a straight glide at trim matches the polar.
+- **Brakes** turn a strip's chord nose-up, camber it, add drag, and curl the tip down (the side's
+  lift leans out, which is what banks the glider). Braked speeds emerge; the numbers were tuned to
+  land near the polar's.
+- **Pitch stability** is a moving centre of pressure (aft with angle of attack, far aft past the
+  stall); **pitch damping** acts on the canopy's rotation relative to its flight path.
+- **Load** is the force the lines put on the pilot. Below 0.3 G for 0.15 s the lines are slack and
+  the high side folds (reopens after ~2.5 s, faster if you pump that side).
+- **Stall.** Past its stall angle a strip flies like a flat plate; held deep brakes deepen it.
 - **Ground.** Run up to 4.2 m/s; lift-off at 1.1 × stall airspeed (or when the ground drops away),
-  leaving at trim speed. Touchdown above 3.5 m/s sink, 11 m/s ground speed or 35° bank is a crash.
+  leaving trimmed at trim speed. Touchdown above 3.5 m/s sink, 11 m/s ground speed or 35° bank is
+  a crash.
 
-Tuning numbers and the expected envelope (EN-B): 0.7 brake turn ≈ 26° bank, 13 s per 360°;
-deep brake ≈ 78° / 3.2 G / −10.6 m/s; wingovers pumped in rhythm build past 90° over several
-swings, against the rhythm they don't build, overcooked past 125° they fold; flare zooms up at +2 m/s.
-`src/sim/glider.test.ts` pins each of these.
-
-## Terrain rendering (`src/game/terrain-view.ts`)
-
-The site is drawn as a grid of square chunks (one per detail tile, 3 km). Every chunk has a coarse
-mesh (128² segments, ~23 m) draped with the site-wide photo. A chunk with a detail tile switches,
-by camera distance (including height above the ground), to a 10 m mesh under 4.5 km and the
-native 5 m mesh under 1.5 km, each with the tile's own 2048² photo (~1.5 m/px). Meshes are built
-on demand, one per frame, nearest first, and freed (with the photo) when the camera moves away;
-a 20 % hysteresis stops tiles flickering between levels. Every chunk hangs 80 m skirts on its
-edges, so a seam between levels shows terrain-coloured wall instead of sky.
-
-The terrain material is a `MeshStandardMaterial` patched in `onBeforeCompile` to add:
-
-- **Grain**: value noise at 0.7, 2.6 and 11 m modulating the colour, and a finer bump in the
-  normal, fading out by 700 m / 250 m — the photo is too soft for the last few metres.
-- **Lift map**: ridge lift at ridge-top height (`createLiftMap` in `world.ts`), looked up by
-  world position and blended over the lit colour when toggled.
-
-Physics uses the same data: `Heightmap.addDetail` registers each tile, and `heightAt` prefers a
-tile where one exists, so you touch down on the ground you see.
+Envelope (EN-B), pinned by `src/sim/glider.test.ts`: 70 % brake ≈ 28° bank, 14 s per 360°;
+80 % held ≈ 80° / 3 G / −12 m/s spiral that exits hands-up; wingovers pumped in the swing's ~6 s
+rhythm pass 90° with a load under 1 G at the top; full brakes stall in about a second and recover
+hands-up.
 
 ## Wing and pilot model (`src/game/wing.ts`)
 

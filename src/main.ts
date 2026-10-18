@@ -243,8 +243,8 @@ async function boot(): Promise<void> {
 
     toScene(extent, state.x, state.y, state.z, pilotPos);
     model.group.position.copy(pilotPos);
-    const flyingNow = state.phase === 'flying';
-    model.group.rotation.set(flyingNow ? state.gamma : 0, -state.heading, flyingNow ? -state.bank : 0);
+    // The body's own attitude: canopy, lines and pilot swing as one.
+    model.group.rotation.set(state.pitch, -state.yaw, -state.roll);
     model.update(state, input.controls, dt);
     clouds.update(wind.thermals.clouds(clock, ...windUV(), weather.inversionM));
 
