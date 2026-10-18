@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-18 09:43 UTC — Collapsible controls card
+
+- The Controls card in the bottom-left folds down to a small "Controls H" tab: click its heading or press **H**. It stays the way you left it on your next visit, and it is still open on a first visit so a new pilot sees the keys.
+
 ## 2026-10-18 09:36 UTC — Tandem airbags
 
 - Both tandem harnesses carry the big protector under the seat: deep below the seat, tapering under the thighs and curving up behind the back, to the shoulder blades on the pilot (black) and the small of the back on the passenger (slate green), with a mint piping seam. On the ground it hangs empty behind the legs and fills after takeoff.

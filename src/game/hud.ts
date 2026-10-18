@@ -19,6 +19,7 @@ const AGL_LOW = 50;
 const AGL_DANGER = 20;
 /** Thermal assistant: metres from the centre to the edge of the plot. */
 const TRACK_RADIUS_M = 80;
+const HELP_KEY = 'famara-glide.help-collapsed';
 
 export interface HudFrame {
   climb: number;
@@ -56,20 +57,35 @@ export class Hud {
   private readonly landingNeed = el('landing-need');
   private readonly message = el('message');
   private readonly help = el('help');
+  private readonly helpToggle = el('help-toggle');
   private messageTimer = 0;
   private layout: Layout = 'full';
   private flashArmed = true;
 
   constructor(commitSha: string) {
     el('sha').textContent = commitSha ? `· ${commitSha}` : '';
+    let collapsed = false; // open on a first visit, so a new pilot sees the keys
+    try { collapsed = localStorage.getItem(HELP_KEY) === '1'; } catch { /* storage blocked */ }
+    this.setHelp(collapsed);
+    this.helpToggle.addEventListener('click', () => {
+      this.toggleHelp();
+      this.helpToggle.blur(); // or Space (full brakes) would click it again
+    });
   }
 
   ready(): void {
     el('loading').classList.add('done');
   }
 
+  /** The controls card collapses to its heading; H or a click on the heading flips it, and the choice is remembered. */
   toggleHelp(): void {
-    this.help.classList.toggle('hidden');
+    this.setHelp(!this.help.classList.contains('collapsed'));
+  }
+
+  private setHelp(collapsed: boolean): void {
+    this.help.classList.toggle('collapsed', collapsed);
+    this.helpToggle.setAttribute('aria-expanded', String(!collapsed));
+    try { localStorage.setItem(HELP_KEY, collapsed ? '1' : '0'); } catch { /* private mode: just not remembered */ }
   }
 
   /** Cycles full → minimal → hidden and returns the new layout. */
