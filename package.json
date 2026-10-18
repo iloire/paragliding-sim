@@ -13,7 +13,7 @@
     "physics-figures": "tsx scripts/physics-figures.ts"
   },
   "author": "",
-  "license": "UNLICENSED",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "dependencies": {
     "lil-gui": "0.21.0",

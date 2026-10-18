@@ -1,0 +1,50 @@
+Copyright (c) 2026 ivan l. (https://github.com/iloire)
+
+Non-Commercial License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to use, copy,
+modify and distribute the Software for non-commercial purposes only, subject to
+the following conditions:
+
+1. Non-commercial use only
+   "Non-commercial" means use that is not primarily intended for or directed
+   towards commercial advantage or monetary compensation. Any commercial use of
+   the Software or of a derivative work requires a separate commercial licence
+   from the copyright holder.
+
+2. Redistribution
+   Copies and derivative works must keep the above copyright notice, this list
+   of conditions and the disclaimer below, and must be distributed under these
+   same terms.
+
+3. Disclaimer
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+   WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+   IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Commercial use
+--------------
+
+Commercial use includes, but is not limited to:
+
+- selling the Software, or a product that includes it or is derived from it;
+- using it in a paid product, service, installation or internal tool, such as
+  a simulator or kiosk at a venue that charges for entry or for its use;
+- running it behind a paywall or as part of a paid hosted service;
+- monetising it through advertising, subscriptions or in-app purchases;
+- distributing it to customers as part of a commercial offering.
+
+Any of these needs a commercial licence, agreed in writing and possibly
+subject to fees or other conditions. To ask for one, contact the copyright
+holder through https://github.com/iloire with your organisation, the intended
+use and how it will be distributed.
+
+---
+
+The terrain data under public/sites/ (heights and orthophotos) is not covered
+by this licence: MDT05 and PNOA © Instituto Geográfico Nacional (https://www.ign.es),
+CC BY 4.0.

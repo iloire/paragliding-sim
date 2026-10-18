@@ -17,4 +17,33 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run lint
-      - run: npm run build
+      # GitHub Pages serves the site from /<repo>/, so the bundle and the terrain URLs need that base.
+      - run: npm run build -- --base=/${{ github.event.repository.name }}/
+      - if: github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  # Green means this commit is live: deployed to Pages and answering on the real URL.
+  deploy:
+    needs: test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Smoke test
+        env:
+          URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          curl -fsS "$URL" | grep -q '<title>'
+          curl -fsS "${URL}sites/index.json" | grep -q lanzarote

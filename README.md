@@ -6,6 +6,8 @@ A browser paragliding simulator over real terrain, for pilots who want the air t
 does at their sites. It is the prototype of a planned Unreal Engine game: it tests the flight feel
 and the lift model cheaply first.
 
+**▶ Fly it: [iloire.github.io/paragliding-sim](https://iloire.github.io/paragliding-sim/)** (desktop browser, or a phone held sideways)
+
 ![Ridge soaring the Risco de Famara in a 24 km/h north-westerly](docs/screenshots/famara-ridge.png)
 
 ## What's in it
@@ -104,8 +106,12 @@ To add a region or rebuild one:
 
 ## Deploy
 
-Not deployed yet. It is a static Vite build (`dist/`), so any static host will do.
+GitHub Pages, from CI. Every push to `main` that passes the tests is built with the
+`/paragliding-sim/` base path and deployed. The deploy job then fetches the live page and the site list,
+so a green badge means that commit is live.
 
----
+## Licence
 
-Terrain: MDT05 and PNOA © [Instituto Geográfico Nacional](https://www.ign.es), CC BY 4.0.
+The code is free for non-commercial use under a [custom licence](LICENSE); commercial use (selling it,
+paid installations or services, ads) needs a separate licence from the author. The terrain data (MDT05 and PNOA) is © [Instituto Geográfico Nacional](https://www.ign.es),
+CC BY 4.0.

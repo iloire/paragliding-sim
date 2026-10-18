@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-18 10:22 UTC — Live on GitHub Pages, non-commercial licence
+
+- The sim is public at [iloire.github.io/paragliding-sim](https://iloire.github.io/paragliding-sim/). CI builds every green push to `main` with the `/paragliding-sim/` base path, deploys it to Pages and smoke-tests the live page.
+- The code is free for non-commercial use; commercial use needs a licence from the author. The IGN terrain data stays CC BY 4.0.
+
 ## 2026-10-18 09:43 UTC — Collapsible controls card
 
 - The Controls card in the bottom-left folds down to a small "Controls H" tab: click its heading or press **H**. It stays the way you left it on your next visit, and it is still open on a first visit so a new pilot sees the keys.
