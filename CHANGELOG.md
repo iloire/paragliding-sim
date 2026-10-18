@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-18 09:36 UTC — Tandem airbags
+
+- Both tandem harnesses carry the big protector under the seat: deep below the seat, tapering under the thighs and curving up behind the back, to the shoulder blades on the pilot (black) and the small of the back on the passenger (slate green), with a mint piping seam. On the ground it hangs empty behind the legs and fills after takeoff.
+- The rounded-section loft the Submarine harness is built from now lives in `src/game/body.ts`, shared by both crews.
+
 ## 2026-10-18 09:31 UTC — Tandem crew
 
 - **Flight → Pilot → Tandem** puts a tandem crew under the wing: a passenger in front and lower in an open seat harness, legs hanging, hands on the shoulder straps, and the pilot behind and higher on the brakes, both clipped to spreader bars hanging from the carabiners. They stand and run one behind the other on launch.

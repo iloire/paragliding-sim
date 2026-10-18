@@ -15,7 +15,7 @@
 
 import * as THREE from 'three';
 import type { Controls, GliderState } from '../sim/glider';
-import { Gait, solveArm, span, type Arm } from './body';
+import { Gait, loft as loftSections, sec, solveArm, span, type Arm, type Section } from './body';
 import { createTandem } from './tandem';
 
 const CELLS = 48;
@@ -303,49 +303,9 @@ export function createGlider(): GliderModel {
   // rises behind the head and runs back to a cut-off tail, with a keel hanging under it.
   // Blue with a dark band along each side and the fairing's baffles as panel lines.
   const SEAT = new THREE.Vector3(0, 0.72, 0.2); // pivot the harness folds about on the ground
-  interface Section { z: number; w: number; bottom: number; top: number }
   const HULL = { blue: new THREE.Color(0x1d9fe2), band: new THREE.Color(0x3b4756), cockpit: new THREE.Color(0x141519) };
-  const loft = (sections: Section[], paint: (s: Section, z: number, fy: number, up: number) => THREE.Color): THREE.BufferGeometry => {
-    const RING = 36, EXP = 2.6;
-    const pos: number[] = [], col: number[] = [], idx: number[] = [];
-    for (const s of sections) {
-      for (let k = 0; k <= RING; k++) {
-        const a = (k / RING) * Math.PI * 2;
-        const ca = Math.cos(a), sa = Math.sin(a);
-        const mid = (s.top + s.bottom) / 2, h = (s.top - s.bottom) / 2;
-        const y = mid + h * Math.sign(sa) * Math.abs(sa) ** (2 / EXP);
-        pos.push(s.w * Math.sign(ca) * Math.abs(ca) ** (2 / EXP), y, s.z);
-        const c = paint(s, s.z, (y - s.bottom) / Math.max(s.top - s.bottom, 1e-3), sa);
-        col.push(c.r, c.g, c.b);
-      }
-    }
-    const R = RING + 1;
-    for (let i = 0; i < sections.length - 1; i++) {
-      for (let k = 0; k < RING; k++) {
-        const a = i * R + k, b = a + R;
-        idx.push(a, a + 1, b, b, a + 1, b + 1);
-      }
-    }
-    // Fan caps at both ends.
-    for (const [i, flip] of [[0, true], [sections.length - 1, false]] as const) {
-      const s = sections[i];
-      const centre = pos.length / 3;
-      pos.push(0, (s.top + s.bottom) / 2, s.z);
-      col.push(col[i * R * 3], col[i * R * 3 + 1], col[i * R * 3 + 2]);
-      for (let k = 0; k < RING; k++) {
-        const a = i * R + k;
-        if (flip) idx.push(centre, a + 1, a); else idx.push(centre, a, a + 1);
-      }
-    }
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
-    geo.setIndex(idx);
-    geo.computeVertexNormals();
-    geo.translate(-SEAT.x, -SEAT.y, -SEAT.z);
-    return geo;
-  };
-  const sec = (z: number, w: number, bottom: number, top: number): Section => ({ z, w, bottom, top });
+  const loft = (sections: Section[], paint: (s: Section, z: number, fy: number, up: number) => THREE.Color) =>
+    loftSections(sections, paint).translate(-SEAT.x, -SEAT.y, -SEAT.z);
   const paintHull = (_s: Section, z: number, fy: number, up: number): THREE.Color => {
     const c = new THREE.Color();
     if (z > -0.24 && z < 0.5 && up > 0.55) return c.copy(HULL.cockpit); // the open cockpit

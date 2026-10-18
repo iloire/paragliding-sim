@@ -8,11 +8,15 @@
 // a black open-face helmet and sunglasses. Both jackets carry the white chevron logo on the chest,
 // and the harness webbing is black with mint-green loops.
 //
+// Under each seat is the big foam/air protector every tandem harness carries: a rounded bag that
+// bulges well below the seat and curves up behind the back — up to the shoulder blades on the
+// pilot, only to the small of the back on the passenger, whose back rests against the pilot.
+//
 // Same frame as the solo pilot (src/game/wing.ts): origin at the seat base, +Y up, forward −Z.
 
 import * as THREE from 'three';
 import type { Controls, GliderState } from '../sim/glider';
-import { Gait, solveArm, span, type Arm } from './body';
+import { Gait, loft, sec, solveArm, span, type Arm, type Section } from './body';
 
 type Joint = 'hips' | 'neck' | 'head' | 'kneeL' | 'kneeR' | 'footL' | 'footR' | 'shoulderL' | 'shoulderR';
 type Pose = Record<Joint, THREE.Vector3>;
@@ -32,10 +36,13 @@ interface Look {
   hair: number;
   /** Body size relative to the pilot. */
   size: number;
+  /** The protector under the seat: its colour, and how far it rises behind the back (m above the hips). */
+  airbag: number;
+  airbagBack: number;
 }
 
-const PILOT: Look = { jacket: 0x3a3d43, legs: 0x26282d, shorts: false, shoe: 0x1c1d20, skin: 0xc58e6b, helmet: 0xe8862c, vents: 0xb5601a, beard: 0x3a2a20, hair: 0x2e231c, size: 1 };
-const PASSENGER: Look = { jacket: 0x1d1e23, legs: 0x18191c, shorts: true, shoe: 0x2a2b2f, skin: 0xc8916d, helmet: 0x1a1b1e, vents: 0x0e0f11, hair: 0x2b2019, size: 0.93 };
+const PILOT: Look = { jacket: 0x3a3d43, legs: 0x26282d, shorts: false, shoe: 0x1c1d20, skin: 0xc58e6b, helmet: 0xe8862c, vents: 0xb5601a, beard: 0x3a2a20, hair: 0x2e231c, size: 1, airbag: 0x1f2125, airbagBack: 0.5 };
+const PASSENGER: Look = { jacket: 0x1d1e23, legs: 0x18191c, shorts: true, shoe: 0x2a2b2f, skin: 0xc8916d, helmet: 0x1a1b1e, vents: 0x0e0f11, hair: 0x2b2019, size: 0.93, airbag: 0x4f5d58, airbagBack: 0.2 };
 
 // Standing: the passenger runs in front, the pilot right behind. Seated: the passenger reclines in
 // front and lower with the legs hanging, the pilot sits up behind so they see over the passenger's
@@ -73,6 +80,27 @@ const METAL = new THREE.MeshStandardMaterial({ color: 0xb8bcc2, roughness: 0.3, 
 const SEAT = new THREE.MeshStandardMaterial({ color: 0x2a2d33, roughness: 0.75 });
 const LENS = new THREE.MeshStandardMaterial({ color: 0x15171b, roughness: 0.05, metalness: 0.9 });
 const WHITE = new THREE.MeshStandardMaterial({ color: 0xf2f2ef, roughness: 0.6 });
+const PIPING = new THREE.Color(0x6fcfb0);
+
+/**
+ * The protector in the seat's own frame: origin at the hips, +Y up the spine, +Z behind the back,
+ * −Z out under the thighs. Deepest just behind the hips, then it rises behind the back to `backTop`.
+ */
+function airbagSections(backTop: number): Section[] {
+  const rise = (f: number) => -0.06 + (backTop + 0.06) * f;
+  return [
+    sec(-0.36, 0.1, -0.1, -0.05), sec(-0.3, 0.19, -0.17, -0.04), sec(-0.18, 0.23, -0.28, -0.05),
+    sec(-0.04, 0.25, -0.36, -0.06), sec(0.08, 0.25, -0.4, rise(0.2)), sec(0.16, 0.24, -0.38, rise(0.75)),
+    sec(0.24, 0.22, -0.3, rise(0.97)), sec(0.3, 0.18, -0.18, rise(1)), sec(0.33, 0.08, -0.06, rise(0.85)),
+  ];
+}
+
+/** The same bag empty on the ground: a flat pouch hanging behind the thighs, one section per inflated one. */
+const FLAT_AIRBAG: Section[] = [
+  sec(0.1, 0.1, -0.38, 0.0), sec(0.11, 0.17, -0.48, 0.07), sec(0.125, 0.2, -0.53, 0.1), sec(0.14, 0.2, -0.55, 0.11),
+  sec(0.155, 0.2, -0.55, 0.11), sec(0.17, 0.2, -0.55, 0.11), sec(0.185, 0.2, -0.53, 0.1), sec(0.2, 0.17, -0.48, 0.07),
+  sec(0.21, 0.1, -0.38, 0.0),
+];
 
 /** A person in a seat harness: builds the meshes once, `place` poses them. */
 function person(parent: THREE.Group, look: Look) {
@@ -152,10 +180,18 @@ function person(parent: THREE.Group, look: Look) {
   strap.position.set(0, -0.005, 0.01);
   head.add(strap);
 
-  // Seat harness: a seat plate under the thighs, a padded back, shoulder straps down the chest
-  // with mint loops, and a chest strap.
+  // Seat harness: a seat plate under the thighs, the airbag under and behind it, shoulder straps
+  // down the chest with mint loops, and a chest strap.
   const seat = add(new THREE.Mesh(new THREE.CapsuleGeometry(0.05 * k, 1, 4, 12), SEAT));
-  const back = add(new THREE.Mesh(new THREE.CapsuleGeometry(0.06 * k, 1, 4, 12), SEAT));
+  const bagColour = new THREE.Color(look.airbag);
+  // A mint piping seam round the bag where the seat part meets the back part.
+  const bagGeo = loft(airbagSections(look.airbagBack), (_s, z) => (Math.abs(z - 0.12) < 0.012 ? PIPING : bagColour).clone()).scale(k, k, k);
+  const flatGeo = loft(FLAT_AIRBAG, () => bagColour).scale(k, k, k);
+  // Morph target 0 deflates it: 1 on the ground, 0 inflated in flight.
+  bagGeo.morphAttributes.position = [flatGeo.attributes.position];
+  bagGeo.morphAttributes.normal = [flatGeo.attributes.normal];
+  const airbag = add(new THREE.Mesh(bagGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7 })));
+  const basis = new THREE.Matrix4(), right = new THREE.Vector3(1, 0, 0), behind = new THREE.Vector3();
   const straps = [0, 1].map(() => limb(0.016, WEBBING));
   const loops = [0, 1].map(() => add(new THREE.Mesh(new THREE.TorusGeometry(0.03 * k, 0.008, 4, 12), MINT)));
   const chestStrap = add(new THREE.Mesh(new THREE.BoxGeometry(0.26 * k, 0.025, 0.012), WEBBING));
@@ -170,8 +206,11 @@ function person(parent: THREE.Group, look: Look) {
     shoes[i].position.copy(foot);
   };
 
-  /** Poses the body; `hands` are the targets in the parent's frame, `pole` where the elbows go. */
-  function place(p: Pose, hands: [THREE.Vector3, THREE.Vector3], pole: (side: number) => THREE.Vector3, headPitch: number): void {
+  /**
+   * Poses the body; `hands` are the targets in the parent's frame, `pole` where the elbows go,
+   * `inflated` 1 in flight, 0 on the ground where the airbag hangs empty behind the legs.
+   */
+  function place(p: Pose, hands: [THREE.Vector3, THREE.Vector3], pole: (side: number) => THREE.Vector3, headPitch: number, inflated: number): void {
     up.subVectors(p.neck, p.hips).normalize();
     fwd.set(0, up.z, -up.y); // the way the chest faces: −Z when upright, tipping up as they recline
     span(torso, p.hips, p.neck);
@@ -189,12 +228,14 @@ function person(parent: THREE.Group, look: Look) {
     logo.position.lerpVectors(p.hips, p.neck, 0.68).addScaledVector(fwd, 0.163 * k).setX(0.075 * k);
     logo.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), fwd);
 
-    // The seat runs under the thighs, the back plate behind the spine.
+    // The seat runs under the thighs, the airbag hangs in the seat's frame (right, up the spine, behind).
     const knee = a.lerpVectors(p.kneeL, p.kneeR, 0.5);
     span(seat, b.copy(p.hips).addScaledVector(up, -0.1), b.clone().lerp(knee, 0.7));
-    span(back, a.copy(p.hips).addScaledVector(fwd, -0.15 * k), a.clone().addScaledVector(up, 0.4 * k));
     seat.scale.x = 3.6; // wide and flat, not round
-    back.scale.x = 3.2;
+    behind.copy(fwd).negate();
+    airbag.quaternion.setFromRotationMatrix(basis.makeBasis(right, up, behind));
+    airbag.position.copy(p.hips);
+    airbag.morphTargetInfluences![0] = 1 - inflated;
     for (const [i, side] of [[0, -1], [1, 1]] as const) {
       const sh = side < 0 ? p.shoulderL : p.shoulderR;
       const top = a.copy(sh).addScaledVector(fwd, 0.07 * k).setX(side * 0.1 * k);
@@ -264,14 +305,14 @@ export function createTandem(): TandemCrew {
     if (swing > 0) { run(pp, runPhase + Math.PI, swing); run(pl, runPhase, swing); }
 
     // Passenger: hands on the shoulder straps at the chest.
-    passenger.place(pp, [passenger.chest(pp, -1, 0.11, 0.2, handL), passenger.chest(pp, 1, 0.11, 0.2, handR)], passengerPole, -0.1 * flyBlend);
+    passenger.place(pp, [passenger.chest(pp, -1, 0.11, 0.2, handL), passenger.chest(pp, 1, 0.11, 0.2, handR)], passengerPole, -0.1 * flyBlend, flyBlend);
 
     // Pilot: hands on the brake handles, which hang from the swinging canopy.
     group.rotation.z = -c.weightShift * 0.14 * flyBlend;
     group.updateMatrixWorld(true);
     group.worldToLocal(handle(-1, c.brakeLeft, handL));
     group.worldToLocal(handle(1, c.brakeRight, handR));
-    pilot.place(pl, [handL, handR], pilotPole, -0.2 * flyBlend);
+    pilot.place(pl, [handL, handR], pilotPole, -0.2 * flyBlend, flyBlend);
 
     for (const [i, side] of [[0, -1], [1, 1]] as const) {
       const { bar, link, toPassenger, toPilot } = bars[i];

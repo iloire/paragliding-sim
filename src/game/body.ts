@@ -56,3 +56,52 @@ export class Gait {
     this.swing = flying ? 0 : Math.min(s.runSpeed / 4, 1);
   }
 }
+
+/** A cross-section of a lofted hull: at `z`, half-width `w`, from `bottom` to `top`. */
+export interface Section { z: number; w: number; bottom: number; top: number }
+export const sec = (z: number, w: number, bottom: number, top: number): Section => ({ z, w, bottom, top });
+
+/**
+ * A hull lofted through rounded-box (superellipse) sections along Z, capped at both ends.
+ * `paint` colours each vertex from its section, z, height share fy (0 bottom … 1 top) and
+ * `up` (sine of the angle round the ring: 1 on top, −1 underneath).
+ */
+export function loft(sections: Section[], paint: (s: Section, z: number, fy: number, up: number) => THREE.Color): THREE.BufferGeometry {
+  const RING = 36, EXP = 2.6;
+  const pos: number[] = [], col: number[] = [], idx: number[] = [];
+  for (const s of sections) {
+    for (let k = 0; k <= RING; k++) {
+      const a = (k / RING) * Math.PI * 2;
+      const ca = Math.cos(a), sa = Math.sin(a);
+      const mid = (s.top + s.bottom) / 2, h = (s.top - s.bottom) / 2;
+      const y = mid + h * Math.sign(sa) * Math.abs(sa) ** (2 / EXP);
+      pos.push(s.w * Math.sign(ca) * Math.abs(ca) ** (2 / EXP), y, s.z);
+      const c = paint(s, s.z, (y - s.bottom) / Math.max(s.top - s.bottom, 1e-3), sa);
+      col.push(c.r, c.g, c.b);
+    }
+  }
+  const R = RING + 1;
+  for (let i = 0; i < sections.length - 1; i++) {
+    for (let k = 0; k < RING; k++) {
+      const a = i * R + k, b = a + R;
+      idx.push(a, a + 1, b, b, a + 1, b + 1);
+    }
+  }
+  // Fan caps at both ends.
+  for (const [i, flip] of [[0, true], [sections.length - 1, false]] as const) {
+    const s = sections[i];
+    const centre = pos.length / 3;
+    pos.push(0, (s.top + s.bottom) / 2, s.z);
+    col.push(col[i * R * 3], col[i * R * 3 + 1], col[i * R * 3 + 2]);
+    for (let k = 0; k < RING; k++) {
+      const a = i * R + k;
+      if (flip) idx.push(centre, a + 1, a); else idx.push(centre, a, a + 1);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  return geo;
+}

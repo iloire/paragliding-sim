@@ -558,6 +558,15 @@ charcoal with dark trousers, an orange helmet and a beard, the passenger in blac
 shorts and bare legs, a black helmet and a slightly smaller build. The harness webbing is black
 with mint loops. Standing, both run one behind the other, legs scissoring out of phase.
 
+Under each seat hangs the **airbag** every tandem harness carries, lofted from rounded-box
+sections like the Submarine hull, in the seat's own frame (up the spine, out behind the back).
+It is deepest just behind the hips, about 40 cm below the seat, tapers forward under the thighs
+and curves up behind the back: to the shoulder blades on the pilot (black), only to the small of
+the back on the passenger (slate green), whose back rests against the pilot. A mint piping seam
+runs round where the seat part meets the back part. On the ground a morph target empties it into
+a flat pouch hanging behind the thighs, and it fills as the crew settles into the seats after
+takeoff.
+
 A tandem wing has trimmers, not a speed bar, so nobody's legs move when the wing speeds up.
 
 ---
