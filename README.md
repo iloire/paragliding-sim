@@ -29,6 +29,8 @@ It runs in a desktop browser, or on a phone held sideways. Nothing to install.
 | ![Rials, Castejón de Sos, in the Pyrenees](docs/screenshots/castejon-rials.png) | ![Sunset over Famara](docs/screenshots/sunset.png) |
 | ![Site picker over the lift map](docs/screenshots/site-picker.png) | |
 
+▶ [Watch 40 s of gameplay at Famara](docs/videos/famara-gameplay.mp4), stall included.
+
 ## Sites
 
 | Region | Launches |
