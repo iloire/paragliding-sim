@@ -23,6 +23,7 @@ export interface LandingSpec {
 
 export interface SiteSpec {
   name: string;
+  country: string;
   proj4: string;
   crs: string;
   bbox: [number, number, number, number];
@@ -69,9 +70,13 @@ export interface Site {
   toLatLon(x: number, y: number): [number, number];
 }
 
-export async function loadSite(id: string): Promise<Site> {
-  const base = `${import.meta.env.BASE_URL}sites/${id}/`;
-  const spec = (await (await fetch(`${base}site.json`)).json()) as SiteSpec;
+export function siteBase(id: string): string {
+  return `${import.meta.env.BASE_URL}sites/${id}/`;
+}
+
+/** Loads the terrain for a region whose site.json has already been read (see catalog.ts). */
+export async function loadSite(id: string, spec: SiteSpec): Promise<Site> {
+  const base = siteBase(id);
   const buffer = await (await fetch(`${base}${spec.heightmap.file}`)).arrayBuffer();
   const [x0, y0, x1] = spec.bbox;
   const terrain = Heightmap.fromInt16Dm(buffer, spec.heightmap.size, x1 - x0);

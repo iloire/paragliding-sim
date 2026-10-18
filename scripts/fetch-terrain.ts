@@ -3,8 +3,8 @@
 //   ortho.jpg  — PNOA orthophoto over exactly the same bbox
 //   detail/    — the same pair at the DEM's native 5 m (and a sharper photo) for the
 //                square tiles near the launches, plus tiles.json listing them
-// Usage: npm run fetch-terrain -- famara            (everything)
-//        npm run fetch-terrain -- famara --detail   (detail tiles only)
+// Usage: npm run fetch-terrain -- lanzarote            (everything)
+//        npm run fetch-terrain -- lanzarote --detail   (detail tiles only)
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fromArrayBuffer } from 'geotiff';
@@ -129,7 +129,7 @@ function pickTiles(site: SiteFile, base: Int16Array): [number, number][] {
 }
 
 async function main(): Promise<void> {
-  const siteId = process.argv[2] ?? 'famara';
+  const siteId = process.argv[2] ?? 'lanzarote';
   const detailOnly = process.argv.includes('--detail');
   const dir = join('public', 'sites', siteId);
   const site = JSON.parse(readFileSync(join(dir, 'site.json'), 'utf8')) as SiteFile;

@@ -1,5 +1,6 @@
 {
   "name": "Lanzarote",
+  "country": "Spain",
   "proj4": "+proj=utm +zone=28 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs",
   "crs": "EPSG:4083",
   "bbox": [616000, 3193000, 658000, 3235000],

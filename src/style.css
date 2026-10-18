@@ -143,6 +143,32 @@ html, body {
 #credits a { color: var(--ink-dim); }
 #sha { margin-left: 8px; opacity: 0.7; }
 
+#picker {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: min(460px, calc(100vw - 32px)); max-height: calc(100vh - 64px); overflow-y: auto;
+  padding: 14px 16px 16px;
+  background: rgba(16, 22, 28, 0.88); border: 1px solid var(--edge); border-radius: 6px;
+  backdrop-filter: blur(8px);
+  z-index: 5;
+}
+#picker[hidden] { display: none; }
+#picker header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+#picker h2, #picker h3 { margin: 0; font-family: var(--display); letter-spacing: 0.12em; text-transform: uppercase; }
+#picker h2 { font-size: 20px; color: var(--accent); }
+#picker h3 { font-size: 13px; color: var(--ink-dim); margin-top: 14px; border-bottom: 1px solid var(--edge); padding-bottom: 4px; }
+#picker h4 { margin: 10px 0 6px; font-family: var(--display); font-size: 22px; font-weight: 700; letter-spacing: 0.04em; }
+#picker h4 span { margin-left: 10px; font-family: var(--mono); font-size: 11px; font-weight: 400; color: var(--ink-dim); letter-spacing: 0; }
+#picker ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+#picker button {
+  font: inherit; color: var(--ink); cursor: pointer;
+  background: transparent; border: 1px solid var(--edge); border-radius: 4px;
+}
+#picker li button { width: 100%; padding: 7px 10px; text-align: left; font-size: 13px; }
+#picker li button:hover, #picker li button:focus-visible { border-color: var(--accent); outline: none; background: rgba(255, 178, 63, 0.1); }
+#picker li button[aria-current="true"] { color: var(--accent); border-color: rgba(255, 178, 63, 0.5); }
+#picker li button[aria-current="true"]::after { content: ' ●'; font-size: 9px; vertical-align: middle; }
+.picker-close { padding: 2px 8px; font-size: 11px; color: var(--ink-dim); }
+
 .lil-gui.root { --background-color: rgba(16, 22, 28, 0.85); --font-family: var(--mono); top: 16px; right: 16px; }
 
 @media (max-width: 720px) {

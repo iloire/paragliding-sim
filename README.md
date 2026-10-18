@@ -29,11 +29,13 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-You start in the air above the launch, facing into the wind (so does switching launch with **N**).
+You start in the air above the launch, facing into the wind (so does switching launch with **N**,
+or picking one from the site list on **M**).
 **A/D** brake left/right, **T** air-starts again, **R** puts you on the ground at the launch, where
 **W** runs off it into the wind. **L** shows the lift map. **Shift + A/D** is a deep brake (hold it for a spiral dive);
 **A/D with Q/E** in rhythm with the swing builds wingovers. A gamepad works too (triggers = brakes). The weather panel on the
-right changes wind, inversion and thermals live.
+right changes wind, inversion and thermals live. The address bar follows along, so a link like
+`?region=lanzarote&launch=mala&wind=300/18` starts that launch in that wind.
 
 ## Check it
 
@@ -47,9 +49,11 @@ CI runs the same three on every push to `main` and every pull request.
 
 ## Terrain data
 
-The height map and orthophoto are committed under `public/sites/famara/`, plus 3 km detail tiles
+The height map and orthophoto are committed under `public/sites/lanzarote/`, plus 3 km detail tiles
 (native 5 m heights, 1.5 m/px photo) around the launches in `detail/`. To rebuild them, or to add
-a site, edit `site.json` and run `npm run fetch-terrain -- <site>` (`--detail` redoes only the tiles). See
+a region, edit its `site.json`, list it in `public/sites/index.json` and run
+`npm run fetch-terrain -- <region>` (`--detail` redoes only the tiles). The plan for more sites is
+in [docs/plan-sites.md](docs/plan-sites.md). See
 [docs/architecture.md](docs/architecture.md) for the data pipeline, the flight model and the
 air model, and [docs/physics.md](docs/physics.md) for how the physics works, with diagrams
 and charts generated from the model.

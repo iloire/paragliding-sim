@@ -6,6 +6,8 @@ import { CameraRig } from './game/camera';
 import { CloudLayer } from './game/clouds';
 import { Hud, type HudFrame } from './game/hud';
 import { Input, type Action } from './game/input';
+import { loadCatalog, parseStart, startQuery } from './game/catalog';
+import { SitePicker } from './game/picker';
 import { loadSite, type Launch } from './game/site';
 import { createGlider as createGliderModel } from './game/wing';
 import { TerrainView } from './game/terrain-view';
@@ -36,7 +38,12 @@ const EVENTS: Record<string, [string, boolean]> = {
 
 async function boot(): Promise<void> {
   const hud = new Hud(__COMMIT_SHA__);
-  const site = await loadSite('famara');
+  const regions = await loadCatalog();
+  const start = parseStart(location.search, regions);
+  const region = start.region;
+  const line = document.querySelector('.loading-line');
+  if (line) line.textContent = `Loading ${region.spec.name} terrain…`;
+  const site = await loadSite(region.id, region.spec);
   const terrain = site.terrain;
   const extent = terrain.extent;
 
@@ -53,6 +60,10 @@ async function boot(): Promise<void> {
   const ortho = await new THREE.TextureLoader().loadAsync(site.orthoUrl);
 
   const weather: Weather = { ...site.spec.weather };
+  if (start.wind) {
+    weather.windFromDeg = start.wind.fromDeg;
+    weather.windSpeedKmh = start.wind.kmh;
+  }
   const wind = new WindField(terrain, weather);
   const liftMap = createLiftMap(wind);
   const terrainView = new TerrainView(terrain, ortho, site.detailTileM, site.detailTiles, liftMap.texture,
@@ -73,9 +84,9 @@ async function boot(): Promise<void> {
     isWater: (x, y) => terrain.isWater(x, y),
   };
 
-  const settings = { wing: 'EN-B' as WingId, launch: site.launches[0].spec.id, liftMap: false };
+  let launch: Launch = site.launches.find((l) => l.spec.id === start.launchId) ?? site.launches[0];
+  const settings = { wing: 'EN-B' as WingId, launch: launch.spec.id, liftMap: false };
   let polar = new Polar(WINGS[settings.wing]);
-  let launch: Launch = site.launches[0];
   let state: GliderState = createGlider(launch.x, launch.y, launch.z, launch.heading);
   let paused = false;
   let climb = 0;
@@ -112,13 +123,32 @@ async function boot(): Promise<void> {
   function setLaunch(id: string): void {
     launch = site.launches.find((l) => l.spec.id === id) ?? site.launches[0];
     settings.launch = launch.spec.id;
+    gui.controllersRecursive().forEach((c) => c.updateDisplay());
+    writeUrl();
     reset(true);
+  }
+
+  /** Keeps the address bar a link to the current setup. */
+  function writeUrl(): void {
+    history.replaceState(null, '', startQuery(region.id, launch.spec.id, weather.windFromDeg, weather.windSpeedKmh));
   }
 
   function refreshWeather(): void {
     wind.setWeather({ ...weather });
     if (settings.liftMap) liftMap.refresh();
+    writeUrl();
   }
+
+  function pickSite(regionId: string, launchId: string): void {
+    if (regionId === region.id) setLaunch(launchId);
+    else location.search = startQuery(regionId, launchId, weather.windFromDeg, weather.windSpeedKmh); // new terrain: reload
+  }
+
+  let pausedBeforePicker = false;
+  const picker = new SitePicker(regions, pickSite, (open) => {
+    if (open) pausedBeforePicker = paused;
+    paused = open || pausedBeforePicker;
+  });
 
   function downloadIgc(): void {
     if (fixes.length === 0) { hud.say('No flight recorded yet'); return; }
@@ -141,6 +171,7 @@ async function boot(): Promise<void> {
       case 'help': hud.toggleHelp(); break;
       case 'layout': hud.say(`Instrument: ${hud.cycleLayout()}`, 1.5); break;
       case 'lift': toggleLiftMap(!settings.liftMap); break;
+      case 'sites': if (picker.isOpen) picker.close(); else picker.open(region.id, launch.spec.id); break;
       case 'nextLaunch': {
         const i = site.launches.indexOf(launch);
         setLaunch(site.launches[(i + 1) % site.launches.length].spec.id);
@@ -172,6 +203,7 @@ async function boot(): Promise<void> {
     polar = new Polar(WINGS[id]);
   });
   fl.add(settings, 'liftMap').name('Lift map (L)').onChange(toggleLiftMap);
+  fl.add({ sites: () => picker.open(region.id, launch.spec.id) }, 'sites').name('Sites… (M)');
   fl.add({ airstart: () => reset(true) }, 'airstart').name('Air start (T)');
   fl.add({ reset: () => reset() }, 'reset').name('Reset to launch (R)');
   fl.add({ igc: downloadIgc }, 'igc').name('Download IGC');
@@ -201,6 +233,7 @@ async function boot(): Promise<void> {
     });
   }
 
+  writeUrl();
   reset(true);
   hud.ready();
 

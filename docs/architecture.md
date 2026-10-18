@@ -6,7 +6,8 @@ unchanged in behaviour (translated to C++, same tests).
 ```
 src/sim/    pure TypeScript, no three.js, no DOM — unit-tested
 src/game/   three.js scene, input, HUD, audio — the throwaway rendering layer
-public/sites/<id>/   site.json + generated terrain data
+public/sites/index.json   the regions the game offers (ids)
+public/sites/<id>/   site.json + generated terrain data, one folder per region
 scripts/fetch-terrain.ts   IGN download → height.bin + ortho.jpg + detail tiles
 ```
 
@@ -100,9 +101,24 @@ instant ratios, so it recovers straight away on leaving lift. G and bank stay di
 The maths (glide-to, track buffer, compass) is pure and tested in `instruments.test.ts`;
 `hud.ts` only draws.
 
+## Regions, launches and the URL
+
+A **region** is one terrain download (`public/sites/<id>/`); its `site.json` names it, gives its
+`country` and lists its **launches**. `public/sites/index.json` lists the region ids. At boot
+`src/game/catalog.ts` reads the manifest and every `site.json` (≈1 KB each), then the URL picks
+what to load: `?region=lanzarote&launch=famara&wind=345/24` (wind = from ° / km/h). Unknown ids
+fall back to the first region and launch, so an old link still flies. The game keeps the URL in
+step with the current launch and wind (`history.replaceState`), so the address bar is always a
+link to the setup.
+
+The site picker (**M**, `src/game/picker.ts`) lists Country › Region › Launch. A launch in the
+loaded region switches in place; one in another region sets the URL and reloads, since the
+terrain, wind field and lift map are all built for one region. The roadmap (wind wedges, map
+picker, sites outside Spain) is in [plan-sites.md](plan-sites.md).
+
 ## Terrain data
 
-`npm run fetch-terrain -- famara` reads `public/sites/famara/site.json` and downloads:
+`npm run fetch-terrain -- lanzarote` reads `public/sites/lanzarote/site.json` and downloads:
 
 - **Height**: IGN WCS `Elevacion4083_5` (MDT05, 5 m, REGCAN95 / UTM 28N) resampled to 2048² (~20.5 m over the 42 km bbox that covers the whole flyable island),
   3×3 smoothed to hide 1 m terracing, written as Int16 decimetres. Sea (nodata or ≤ 0 m) becomes −15 m.

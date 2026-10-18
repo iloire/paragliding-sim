@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-18 03:10 UTC — Site picker and deep links
+
+- Sites are now regions: `public/sites/famara/` is `public/sites/lanzarote/`, and `public/sites/index.json` lists the regions the game offers. `site.json` gains `country`.
+- **M** opens a site picker (Country › Region › Launch; arrows, Enter, Esc). A launch in the loaded region switches in place; another region reloads with its terrain. The sim pauses while it is open.
+- Deep links: `?region=lanzarote&launch=mala&wind=300/18`. The URL follows the current launch and wind; unknown ids fall back to the first region and launch.
+- `docs/plan-sites.md`: the plan for more regions inside and outside the Canaries (wind wedges, map picker, data sources, storage).
+
 ## 2026-10-18 01:33 UTC — Instrument panel rework
 
 - Laid out by priority in a compact strip (~600×110 px, down from ~790×160): big vario with a vertical ±5 m/s scale, then AGL large, then smaller reference readouts; flight time moved to a footer row.
