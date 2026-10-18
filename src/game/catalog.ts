@@ -1,5 +1,5 @@
 // Every flyable region (public/sites/index.json lists their ids) and the start the URL asks for:
-//   ?region=lanzarote&launch=famara&wind=345/24   (wind = from degrees / km/h)
+//   ?region=lanzarote&launch=famara&wind=345/24&time=18:30   (wind = from degrees / km/h, time = solar)
 
 import { siteBase, type SiteSpec } from './site';
 
@@ -12,6 +12,8 @@ export interface Start {
   region: Region;
   launchId: string;
   wind?: { fromDeg: number; kmh: number };
+  /** Solar time of day, hours. */
+  hour?: number;
 }
 
 /** Reads the manifest and every region's site.json (≈1 KB each; the terrain loads later). */
@@ -30,13 +32,22 @@ export function parseStart(search: string, regions: Region[]): Start {
   const launch = region.spec.launches.find((l) => l.id === q.get('launch')) ?? region.spec.launches[0];
   const m = /^(\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)$/.exec(q.get('wind') ?? '');
   const wind = m ? { fromDeg: Number(m[1]) % 360, kmh: Number(m[2]) } : undefined;
-  return { region, launchId: launch.id, wind };
+  const t = /^(\d{1,2}):(\d{2})$/.exec(q.get('time') ?? '');
+  const hour = t && Number(t[1]) < 24 && Number(t[2]) < 60 ? Number(t[1]) + Number(t[2]) / 60 : undefined;
+  return { region, launchId: launch.id, wind, hour };
+}
+
+/** 18.5 → "18:30". */
+export function clockTime(hour: number): string {
+  const m = Math.round(hour * 60) % 1440;
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 }
 
 /** Without a wind, the region's own default weather applies. */
-export function startQuery(regionId: string, launchId: string, windFromDeg?: number, windKmh?: number): string {
+export function startQuery(regionId: string, launchId: string, windFromDeg?: number, windKmh?: number, hour?: number): string {
   const wind = windFromDeg !== undefined && windKmh !== undefined ? `&wind=${Math.round(windFromDeg)}/${Math.round(windKmh)}` : '';
-  return `?region=${encodeURIComponent(regionId)}&launch=${encodeURIComponent(launchId)}${wind}`;
+  const time = hour !== undefined ? `&time=${clockTime(hour)}` : '';
+  return `?region=${encodeURIComponent(regionId)}&launch=${encodeURIComponent(launchId)}${wind}${time}`;
 }
 
 /** Regions grouped by country, both in alphabetical order, for the picker. */

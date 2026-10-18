@@ -25,6 +25,8 @@ the lift model cheaply first. The plan lives in the notes vault (`Projects/parag
 
 ![Above the Famara launch: native 5 m terrain and 1.5 m/px photo near the camera](docs/screenshots/terrain-detail.png)
 
+![Sunset over Famara: the sun on the horizon, the wing backlit](docs/screenshots/sunset.png)
+
 ## Run it
 
 ```bash
@@ -37,8 +39,11 @@ or picking one from the site list on **M**).
 **A/D** brake left/right, **T** air-starts again, **R** puts you on the ground at the launch, where
 **W** runs off it into the wind. **L** shows the lift map. **Shift + A/D** is a deep brake (hold it for a spiral dive);
 **A/D with Q/E** in rhythm with the swing builds wingovers. A gamepad works too (triggers = brakes). The weather panel on the
-right changes wind, inversion and thermals live. The address bar follows along, so a link like
-`?region=lanzarote&launch=mala&wind=300/18` starts that launch in that wind.
+right changes wind, inversion and thermals live, and **Time of day** moves the sun: thermals are
+weak in the morning, strongest and roughest in the early afternoon, gone by the evening, and the
+Sunset preset puts the sun on the horizon. The address bar follows along, so a link like
+`?region=lanzarote&launch=mala&wind=300/18&time=17:20` starts that launch in that wind at that
+(solar) time.
 
 ## Check it
 

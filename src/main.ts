@@ -6,16 +6,17 @@ import { CameraRig } from './game/camera';
 import { CloudLayer } from './game/clouds';
 import { Hud, type HudFrame } from './game/hud';
 import { Input, type Action } from './game/input';
-import { loadCatalog, parseStart, startQuery } from './game/catalog';
+import { clockTime, loadCatalog, parseStart, startQuery } from './game/catalog';
 import { SitePicker } from './game/picker';
 import { loadSite, type Launch } from './game/site';
 import { createGlider as createGliderModel } from './game/wing';
 import { TerrainView } from './game/terrain-view';
-import { createLiftMap, createSkyAndLight, createSurround, toScene } from './game/world';
+import { createLiftMap, createSurround, Sunlight, toScene } from './game/world';
 import { compass, glideTo, TurnTrack } from './sim/instruments';
 import { createGlider, stepGlider, type Environment, type GliderState } from './sim/glider';
 import { buildIgc, type Fix } from './sim/igc';
 import { Polar, WINGS, type WingId } from './sim/polar';
+import { dayOfYear, daylight, heating, sunPosition } from './sim/sun';
 import { WindField, type Weather } from './sim/wind';
 
 declare const __COMMIT_SHA__: string;
@@ -23,6 +24,8 @@ declare const __COMMIT_SHA__: string;
 const STEP = 1 / 120;
 const AIRSTART_HEIGHT = 120;
 const IGC_INTERVAL = 1;
+/** Solar time a flight starts at without ?time= — the thermals' peak, which the weather sliders describe. */
+const DEFAULT_HOUR = 13;
 
 const EVENTS: Record<string, [string, boolean]> = {
   takeoff: ['Airborne — work the lift band in front of the ridge', false],
@@ -56,7 +59,7 @@ async function boot(): Promise<void> {
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.3, 200000);
-  createSkyAndLight(scene, renderer);
+  const sunlight = new Sunlight(scene, renderer);
   const ortho = await new THREE.TextureLoader().loadAsync(site.orthoUrl);
 
   const weather: Weather = { ...site.spec.weather };
@@ -86,6 +89,13 @@ async function boot(): Promise<void> {
 
   let launch: Launch = site.launches.find((l) => l.spec.id === start.launchId) ?? site.launches[0];
   const settings = { wing: 'EN-B' as WingId, launch: launch.spec.id, liftMap: false };
+  const lat = site.toLatLon(extent / 2, extent / 2)[0];
+  const day = dayOfYear(new Date());
+  const { sunrise, sunset } = daylight(lat, day);
+  const sky = { hour: start.hour ?? DEFAULT_HOUR, preset: '', info: '' };
+  const PRESETS: Record<string, number> = {
+    Sunrise: sunrise + 0.25, Morning: 10, Midday: 13, Afternoon: 15.5, Sunset: sunset - 0.25,
+  };
   let polar = new Polar(WINGS[settings.wing]);
   let state: GliderState = createGlider(launch.x, launch.y, launch.z, launch.heading);
   let paused = false;
@@ -130,7 +140,19 @@ async function boot(): Promise<void> {
 
   /** Keeps the address bar a link to the current setup. */
   function writeUrl(): void {
-    history.replaceState(null, '', startQuery(region.id, launch.spec.id, weather.windFromDeg, weather.windSpeedKmh));
+    history.replaceState(null, '', startQuery(region.id, launch.spec.id, weather.windFromDeg, weather.windSpeedKmh, sky.hour));
+  }
+
+  /** Puts the sun where the hour says, and lets it set the thermals and the light. */
+  function setTime(): void {
+    const sun = sunPosition(lat, day, sky.hour);
+    const heat = heating(lat, day, sky.hour);
+    wind.setSun(heat, sun.dir);
+    sunlight.set(sun.dir, sun.elevationDeg);
+    clouds.setTint(sunlight.cloudTint);
+    sky.info = `${clockTime(sky.hour)} · heating ${Math.round(heat * 100)} %`;
+    gui.controllersRecursive().forEach((c) => c.updateDisplay());
+    writeUrl();
   }
 
   function refreshWeather(): void {
@@ -141,7 +163,7 @@ async function boot(): Promise<void> {
 
   function pickSite(regionId: string, launchId: string): void {
     if (regionId === region.id) setLaunch(launchId);
-    else location.search = startQuery(regionId, launchId); // new terrain: reload, with that region's own weather
+    else location.search = startQuery(regionId, launchId, undefined, undefined, sky.hour); // new terrain: reload, with that region's own weather
   }
 
   let pausedBeforePicker = false;
@@ -191,12 +213,18 @@ async function boot(): Promise<void> {
   canvas.addEventListener('pointerdown', () => audio.start());
 
   const gui = new GUI({ title: 'Famara Glide' });
+  const tm = gui.addFolder('Time of day');
+  tm.add(sky, 'preset', ['', ...Object.keys(PRESETS)]).name('Preset').onChange((p: string) => {
+    if (p in PRESETS) { sky.hour = PRESETS[p]; setTime(); }
+  });
+  tm.add(sky, 'hour', 5, 21, 0.05).name('Solar time h').onChange(() => { sky.preset = ''; setTime(); });
+  tm.add(sky, 'info').name('Sun').disable();
   const wx = gui.addFolder('Weather');
   wx.add(weather, 'windSpeedKmh', 0, 45, 1).name('Wind km/h').onChange(refreshWeather);
   wx.add(weather, 'windFromDeg', 0, 359, 5).name('Wind from °').onFinishChange(refreshWeather);
   wx.add(weather, 'inversionM', 300, 4000, 50).name('Inversion m').onFinishChange(refreshWeather);
   wx.add(weather, 'thermalStrength', 0, 4, 0.1).name('Thermals m/s').onChange(refreshWeather);
-  wx.add(weather, 'turbulence', 0, 1, 0.05).name('Turbulence').onChange(refreshWeather);
+  wx.add(weather, 'turbulence', 0, 1, 0.05).name('Wind turbulence').onChange(refreshWeather);
   const fl = gui.addFolder('Flight');
   fl.add(settings, 'launch', Object.fromEntries(site.launches.map((l) => [l.spec.name, l.spec.id]))).name('Launch').onChange(setLaunch);
   fl.add(settings, 'wing', Object.fromEntries(Object.entries(WINGS).map(([id, w]) => [w.label, id]))).name('Wing').onChange((id: WingId) => {
@@ -233,7 +261,7 @@ async function boot(): Promise<void> {
     });
   }
 
-  writeUrl();
+  setTime();
   reset(true);
   hud.ready();
 
@@ -284,7 +312,7 @@ async function boot(): Promise<void> {
     // The body's own attitude: canopy, lines and pilot swing as one.
     model.group.rotation.set(state.pitch, -state.yaw, -state.roll);
     model.update(state, input.controls, dt);
-    clouds.update(wind.thermals.clouds(clock, ...windUV(), weather.inversionM));
+    clouds.update(wind.thermals.clouds(clock, ...windUV(), wind.cloudbase));
 
     const ground = terrain.groundAt(state.x, state.y);
     const camGroundZ = terrain.groundAt(...camGround());

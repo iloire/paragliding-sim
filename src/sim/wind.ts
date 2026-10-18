@@ -32,6 +32,10 @@ const UPWIND_DECAY_M = 250;
 const RIDGE_LOOKAHEAD_M = 1500;
 /** Band top = ridge top + this × ridge relief. */
 const BAND_ABOVE_RIDGE = 0.7;
+/** Convective turbulence (m/s) per m/s of thermal climb at full heating. */
+const THERMAL_TURBULENCE = 0.5;
+/** Cloudbase at no heating as a share of the inversion: it rises to the inversion at the day's peak. */
+const MORNING_CLOUDBASE = 0.75;
 /** Caps the slope term so a sheer face gives strong (~4 m/s at 22 km/h), not absurd, lift. */
 const MAX_SLOPE = 0.75;
 
@@ -51,6 +55,8 @@ export class WindField {
   private readonly smooth: Float32Array;
   private weather: Weather;
   private dirFrom = NaN;
+  /** 0..1 — the sun's heating (sun.ts); 1 = the day's peak, which the sliders describe. */
+  private heat = 1;
 
   constructor(
     readonly terrain: Heightmap,
@@ -89,6 +95,18 @@ export class WindField {
 
   get speed(): number {
     return this.weather.windSpeedKmh / 3.6;
+  }
+
+  /** Where the sun is and how hard it heats: drives the thermals, their turbulence and cloudbase. */
+  setSun(heat: number, dir: [number, number, number]): void {
+    this.heat = heat;
+    this.thermals.activity = heat;
+    this.thermals.sun = dir;
+  }
+
+  /** Thermal tops: low and soft in the morning, up at the inversion when heating peaks. */
+  get cloudbase(): number {
+    return this.weather.inversionM * (MORNING_CLOUDBASE + (1 - MORNING_CLOUDBASE) * this.heat);
   }
 
   setWeather(weather: Weather): void {
@@ -182,9 +200,13 @@ export class WindField {
     const s = this.windSpeedAt(x, y, z);
     const u = dx * s, v = dy * s;
     let w = this.ridgeLift(x, y, z);
-    w += this.thermals.sample(x, y, z, t, u, v, this.weather.inversionM);
+    const cloudbase = this.cloudbase;
+    w += this.thermals.sample(x, y, z, t, u, v, cloudbase);
     const leeness = -this.bilinear(this.lee, x, y);
     w += turbulence(x, y, t) * this.weather.turbulence * (0.4 + 2 * leeness) * Math.min(this.speed / 6, 1.5);
+    // Midday air is rough: the thermals churn it, shorter and faster than the mechanical kind.
+    const convective = this.weather.thermalStrength * this.heat;
+    if (convective > 0 && z < cloudbase) w += THERMAL_TURBULENCE * convective * turbulence(x * 1.9 + 517, y * 1.9 - 233, t * 1.6);
     return { u, v, w };
   }
 }

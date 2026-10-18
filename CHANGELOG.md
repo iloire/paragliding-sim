@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-18 04:00 UTC — Time of day and sunsets
+
+- **Time of day** panel: a solar-time slider (05:00–21:00) and Sunrise / Morning / Midday / Afternoon / Sunset presets. `?time=HH:MM` starts at that time, and the address bar follows. Without it a flight starts at 13:00, the thermals' peak, so the weather sliders behave as before.
+- The sun is placed from the region's latitude, today's date and the hour (`src/sim/sun.ts`), and gives a heating factor that peaks in the early afternoon. Heating scales thermal climb and how many thermals are alive, adds convective turbulence (about ±1 m/s at the peak with 2 m/s thermals, none in the evening) and lifts cloudbase from 75 % of the inversion to the inversion.
+- A low sun puts the thermals on the slopes facing it; slopes in their own shade trigger none.
+- Sunsets: the sky shader, the sun's light colour and angle, the fog, the exposure, the ambient light and the cumulus tint all follow the sun, so near the horizon the sky glows orange and the wing is backlit. The aerial photo's midday shading is baked in, so there are no long sunset shadows yet.
+- The weather panel's turbulence slider is now **Wind turbulence**: the mechanical kind, separate from the thermals' own.
+
 ## 2026-10-18 03:55 UTC — Castejón de Sos, Àger and Organyà
 
 - Three Pyrenean regions, 24 km IGN bboxes each, launches from ParaglidingEarth: **Castejón de Sos** (Rials, Chía – Abedules, Pedras Blancas, Liri), **Àger** (Sant Alís, Àger) and **Organyà** (Organyà, Santa Fe, Prats, Narieda). They sit in UTM zone 31, which IGN's WCS does not serve, so they use zone 30 extended east.

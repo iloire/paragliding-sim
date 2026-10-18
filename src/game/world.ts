@@ -6,8 +6,6 @@ import * as THREE from 'three';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
 import type { WindField } from '../sim/wind';
 
-const SUN_ELEVATION = 48;
-const SUN_AZIMUTH = 215;
 /** Lift map hides anything weaker than this (m/s) — gentle slopes would paint the whole island. */
 const LIFT_MAP_MIN = 0.5;
 
@@ -41,34 +39,72 @@ export function createSurround(extent: number, plainM?: number): THREE.Mesh {
   return surround;
 }
 
-export function createSkyAndLight(scene: THREE.Scene, renderer: THREE.WebGLRenderer): THREE.DirectionalLight {
-  const sky = new Sky();
-  sky.scale.setScalar(450000);
-  const u = sky.material.uniforms;
-  u.turbidity.value = 5;
-  u.rayleigh.value = 1.4;
-  u.mieCoefficient.value = 0.004;
-  u.mieDirectionalG.value = 0.8;
-  const sun = new THREE.Vector3().setFromSphericalCoords(
-    1,
-    THREE.MathUtils.degToRad(90 - SUN_ELEVATION),
-    THREE.MathUtils.degToRad(180 - SUN_AZIMUTH),
-  );
-  u.sunPosition.value.copy(sun);
-  scene.add(sky);
+const DAY_LIGHT = new THREE.Color(0xfff1dc);
+const LOW_SUN_LIGHT = new THREE.Color(0xffb27a);
+const HORIZON_LIGHT = new THREE.Color(0xff8a50);
+const DAY_FOG = new THREE.Color(0xbfd3e0);
+const LOW_SUN_FOG = new THREE.Color(0xd8a184);
+const NIGHT_FOG = new THREE.Color(0x1b2130);
 
-  // Reflections and ambient light come from the same sky.
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  const envScene = new THREE.Scene();
-  envScene.add(sky.clone());
-  scene.environment = pmrem.fromScene(envScene).texture;
-  scene.environmentIntensity = 0.3;
+function smoothstep(a: number, b: number, x: number): number {
+  const t = Math.min(Math.max((x - a) / (b - a), 0), 1);
+  return t * t * (3 - 2 * t);
+}
 
-  const light = new THREE.DirectionalLight(0xfff1dc, 3.2);
-  light.position.copy(sun).multiplyScalar(20000);
-  scene.add(light);
-  scene.fog = new THREE.FogExp2(0xbfd3e0, 0.000032);
-  return light;
+/**
+ * The sky, the sun's light, the fog and the ambient light, all set from where the sun is.
+ * Near the horizon the sky shader's own scattering turns it orange; the light, fog, exposure
+ * and cloud tint follow so the scene reads as one sunset.
+ */
+export class Sunlight {
+  /** Multiply cumulus by this: white at midday, warm at sunset, grey at dusk. */
+  readonly cloudTint = new THREE.Color(1, 1, 1);
+  private readonly sky = new Sky();
+  private readonly envSky = new Sky();
+  private readonly envScene = new THREE.Scene();
+  private readonly pmrem: THREE.PMREMGenerator;
+  private readonly light = new THREE.DirectionalLight(0xffffff, 3.2);
+  private readonly fog = new THREE.FogExp2(0xbfd3e0, 0.000032);
+  private env: THREE.WebGLRenderTarget | null = null;
+
+  constructor(private readonly scene: THREE.Scene, private readonly renderer: THREE.WebGLRenderer) {
+    this.sky.scale.setScalar(450000);
+    this.envSky.scale.setScalar(450000);
+    // The environment shares the sky's uniforms, so reflections and ambient light match it.
+    this.envSky.material = this.sky.material;
+    this.envScene.add(this.envSky);
+    this.pmrem = new THREE.PMREMGenerator(renderer);
+    scene.add(this.sky, this.light);
+    scene.fog = this.fog;
+  }
+
+  /** Sun as a sim-frame unit vector (east, north, up) and its elevation in degrees. */
+  set(dir: [number, number, number], elevationDeg: number): void {
+    const low = 1 - smoothstep(0, 22, elevationDeg); // 0 high sun … 1 on the horizon
+    const day = smoothstep(-5, 1, elevationDeg); // 0 dusk … 1 sun up
+    const u = this.sky.material.uniforms;
+    u.turbidity.value = 5 + 7 * low;
+    u.rayleigh.value = 1.4 + 3 * low;
+    u.mieCoefficient.value = 0.004;
+    u.mieDirectionalG.value = 0.8 + 0.1 * low;
+    u.sunPosition.value.set(dir[0], dir[2], -dir[1]);
+
+    // The light keeps a grazing angle even once the disc is down, so the terrain isn't lit from below.
+    const lift = Math.max(elevationDeg, 2) * Math.PI / 180;
+    const flat = Math.hypot(dir[0], dir[1]) || 1;
+    this.light.position.set((dir[0] / flat) * Math.cos(lift), Math.sin(lift), (-dir[1] / flat) * Math.cos(lift)).multiplyScalar(20000);
+    this.light.color.copy(DAY_LIGHT).lerp(LOW_SUN_LIGHT, low ** 1.5).lerp(HORIZON_LIGHT, 1 - smoothstep(0, 4, elevationDeg));
+    this.light.intensity = 3.2 * (0.55 + 0.45 * smoothstep(2, 25, elevationDeg)) * day;
+
+    this.fog.color.copy(DAY_FOG).lerp(LOW_SUN_FOG, low ** 2).lerp(NIGHT_FOG, 1 - day);
+    this.renderer.toneMappingExposure = 0.5 + 0.15 * low;
+    this.cloudTint.setRGB(1, 1, 1).lerp(LOW_SUN_LIGHT, 0.55 * low ** 2).lerp(NIGHT_FOG, 0.8 * (1 - day));
+
+    this.env?.dispose();
+    this.env = this.pmrem.fromScene(this.envScene);
+    this.scene.environment = this.env.texture;
+    this.scene.environmentIntensity = 0.3 + 0.3 * low;
+  }
 }
 
 /** Ridge lift at ridge-top height as an RGBA map over the site: green up, red down. */

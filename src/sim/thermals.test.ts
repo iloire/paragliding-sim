@@ -40,4 +40,38 @@ describe('ThermalField', () => {
     expect(clouds).toHaveLength(1);
     expect(clouds[0].z).toBeGreaterThan(1200);
   });
+
+  it('follows the sun: weaker and fewer on a low heating', () => {
+    const f = new ThermalField(terrain, 7);
+    f.thermals = [mature];
+    f.activity = 0.4;
+    expect(f.sample(3000, 3000, 700, 0, 0, 0, 1500)).toBeCloseTo(2.5 * 0.4, 1);
+    f.update(0, 2);
+    expect(f.thermals.length).toBe(Math.round(24 * 0.6));
+    f.activity = 0;
+    f.update(1, 2);
+    expect(f.thermals).toHaveLength(0);
+  });
+
+  it('triggers on slopes facing a low sun, not on the ones in their own shade', () => {
+    const low = 10 * Math.PI / 180;
+    const count = (sunFromNorth: boolean): [number, number] => {
+      const f = new ThermalField(terrain, 3);
+      f.sun = [0, (sunFromNorth ? 1 : -1) * Math.cos(low), Math.sin(low)];
+      let south = 0, north = 0;
+      for (let t = 0; t < 40; t++) {
+        f.thermals = [];
+        f.update(t * 1000, 2);
+        for (const th of f.thermals) {
+          if (th.y > 2050 && th.y < 2350) south++; // the cliff faces south
+          if (th.y > 4050 && th.y < 4350) north++; // the far slope faces north
+        }
+      }
+      return [south, north];
+    };
+    const [southFace, northFace] = count(false);
+    expect(southFace).toBeGreaterThan(3 * Math.max(northFace, 1));
+    const [southFace2, northFace2] = count(true);
+    expect(northFace2).toBeGreaterThan(3 * Math.max(southFace2, 1));
+  });
 });

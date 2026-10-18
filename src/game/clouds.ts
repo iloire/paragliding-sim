@@ -49,6 +49,11 @@ export class CloudLayer {
     }
   }
 
+  /** Light colour on the clouds (the sunset tint). */
+  setTint(color: THREE.Color): void {
+    for (const c of this.clouds) c.material.color.copy(color);
+  }
+
   update(clouds: Cloud[]): void {
     for (let i = 0; i < POOL; i++) {
       const slot = this.clouds[i];

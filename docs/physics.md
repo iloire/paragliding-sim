@@ -404,6 +404,33 @@ replay or a test sees the same sky.
 - **Cumulus:** a mature thermal (envelope above 0.3, strength at least 0.8 m/s, cloudbase at
   least 200 m above the trigger) puts a cloud at cloudbase, over the leaned top of the column.
 
+### The sun and the time of day
+
+The time of day is **solar time** (12:00 = sun due south), so "sunset" means the sun on the
+horizon at every site and on every date. `src/sim/sun.ts` places the sun from the site's
+latitude, today's day of year and the hour, and turns it into a **heating** factor, 0..1:
+
+`heating = (sin(elevation) − sin 10°) × min((hour − sunrise) / 7 h, 1)`, normalised to the
+day's peak.
+
+The first term is the sun's height, with nothing below 10°, so thermals are gone an hour or so
+before sunset. The second is the ground warming up, so the same sun heats less at 10:00 than at
+14:00. Together they peak early in the afternoon (about 13:00 solar at Famara in October)
+rather than at noon. The weather sliders describe that peak, and heating scales it down:
+
+- **Thermals:** the core climb is multiplied by heating, and fewer of them are kept alive
+  (`24 × min(1.5 × heating, 1)`). A morning has a handful of weak ones; at 17:00 there are none.
+- **Where they trigger:** a candidate spot survives with probability `exposure / 1.6`, where
+  exposure is the sun on that slope relative to flat ground. At midday every slope is much the
+  same; with a low sun, the slopes facing it take the thermals and the ones in their own shade
+  get none.
+- **Convective turbulence:** midday air is rough. A second noise layer, shorter and faster than
+  the mechanical one, adds `0.5 × thermals × heating` m/s below cloudbase. With 2 m/s thermals
+  that is about ±1 m/s at the peak and nearly nothing in the evening, which is when the air
+  goes smooth and only the ridge works.
+- **Cloudbase** rises through the day, from 75 % of the inversion with no heating to the full
+  inversion at the peak. The ridge lift's inversion lid stays where the slider puts it.
+
 ![Vertical air across a thermal's core](physics/thermal-profile.svg)
 
 ![Core strength over a thermal's life](physics/thermal-life.svg)
@@ -416,7 +443,9 @@ Turbulence is cheap, smooth pseudo-noise: three layers of sines at unrelated fre
 and t, returning −1..1. No grid, no state, deterministic. Its amplitude is
 `turbulence × (0.4 + 2 × leeness) × min(U/6, 1.5)`: stronger in the lee of the hill, and
 stronger the windier it is. It enters as vertical air, so it reaches the wing through the gust
-term in [§7](#7-stalls-gusts-and-collapses), and on a rough day it can fold a side.
+term in [§7](#7-stalls-gusts-and-collapses), and on a rough day it can fold a side. Thermal
+activity adds its own convective layer on top (see above), which depends on the time of day,
+not on the wind.
 
 ---
 

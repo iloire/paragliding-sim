@@ -53,3 +53,35 @@ describe('WindField ridge lift', () => {
     expect(air.v).toBeCloseTo(0, 5);
   });
 });
+
+describe('WindField and the sun', () => {
+  const terrain = cliffTerrain();
+  const UP: [number, number, number] = [0, 0, 1];
+
+  /** RMS vertical air over a patch of plateau with no thermal in it: the turbulence alone. */
+  function roughness(heat: number): number {
+    const wind = new WindField(terrain, calmWeather({ thermalStrength: 2 }), 128);
+    wind.setSun(heat, UP);
+    wind.thermals.thermals = [];
+    let sum = 0, n = 0;
+    for (let i = 0; i < 400; i++) {
+      const w = wind.sample(1000 + (i % 20) * 37, 3000 + Math.floor(i / 20) * 29, 700, i * 0.7).w;
+      sum += w * w; n++;
+    }
+    return Math.sqrt(sum / n);
+  }
+
+  it('makes the midday air rough and the evening air smooth', () => {
+    expect(roughness(1)).toBeGreaterThan(0.3);
+    expect(roughness(0.1)).toBeLessThan(roughness(1) / 5);
+    expect(roughness(0)).toBe(0);
+  });
+
+  it('raises cloudbase to the inversion as heating peaks', () => {
+    const wind = new WindField(terrain, calmWeather({ inversionM: 2000 }), 128);
+    wind.setSun(0, UP);
+    expect(wind.cloudbase).toBe(1500);
+    wind.setSun(1, UP);
+    expect(wind.cloudbase).toBe(2000);
+  });
+});

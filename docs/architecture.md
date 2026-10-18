@@ -78,6 +78,13 @@ Built on a 512² grid over the site (~82 m cells over the 42 km island bbox), re
 Thermals trigger over land above 30 m, live 6–12 min with a ramp up and down, lean downwind by
 the time the air took to climb, have a sink ring, stop at the inversion and mark it with a cumulus.
 
+The time of day (`src/sim/sun.ts`, solar time) sets the sun's position and a 0..1 heating that
+peaks in the early afternoon. Heating scales thermal climb and count, adds convective turbulence
+and lifts cloudbase toward the inversion; a low sun puts the thermals on the slopes facing it
+([physics.md](physics.md#the-sun-and-the-time-of-day)). On screen, `Sunlight` in
+`src/game/world.ts` drives the sky shader, the sun's light, the fog, the exposure and the cloud
+tint from the same sun, so a low sun turns the scene into a sunset.
+
 These rules come from the notes vault's *coastal-soaring-lift-factors* note; the tests in
 `src/sim/wind.test.ts` pin each of them on a synthetic cliff.
 
