@@ -230,7 +230,7 @@ when you let go.
 ### The flare
 
 Full brakes from trim: CL jumps, the canopy pitches back as it slows, and the glider zooms up
-briefly (about +0.5 m/s on all three wings) while the airspeed falls from 38 to about 21 km/h.
+briefly (about +0.6 m/s on the EN-A, +0.9 on the EN-B and +1.2 on the EN-C) while the airspeed falls from 38 to about 21 km/h.
 Hold the brakes and the speed runs out into a stall (§7). The zoom is smaller than the old point-
 mass model's +2 m/s: a canopy falling back loses its own airspeed relative to the pilot, as a real
 one does when you stab the brakes.
@@ -264,19 +264,32 @@ Hold a deep brake and a wing willing to spiral winds in: steeper bank, faster, h
 sink, until the drag of the faster, steeper wing balances it. On release the stored speed comes
 out as a big zoom climb, then the pendulum swings it back to level.
 
+**More brake winds it tighter.** In a developed spiral the inner, braked half flies just past its
+stall (the canopy rolls about its chord as it circles, so the inner side meets the air at a high
+angle) and the outer half carries the load. A brake pulled past 70 % keeps that half's profile
+cambered past the stall (`STALL_CAMBER_CL`, fading out 0.3 rad past it), so it keeps more lift
+the deeper it's pulled and the spiral winds faster. Without that, a stalled strip was a flat
+plate whatever the brake, and every spiral settled at the same ~62°, 60°/s, 7.5 m/s and 1.9 G
+from 80 % to full brake. Brakes at 70 % or less are untouched by it. Managing a spiral is now
+managing the inner brake: ease it off to bring the G down, and release it gradually, because
+letting go at 5 G throws the wing into a big climb and a swing.
+
 ![Spiral dive and exit for the three wing classes](physics/spiral.svg)
 
-80 % brake held for 16 s:
+One brake held, after 30 s:
 
-| Wing | Bank | Load | Airspeed | Sink |
-|---|---|---|---|---|
-| EN-A | 25° (a steep turn: the school wing resists spiralling) | 1.1 G | 37 km/h | 1.4 m/s |
-| EN-B | 80° | 3.0 G | 75 km/h | 12.5 m/s |
-| EN-C | 59° | 1.8 G | 59 km/h | 6.2 m/s |
+| Wing | 80 % | 90 % | 100 % |
+|---|---|---|---|
+| EN-A | 24°, 1.1 G, 1.4 m/s (a steep turn: the school wing resists spiralling) | 25°, 1.1 G, 1.5 m/s | 28°, 1.1 G, 1.5 m/s |
+| EN-B | 106°/s, 3.2 G, 13.4 m/s | 146°/s, 4.6 G, 17.0 m/s | 164°/s, 5.3 G, 18.3 m/s |
+| EN-C | 118°/s, 3.7 G, 15.6 m/s | 145°/s, 4.6 G, 17.9 m/s | 164°/s, 5.4 G, 19.4 m/s |
 
-All three come out on their own when released (EN-B within about 5 s). A full one-sided brake at
-low speed is past the spiral: the braked tip nears its stall, which is how a real spin starts.
-The HUD flags `spiral` when the load passes 2.2 G above about 52° bank, and clears it below 1.4 G.
+Bank sits at 76–81° in all of these; the depth shows in turn rate, G and sink. Locked in at 80 %
+and then pulled to full, the EN-B goes from about 110°/s, 3.3 G and 14 m/s to 164°/s, 5.3 G and
+18 m/s within 4 s. All three come out on their own when released (EN-B within about 5 s from
+80 %). A full one-sided brake at low speed is past the spiral: the braked tip nears its stall,
+which is how a real spin starts. The HUD flags `spiral` when the load passes 2.2 G above about
+52° bank, and clears it below 1.4 G.
 
 ### Wingovers
 
@@ -296,7 +309,8 @@ tight. Rush the rhythm (3 s) and the swing never builds.
 A strip stalls past its own stall angle (lower with more brake). Past the stall each strip flies
 like a **flat plate**: lift `1.1·sin 2α`, drag `1.8·sin²α`. Holding both brakes past 90 % keeps
 pulling the trailing edge down over 1.2 s, which deepens the stall. The glider counts as
-**stalled** when most of the canopy is past its stall angle for 0.4 s.
+**stalled** when most of *both* halves are past their stall angle for 0.4 s. (One half past its
+stall is a deep spiral's inner side, not a stall.)
 
 **Full stall.** Stalled with both brakes still held past 70 %, the inlets no longer face the air
 and the canopy **deflates** over 0.7 s (`deflation` 0 → 1). A deflated canopy keeps 15 % of its
@@ -604,6 +618,7 @@ Change one, then run `npm test` and `npm run physics-figures`.
 | `CP_ALPHA`, `CP_STALL` | 3 chords/rad, 0.72 chords | How far aft the centre of pressure moves with angle of attack, and past the stall |
 | `CM_Q` | 30 | Pitch damping relative to the airflow |
 | `CD_CROSS` | 0.047 | Drag of flow along the span (the arc as a fin) |
+| `DEEP_BRAKE`, `STALL_CAMBER_CL`, `STALL_CAMBER_FADE` | 70 %, 1.6, 0.3 rad | A brake past 70 % keeps camber lift past the stall (up to +1.6 CL at full brake, gone 0.3 rad past it): how much more brake tightens a spiral |
 | `DEEP_STALL_INCIDENCE`, `DEEP_HOLD` | 0.2 rad, 1.2 s | How held deep brakes deepen the stall |
 | `WEIGHT_SHIFT_M` | 0.15 m | How far the pilot leans |
 | `COLLAPSE_LOAD`, `COLLAPSE_SECONDS` | 0.3 G, 2.5 s | When slack lines fold a side, and how long it stays folded |
@@ -628,7 +643,7 @@ and worth revisiting for the Unreal build:
   the canopy; slack is detected and becomes a fold. No riser twist either.
 - **No apparent-mass tensor.** The air the canopy carries is a single added inertia, not the
   direction-dependent apparent mass of a real canopy.
-- **The flare is soft.** About +0.5 m/s, because the canopy pitches back and loses airspeed. Real
+- **The flare is soft.** About +0.6 to +1.2 m/s, because the canopy pitches back and loses airspeed. Real
   flares at the ground are progressive, and the sim rewards that too.
 - **Collapses and stalls are states, not shapes.** The aerodynamics don't know what the canopy
   looks like. A fold is "one side keeps 30 % of its lift and drags more", and there are no

@@ -6,6 +6,8 @@ import type { TouchPad } from './touch';
 
 const RAMP = 2.5; // brake travel per second on keys
 const TURN_BRAKE = 0.7;
+/** Past TURN_BRAKE, Shift feeds the brake in this slowly (per second): hold it longer to wind a spiral tighter. */
+const DEEP_RAMP = 0.15;
 const BOTH_BRAKES = 0.55;
 
 export type Action = 'reset' | 'camera' | 'mute' | 'pause' | 'help' | 'lift' | 'nextLaunch' | 'layout' | 'sites' | 'warp';
@@ -56,12 +58,19 @@ export class Input {
     const both = this.down('KeyS', 'ArrowDown') ? BOTH_BRAKES : 0;
     const flare = this.down('Space');
     // Shift turns a normal turn into a deep brake — the way into a spiral.
-    const turnBrake = this.down('ShiftLeft', 'ShiftRight') ? 1 : TURN_BRAKE;
+    const deep = this.down('ShiftLeft', 'ShiftRight');
+    const turnBrake = deep ? 1 : TURN_BRAKE;
     const targetL = flare ? 1 : Math.min((this.down('KeyA', 'ArrowLeft') ? turnBrake : 0) + both, 1);
     const targetR = flare ? 1 : Math.min((this.down('KeyD', 'ArrowRight') ? turnBrake : 0) + both, 1);
     const ramp = (v: number, t: number) => v + Math.max(-RAMP * dt, Math.min(RAMP * dt, t - v));
-    this.keyLeft = ramp(this.keyLeft, targetL);
-    this.keyRight = ramp(this.keyRight, targetR);
+    // Shift pulls to the turn brake as fast as ever, then feeds the rest in slowly: how deep a
+    // spiral winds is how long Shift is held.
+    const brakeRamp = (v: number, t: number) => {
+      if (!deep || flare || t <= v) return ramp(v, t);
+      return v < TURN_BRAKE ? Math.min(ramp(v, t), TURN_BRAKE) : Math.min(v + DEEP_RAMP * dt, t);
+    };
+    this.keyLeft = brakeRamp(this.keyLeft, targetL);
+    this.keyRight = brakeRamp(this.keyRight, targetR);
     const forward = this.down('KeyW', 'ArrowUp');
     const shift = (this.down('KeyE') ? 1 : 0) - (this.down('KeyQ') ? 1 : 0);
 

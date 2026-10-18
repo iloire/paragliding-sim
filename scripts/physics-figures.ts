@@ -248,17 +248,17 @@ function flareFigure(): void {
 
 function spiralFigure(): void {
   const runs = (Object.keys(polars) as WingId[]).map((id) => ({
-    id, data: fly(polars[id], 32, (t) => (t < 16 ? { ...hands, brakeRight: 0.8 } : hands)),
+    id, data: fly(polars[id], 40, (t) => (t < 16 ? { ...hands, brakeRight: 0.8 } : t < 24 ? { ...hands, brakeRight: 1 } : hands)),
   }));
   const per = (f: (s: GliderState) => number) => runs.map((r) => series(WINGS[r.id].label, WING_COLOR[r.id], r.data, f));
   save('spiral.svg', lineChart({
-    title: 'Spiral dive: one brake held at 80 % for 16 s, then released',
-    subtitle: 'EN-B and EN-C wind into a spiral; the EN-A school wing settles in a steep turn. Hands up, all three unwind.',
-    xLabel: 'Time (s)', x: [0, 32],
-    vRules: [{ at: 16, label: 'brake released' }],
+    title: 'Spiral dive: one brake at 80 % for 16 s, pulled to 100 % for 8 s, then released',
+    subtitle: 'EN-B and EN-C spiral, tighter on more brake; the EN-A school wing stays in a steep turn. Hands up, all unwind.',
+    xLabel: 'Time (s)', x: [0, 40],
+    vRules: [{ at: 16, label: 'full brake' }, { at: 24, label: 'released' }],
     panels: [
-      { yLabel: 'Bank (°)', series: per((s) => s.bank * DEG), y: [-40, 95], height: 150 },
-      { yLabel: 'Load factor (G)', series: per((s) => s.load), y: [0, 4.5], height: 120 },
+      { yLabel: 'Bank (°)', series: per((s) => s.bank * DEG), y: [-70, 95], height: 150 },
+      { yLabel: 'Load factor (G)', series: per((s) => s.load), y: [0, 6], height: 120 },
       { yLabel: 'Vertical speed (m/s)', series: per((s) => s.vz), height: 120 },
     ],
   }));

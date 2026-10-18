@@ -134,6 +134,29 @@ describe('glider', () => {
     expect(s.load).toBeLessThan(1.4);
   });
 
+  it('winds a spiral tighter on more brake: faster round, more sink, more G — and it is not a stall', () => {
+    const s = createGlider(0, 0, 9000, 0, 'flying', polar.trim);
+    let prev = s.heading, turned = 0, stalled = false;
+    const hold = (brakeRight: number, seconds: number) => {
+      turned = 0;
+      for (let i = 0; i < seconds * 120; i++) {
+        stepGlider(s, { ...hands, brakeRight }, polar, flatWorld(), 1 / 120);
+        turned += Math.atan2(Math.sin(s.heading - prev), Math.cos(s.heading - prev));
+        prev = s.heading;
+        stalled ||= s.stalled;
+      }
+      return { rate: turned / seconds, vz: s.vz, load: s.load };
+    };
+    hold(0.8, 18);
+    const locked = hold(0.8, 4);
+    hold(1, 8);
+    const deeper = hold(1, 4);
+    expect(deeper.rate).toBeGreaterThan(locked.rate * 1.3);
+    expect(deeper.vz).toBeLessThan(locked.vz - 3);
+    expect(deeper.load).toBeGreaterThan(locked.load + 1.5);
+    expect(stalled).toBe(false);
+  });
+
   /**
    * Pumps wingovers for 25 s: brake and lean on one side, then the other, every `period / 2` s.
    * Returns the biggest bank, the load at that moment, and how many times a side folded.

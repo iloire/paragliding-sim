@@ -53,7 +53,7 @@ You start in the air above the launch, facing into the wind.
 | Key | Does |
 |---|---|
 | **A / D** | Left / right brake |
-| **Shift + A / D** | Deep brake (hold it for a spiral dive) |
+| **Shift + A / D** | Deep brake: hold it for a spiral dive, longer to wind it tighter |
 | **Q / E** | Weight shift (with A/D in rhythm = wingovers) |
 | **W** | Run on the ground, speed bar in the air |
 | **R** | Restart, in the air above the launch |

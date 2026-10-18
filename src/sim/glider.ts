@@ -156,6 +156,15 @@ const STALL_WIDTH = 0.12;
 /** Past the stall the profile flies like a flat plate: lift FLAT_CL·sin 2α, drag FLAT_CD·sin²α. */
 const FLAT_CL = 1.1;
 const FLAT_CD = 1.8;
+/**
+ * A side's brake pulled past DEEP_BRAKE keeps its strips' profile cambered past their stall: up
+ * to STALL_CAMBER_CL more lift at full brake, fading out by STALL_CAMBER_FADE rad past the stall
+ * (a deep stall is a flat plate whatever the brake). In a spiral the inner, braked half flies just
+ * past its stall, so this is what lets more brake wind the spiral tighter.
+ */
+const DEEP_BRAKE = 0.7;
+const STALL_CAMBER_CL = 1.6;
+const STALL_CAMBER_FADE = 0.3;
 /** A strip's lift limit, above the polar's: the arc tilts lift away from vertical, so each strip works harder. */
 const STRIP_CL_MAX = 1.12;
 /** The brake lines pull the outer canopy most: share of a side's brake each strip gets, inner to outer. */
@@ -365,11 +374,13 @@ class Rig {
     return (this.clMax - CAMBER_CL * this.brakeScale * brake) / LIFT_SLOPE;
   }
 
-  cl(alpha: number, brake: number): number {
+  /** `deep`: how far the side's brake is past DEEP_BRAKE (0..1), for the camber kept past the stall. */
+  cl(alpha: number, brake: number, deep = 0): number {
     const stall = this.alphaStall(brake);
     const attached = Math.max(Math.min(LIFT_SLOPE * alpha + CAMBER_CL * this.brakeScale * brake, this.clMax), -1);
     const k = smoothstep(stall, stall + STALL_WIDTH, alpha);
-    return attached * (1 - k) + FLAT_CL * Math.sin(2 * alpha) * k;
+    const camber = deep > 0 ? STALL_CAMBER_CL * deep * (1 - smoothstep(stall, stall + STALL_CAMBER_FADE, alpha)) : 0;
+    return attached * (1 - k) + (FLAT_CL * Math.sin(2 * alpha) + camber) * k;
   }
 
   /** The polar's total drag at this lift, less the pilot's share, plus the brake and the stall. */
@@ -472,12 +483,12 @@ function tilted(st: Strip, brake: number, tipTilt: number): Strip {
   return { ...st, n: [0, Math.sin(phi), Math.cos(phi)], s: [0, Math.cos(phi), -Math.sin(phi)] };
 }
 
-function stripForce(rig: Rig, strip: Strip, air: Vec, rigAngle: number, brake: number, folded: boolean, deflation = 0): StripForce {
+function stripForce(rig: Rig, strip: Strip, air: Vec, rigAngle: number, brake: number, folded: boolean, deflation = 0, deep = 0): StripForce {
   const st = tilted(strip, brake, rig.tipTilt);
   const u = air[0], w = dot(air, st.n), sv = dot(air, st.s);
   const vp = Math.hypot(u, w) || 1e-6;
   const alpha = Math.atan2(-w, u) + rigAngle + BRAKE_INCIDENCE * rig.brakeScale * brake;
-  let cl = rig.cl(alpha, brake), cd = rig.cd(alpha, brake);
+  let cl = rig.cl(alpha, brake, deep), cd = rig.cd(alpha, brake);
   if (folded) { cl *= FOLD_LIFT; cd += FOLD_CD; }
   if (deflation > 0) { cl *= 1 - (1 - DEFLATED_LIFT) * deflation; cd *= 1 - (1 - DEFLATED_DRAG) * deflation; }
   const qs = HALF_RHO * (AREA / STRIPS);
@@ -558,6 +569,7 @@ function fly(s: GliderState, c: Controls, polar: Polar, env: Environment, dt: nu
   const I = inertia(geo);
   const sideBrake = (st: Strip) => (st.side > 0 ? c.brakeLeft : c.brakeRight);
   const brakes = strips.map((st) => stripBrake(sideBrake(st), st));
+  const deep = strips.map((st) => Math.max((sideBrake(st) - DEEP_BRAKE) / (1 - DEEP_BRAKE), 0));
   s.deepTimer = Math.min(c.brakeLeft, c.brakeRight) > 0.9 ? s.deepTimer + dt : 0;
   const deepStall = DEEP_STALL_INCIDENCE * smoothstep(0, DEEP_HOLD, s.deepTimer);
   const holding = s.stalled && Math.min(c.brakeLeft, c.brakeRight) > STALL_HOLD_BRAKE;
@@ -580,7 +592,9 @@ function fly(s: GliderState, c: Controls, polar: Polar, env: Environment, dt: nu
 
   const h = dt / SUBSTEPS;
   const prevBank = s.bank, prevCl = s.cl;
-  let clSum = 0, alphaSum = 0, stalledShare = 0;
+  let clSum = 0, alphaSum = 0;
+  // Share of each side's strips past their stall (left, right), summed over the substeps.
+  const stalledSide = [0, 0];
 
   for (let k = 0; k < SUBSTEPS; k++) {
     const q = s.q, w = s.omega;
@@ -596,12 +610,12 @@ function fly(s: GliderState, c: Controls, polar: Polar, env: Environment, dt: nu
       const shift = (1 - s.deflation) * (CP_ALPHA * (a0 - trimAlpha[i] - BRAKE_INCIDENCE * rig.brakeScale * brakes[i] - deepStall)
         + CP_STALL * (1 - deepStall / DEEP_STALL_INCIDENCE) * smoothstep(stall, stall + 0.2, a0));
       const at: Vec = [st.r[0] - CHORD * Math.min(Math.max(shift, -CP_LIMITS[1]), -CP_LIMITS[0]), st.r[1], st.r[2]];
-      const f = stripForce(rig, st, sub(add(velB, cross(w, at)), windCB), rigging, brakes[i], folded[i], s.deflation);
+      const f = stripForce(rig, st, sub(add(velB, cross(w, at)), windCB), rigging, brakes[i], folded[i], s.deflation, deep[i]);
       F = add(F, f.force);
       M = add(M, cross(at, f.force));
       clSum += f.cl / STRIPS;
       alphaSum += f.alpha / STRIPS;
-      if (f.alpha > stall) stalledShare += 1 / STRIPS;
+      if (f.alpha > stall) stalledSide[st.side > 0 ? 0 : 1] += 2 / STRIPS;
     });
     // The pilot's drag and weight at his point; the canopy's weight at its own.
     const airPilot = sub(add(velB, cross(w, pilot)), windPB);
@@ -676,8 +690,9 @@ function fly(s: GliderState, c: Controls, polar: Polar, env: Environment, dt: nu
   s.clRate = (s.cl - prevCl) / dt;
   s.alpha = alphaSum / SUBSTEPS;
 
-  // Stall: most of the canopy past its stall angle for a moment.
-  const stalled = stalledShare / SUBSTEPS;
+  // Stall: most of both halves past their stall angle for a moment. (In a deep spiral the inner,
+  // braked half flies past its stall while the outer half carries it: that's not a stall.)
+  const stalled = Math.min(stalledSide[0], stalledSide[1]) / SUBSTEPS;
   s.stallTimer = stalled > 0.6 ? s.stallTimer + dt : Math.max(s.stallTimer - 2 * dt, 0);
   if (!s.stalled && s.stallTimer > 0.4) { s.stalled = true; s.event = 'stall'; }
   if (s.stalled && stalled < 0.2) { s.stalled = false; s.stallTimer = 0; s.event = 'recovered'; }

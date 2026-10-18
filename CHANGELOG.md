@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-18 15:10 UTC — Spirals wind tighter on more brake
+
+- In a spiral dive, more inner brake now means a tighter spiral. On the EN-B, 80 % brake settles at about 105°/s, 3.2 G and 13 m/s down; 90 % at 145°/s, 4.6 G and 17 m/s; full brake at 165°/s, 5.3 G and 18 m/s. Before, anything past 80 % settled at the same 60°/s, 1.9 G and 7.5 m/s, so pulling more did nothing. Ease the brake off to bring the G down, and come out gradually: letting go at 5 G throws you into a big climb and swing.
+- On the keyboard, Shift + A/D pulls to the turn brake as before and then feeds the rest in slowly (full brake after 2 more seconds), so how long you hold Shift is how deep you go.
+- A deep spiral no longer reports a stall (and no longer drops time warp): a stall now needs both halves of the wing stalled.
+- Full brakes keep more lift past the stall, so the flare zooms a little more (+0.6 to +1.2 m/s, was +0.5). Full stalls are unchanged.
+
 ## 2026-10-18 17:10 UTC — No flying in the dark
 
 - The Solar time slider now runs from Sunrise to Sunset for the site and today's date (the sun about 3° up at each end), not a fixed 5–21 h. Before, 18:00 at Famara in October put you in black night.
