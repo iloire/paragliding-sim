@@ -2,30 +2,40 @@
 
 [![CI](https://github.com/iloire/paragliding-sim/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/iloire/paragliding-sim/actions/workflows/ci.yml)
 
-A paragliding simulator prototype at the real **Famara** take-off on Lanzarote, running in the
-browser. It is for pilots who know the site and want the air to behave like it does: ridge lift
-that depends on the wind angle against the Risco de Famara, a soaring band that tops out, an
-inversion that kills it, thermals that mark themselves with cumulus. The glider is a rigid body —
-an arched canopy of six strips 7.5 m above the pilot — so turns, spirals, wingovers with a light
-top, stalls and gust collapses come out of the physics. The
-terrain and aerial photo are the real IGN data. The Lanzarote map covers the island's flyable sites:
-Famara, Mala, Mirador del Río, Tenesar, El Cuchillo, Macher and Playa Quemada (**N** cycles through
-them). Four mainland regions in the Pyrenees and Pre-Pyrenees follow: **Loarre** (Loarre, Tiacuto),
-**Castejón de Sos** (Rials, Chía, Pedras Blancas, Liri), **Àger** (Sant Alís, Àger) and **Organyà**
-(Organyà, Santa Fe, Prats, Narieda). **M** picks between regions.
+A browser paragliding simulator over real terrain, for pilots who want the air to behave like it
+does at their sites. It is the prototype of a planned Unreal Engine game: it tests the flight feel
+and the lift model cheaply first.
 
-This is the **browser prototype** of a planned Unreal Engine game — it proves the flight feel and
-the lift model cheaply first. The plan lives in the notes vault (`Projects/paragliding-simulator/plan.md`).
+![Ridge soaring the Risco de Famara in a 24 km/h north-westerly](docs/screenshots/famara-ridge.png)
 
-![Soaring the Risco de Famara in a 24 km/h north-westerly](docs/screenshots/famara-cliff.png)
+## What's in it
 
-![Instrument panel: vario, AGL, thermal assistant, wind rose and glide to the Famara beach landing](docs/screenshots/instrument-panel.png)
+- **Real terrain**: IGN heights and aerial photo, with 5 m / 1.5 m px detail around each launch.
+- **Air that works like the real thing**: ridge lift set by the wind angle to the slope, a
+  soaring band that tops out, an inversion that caps it, and thermals marked by cumulus.
+- **A wing that is a rigid body**: turns, spirals, wingovers, stalls and collapses come out of the
+  physics. Nothing is scripted.
+- **Solo or tandem**: the tandem flies with a passenger in front, on spreader bars.
+- **Speed bar, time of day, sunsets**: thermals are weak in the morning and strongest in the early afternoon.
+- **Instruments**: vario, AGL, a thermal assistant, a wind rose, glide to the landing, and IGC export.
 
-![Spiral dive over Lanzarote: 82° bank, 3.4 G, −13.7 m/s](docs/screenshots/spiral-dive.png)
+| | |
+|---|---|
+| ![Tandem crew: passenger in front, pilot behind on the brakes](docs/screenshots/tandem.png) | ![Spiral dive at 60° of bank, −7 m/s](docs/screenshots/spiral-dive.png) |
+| ![Rials, Castejón de Sos, in the Pyrenees](docs/screenshots/castejon-rials.png) | ![Sunset over Famara](docs/screenshots/sunset.png) |
+| ![Site picker over the lift map](docs/screenshots/site-picker.png) | |
 
-![Above the Famara launch: native 5 m terrain and 1.5 m/px photo near the camera](docs/screenshots/terrain-detail.png)
+## Sites
 
-![Sunset over Famara: the sun on the horizon, the wing backlit](docs/screenshots/sunset.png)
+| Region | Launches |
+|---|---|
+| **Lanzarote** | Famara, Mala, Mirador del Río, Tenesar, El Cuchillo, Macher, Playa Quemada |
+| **Loarre** | Loarre, Tiacuto |
+| **Castejón de Sos** | Rials, Chía, Pedras Blancas, Liri |
+| **Àger** | Sant Alís, Àger |
+| **Organyà** | Organyà, Santa Fe, Prats, Narieda |
+
+**M** opens the site picker. **N** goes to the next launch in the region.
 
 ## Run it
 
@@ -34,17 +44,35 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-You start in the air above the launch, facing into the wind (so does switching launch with **N**,
-or picking one from the site list on **M**).
-**A/D** brake left/right, **T** air-starts again, **R** puts you on the ground at the launch, where
-**W** runs off it into the wind. **L** shows the lift map. **Shift + A/D** is a deep brake (hold it for a spiral dive);
-**A/D with Q/E** in rhythm with the swing builds wingovers. A gamepad works too (triggers = brakes), and so does a phone held sideways: pull a thumb down on either
-half of the screen to brake that side, push it up to run, slide it sideways to shift weight. The weather panel on the
-right changes wind, inversion and thermals live, and **Time of day** moves the sun: thermals are
-weak in the morning, strongest and roughest in the early afternoon, gone by the evening, and the
-Sunset preset puts the sun on the horizon. The address bar follows along, so a link like
-`?region=lanzarote&launch=mala&wind=300/18&time=17:20` starts that launch in that wind at that
-(solar) time.
+You start in the air above the launch, facing into the wind.
+
+### Controls
+
+| Key | Does |
+|---|---|
+| **A / D** | Left / right brake |
+| **Shift + A / D** | Deep brake (hold it for a spiral dive) |
+| **Q / E** | Weight shift (with A/D in rhythm = wingovers) |
+| **W** | Run on the ground, speed bar in the air |
+| **T** · **R** | Air start · back to the launch, on the ground |
+| **C** · **L** | Camera (orbit, chase, pilot) · lift map |
+| **M** · **N** | Site picker · next launch |
+| **H** | All controls |
+
+A gamepad works too (the triggers are the brakes). So does a phone held sideways: drag a thumb on
+either half of the screen.
+
+The panel on the right sets wind, inversion, thermals, time of day, wing and solo/tandem, all live.
+
+### Share a start
+
+The URL follows the settings, so a link drops someone into the same flight:
+
+```
+?region=lanzarote&launch=mala&wind=300/18&time=17:20
+```
+
+`wind` is direction/km/h, and `time` is solar time.
 
 ## Check it
 
@@ -54,21 +82,30 @@ npm run lint
 npm run build      # typecheck + production bundle
 ```
 
-CI runs the same three on every push to `main` and every pull request.
+CI runs all three on every push to `main` and on every pull request.
 
 ## Terrain data
 
-The height map and orthophoto are committed under `public/sites/lanzarote/`, plus 3 km detail tiles
-(native 5 m heights, 1.5 m/px photo) around the launches in `detail/`. To rebuild them, or to add
-a region, edit its `site.json`, list it in `public/sites/index.json` and run
-`npm run fetch-terrain -- <region>` (`--detail` redoes only the tiles). The plan for more sites is
-in [docs/plan-sites.md](docs/plan-sites.md). See
-[docs/architecture.md](docs/architecture.md) for the data pipeline, the flight model and the
-air model, and [docs/physics.md](docs/physics.md) for how the physics works, with diagrams
-and charts generated from the model.
+Each region lives in `public/sites/<region>/`: a height map, an orthophoto, and 3 km detail
+tiles around the launches.
+
+To add a region or rebuild one:
+
+1. Edit its `site.json`.
+2. List it in `public/sites/index.json`.
+3. Run `npm run fetch-terrain -- <region>` (`--detail` redoes only the tiles).
+
+## Docs
+
+- [docs/architecture.md](docs/architecture.md): data pipeline, flight model, air model
+- [docs/physics.md](docs/physics.md): how the physics works, with diagrams and charts
+- [docs/plan-sites.md](docs/plan-sites.md): plan for more sites
+- The game plan is in the notes vault (`Projects/paragliding-simulator/plan.md`).
 
 ## Deploy
 
-Not deployed. It is a static Vite build (`dist/`), so any static host works when it is time.
+Not deployed yet. It is a static Vite build (`dist/`), so any static host will do.
+
+---
 
 Terrain: MDT05 and PNOA © [Instituto Geográfico Nacional](https://www.ign.es), CC BY 4.0.
