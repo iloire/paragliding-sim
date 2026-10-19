@@ -49,3 +49,17 @@ describe('Heightmap beyond the site edge', () => {
     expect(site.groundAt(7000, 3000)).toBe(550);
   });
 });
+
+describe('Heightmap from the game file', () => {
+  const file = (steps: number[]) => new Int16Array(steps).buffer;
+
+  it('reads decimetres by default', () => {
+    expect(Array.from(Heightmap.fromInt16(file([-150, 7590, 32767, 0]), 2, 100).data)).toEqual([-15, 759, 3276.7, 0].map(Math.fround));
+  });
+
+  it('reads coarser steps for a region above 3276 m', () => {
+    const teide = Heightmap.fromInt16(file([-75, 18575, 18575, 18575]), 2, 100, 0.2);
+    expect(teide.data[0]).toBeCloseTo(-15, 3);
+    expect(teide.data[1]).toBeCloseTo(3715, 3);
+  });
+});

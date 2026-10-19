@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-19 08:46 UTC — Tenerife
+
+- New region: **Tenerife**, with seven launches: La Corona (north-coast soaring above Los Realejos), Izaña NW and Izaña SE (2200 m, the highest launches in Spain), Ladera de Güímar, Ifonche and Taucho (the southern classics above Adeje) and Los Gigantes. The 66 km bbox (IGN MDT05 + PNOA) takes in Teide, Teno and La Laguna, with 5 m detail tiles around every launch. It starts in a 20 km/h NNE trade wind under a 1400 m inversion. `?region=tenerife&launch=izana-se`.
+- Teide (3715 m) is higher than the 3276 m Int16 decimetres can hold, so a region can now store its heights in coarser steps (`heightmap.unitM`, 0.2 m for Tenerife). The other regions are unchanged.
+- `fetch-terrain` retries IGN's occasional 502s instead of giving up partway through a run.
+
 ## 2026-10-18 15:25 UTC — No spiral without the deep brake
 
 - A spiral now needs the deep brake to keep going. Before, a 60–70 % turn that a gust or some weight shift tipped steeper locked into a spiral at about 65°, 2 G and 8–10 m/s and stayed there, so you could spiral down without Shift. Now it comes back out by itself within a few seconds, and easing the brake back to 60 % unwinds even a full-brake spiral.

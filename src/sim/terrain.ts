@@ -24,11 +24,11 @@ export class Heightmap {
     this.pixel = extent / size;
   }
 
-  /** From the game file: Int16 little-endian decimetres. */
-  static fromInt16Dm(buffer: ArrayBuffer, size: number, extent: number, x0 = 0, y0 = 0): Heightmap {
+  /** From the game file: Int16 little-endian, `unitM` metres a step (decimetres by default). */
+  static fromInt16(buffer: ArrayBuffer, size: number, extent: number, unitM = 0.1, x0 = 0, y0 = 0): Heightmap {
     const raw = new Int16Array(buffer);
     const data = new Float32Array(raw.length);
-    for (let i = 0; i < raw.length; i++) data[i] = raw[i] / 10;
+    for (let i = 0; i < raw.length; i++) data[i] = raw[i] * unitM;
     return new Heightmap(size, extent, data, x0, y0);
   }
 

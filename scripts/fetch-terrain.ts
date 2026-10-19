@@ -1,5 +1,6 @@
 // Downloads the open IGN data for a site and writes the files the game loads:
-//   height.bin — Int16 little-endian, decimetres, row 0 = north edge, sea = SEA_LEVEL_DM
+//   height.bin — Int16 little-endian, heightmap.unitM metres a step (default 0.1),
+//                row 0 = north edge, sea = SEA_FLOOR_M
 //   ortho.jpg  — PNOA orthophoto over exactly the same bbox
 //   detail/    — the same pair at the DEM's native 5 m (and a sharper photo) for the
 //                square tiles near the launches, plus tiles.json listing them
@@ -13,7 +14,7 @@ import proj4 from 'proj4';
 const WCS = 'https://servicios.idee.es/wcs-inspire/mdt';
 const WMS = 'https://www.ign.es/wms-inspire/pnoa-ma';
 const NODATA = -32768;
-const SEA_LEVEL_DM = -150; // sea floor 15 m below the water plane, so the coastline reads clearly
+const SEA_FLOOR_M = -15; // 15 m below the water plane, so the coastline reads clearly
 const DEM_RES = 5; // MDT05 native resolution (m)
 /** A detail tile needs at least this much land to be worth fetching. */
 const MIN_LAND = 0.01;
@@ -22,16 +23,21 @@ interface SiteFile {
   proj4: string;
   crs: string;
   bbox: [number, number, number, number];
-  heightmap: { file: string; size: number };
+  heightmap: { file: string; size: number; unitM?: number };
   ortho: { file: string; size: number };
   launches: { lat: number; lon: number }[];
   detail?: { dir: string; tileM: number; orthoSize: number; radiusM: number };
 }
 
-async function download(url: string): Promise<ArrayBuffer> {
+// IGN answers the odd request with a 502 partway through a long run; retry those.
+async function download(url: string, tries = 4): Promise<ArrayBuffer> {
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url}`);
-  return res.arrayBuffer();
+  if (res.ok) return res.arrayBuffer();
+  if (res.status >= 500 && tries > 1) {
+    await new Promise((r) => setTimeout(r, 5000));
+    return download(url, tries - 1);
+  }
+  throw new Error(`${res.status} ${res.statusText} for ${url}`);
 }
 
 // The WCS returns whole metres; a 3×3 box blur removes the 1 m terracing on gentle slopes.
@@ -58,11 +64,11 @@ function smooth(src: Float32Array, n: number, isSea: Uint8Array): Float32Array {
 }
 
 /**
- * DEM over a square, as game-ready Int16 decimetres. `n` samples a side; omitting it takes
+ * DEM over a square, as game-ready Int16 in `unitM` steps. `n` samples a side; omitting it takes
  * the native 5 m grid with a one-pixel margin that is cropped after smoothing, so
  * neighbouring tiles blur across their shared edge identically.
  */
-async function fetchDem(epsg: string, x0: number, y0: number, x1: number, y1: number, n?: number): Promise<Int16Array> {
+async function fetchDem(epsg: string, unitM: number, x0: number, y0: number, x1: number, y1: number, n?: number): Promise<Int16Array> {
   const m = n === undefined ? DEM_RES : 0;
   let url = `${WCS}?SERVICE=WCS&REQUEST=GetCoverage&VERSION=2.0.1&CoverageId=Elevacion${epsg}_5` +
     `&FORMAT=image/tiff&SUBSET=x(${x0 - m},${x1 + m})&SUBSET=y(${y0 - m},${y1 + m})`;
@@ -76,7 +82,7 @@ async function fetchDem(epsg: string, x0: number, y0: number, x1: number, y1: nu
   for (let i = 0; i < w * w; i++) {
     const v = raster[i];
     // Some IGN tiles store open sea as 0 m rather than nodata.
-    if (v === NODATA || v <= 0) { isSea[i] = 1; raw[i] = SEA_LEVEL_DM / 10; } else raw[i] = v;
+    if (v === NODATA || v <= 0) { isSea[i] = 1; raw[i] = SEA_FLOOR_M; } else raw[i] = v;
   }
   const height = smooth(raw, w, isSea);
   const crop = m ? 1 : 0;
@@ -85,10 +91,10 @@ async function fetchDem(epsg: string, x0: number, y0: number, x1: number, y1: nu
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
       const i = (r + crop) * w + c + crop;
-      const dm = isSea[i] ? SEA_LEVEL_DM : Math.round(height[i] * 10);
-      // Int16 decimetres top out at 3276.7 m; an Int16Array would silently wrap a higher peak.
-      if (dm > 32767) throw new Error(`${(dm / 10).toFixed(0)} m is above the 3276 m the Int16 format holds — shrink the bbox`);
-      out[r * size + c] = dm;
+      const v = Math.round((isSea[i] ? SEA_FLOOR_M : height[i]) / unitM);
+      // An Int16Array would silently wrap a peak above 32767 steps (3276 m in decimetres).
+      if (v > 32767) throw new Error(`${(v * unitM).toFixed(0)} m is above the ${(32767 * unitM).toFixed(0)} m Int16 holds at ${unitM} m a step — raise heightmap.unitM`);
+      out[r * size + c] = v;
     }
   }
   return out;
@@ -104,7 +110,7 @@ async function fetchOrtho(crs: string, x0: number, y0: number, x1: number, y1: n
 function pickTiles(site: SiteFile, base: Int16Array): [number, number][] {
   const detail = site.detail!;
   const [x0, y0, x1] = site.bbox;
-  const extent = x1 - x0, n = site.heightmap.size, px = extent / n;
+  const extent = x1 - x0, n = site.heightmap.size, px = extent / n, unitM = site.heightmap.unitM ?? 0.1;
   const proj = proj4('EPSG:4326', site.proj4);
   const launches = site.launches.map((l) => {
     const [e, nn] = proj.forward([l.lon, l.lat]);
@@ -122,7 +128,7 @@ function pickTiles(site: SiteFile, base: Int16Array): [number, number][] {
         for (let x = col * detail.tileM; x < (col + 1) * detail.tileM; x += px) {
           const r = Math.min(Math.floor((extent - y) / px), n - 1), c = Math.floor(x / px);
           total++;
-          if (base[r * n + c] > 50) land++;
+          if (base[r * n + c] * unitM > 5) land++;
         }
       }
       if (land / total >= MIN_LAND) tiles.push([col, row]);
@@ -139,16 +145,18 @@ async function main(): Promise<void> {
   const [x0, y0, x1, y1] = site.bbox;
   const epsg = site.crs.split(':')[1];
   const heightFile = join(dir, site.heightmap.file);
+  const unitM = site.heightmap.unitM ?? 0.1;
 
   if (!detailOnly) {
     const n = site.heightmap.size;
     console.log(`DEM ${n}×${n} from IGN MDT05 …`);
-    const dem = await fetchDem(epsg, x0, y0, x1, y1, n);
+    const dem = await fetchDem(epsg, unitM, x0, y0, x1, y1, n);
     writeFileSync(heightFile, Buffer.from(dem.buffer));
     console.log(`Ortho ${site.ortho.size}² from PNOA …`);
     writeFileSync(join(dir, site.ortho.file), await fetchOrtho(site.crs, x0, y0, x1, y1, site.ortho.size));
     let max = 0, sea = 0;
-    for (const v of dem) { max = Math.max(max, v / 10); if (v === SEA_LEVEL_DM) sea++; }
+    const seaStep = Math.round(SEA_FLOOR_M / unitM);
+    for (const v of dem) { max = Math.max(max, v * unitM); if (v === seaStep) sea++; }
     console.log(`Base done: max elevation ${max.toFixed(0)} m, sea cells ${((sea / dem.length) * 100).toFixed(0)}%`);
   }
 
@@ -161,7 +169,7 @@ async function main(): Promise<void> {
   console.log(`${tiles.length} detail tiles of ${tileM / 1000} km at ${DEM_RES} m …`);
   for (const [col, row] of tiles) {
     const tx0 = x0 + col * tileM, ty0 = y0 + row * tileM;
-    const dem = await fetchDem(epsg, tx0, ty0, tx0 + tileM, ty0 + tileM);
+    const dem = await fetchDem(epsg, unitM, tx0, ty0, tx0 + tileM, ty0 + tileM);
     writeFileSync(join(detailDir, `${col}_${row}.bin`), Buffer.from(dem.buffer));
     writeFileSync(join(detailDir, `${col}_${row}.jpg`), await fetchOrtho(site.crs, tx0, ty0, tx0 + tileM, ty0 + tileM, orthoSize));
     process.stdout.write('.');

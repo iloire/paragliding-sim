@@ -169,12 +169,13 @@ The GoatCounter account (code `paragliding-sim`) was created by hand on goatcoun
 
 - **Height**: IGN WCS `Elevacion<EPSG>_5` (MDT05, 5 m) in the region's `crs` — `4083` (REGCAN95 / UTM 28N)
   for the Canaries, `25830` (ETRS89 / UTM 30N) for the mainland — resampled to 2048² (~20.5 m over
-  Lanzarote's 42 km bbox, ~26 m over Gran Canaria's 54 km, ~14.6 m over Loarre's 30 km, ~11.7 m over the 24 km Pyrenean ones), 3×3
-  smoothed to hide 1 m terracing, written as Int16 decimetres. Sea (nodata or ≤ 0 m) becomes −15 m.
+  Lanzarote's 42 km bbox, ~26 m over Gran Canaria's 54 km, ~32 m over Tenerife's 66 km, ~14.6 m over Loarre's 30 km, ~11.7 m over the 24 km Pyrenean ones), 3×3
+  smoothed to hide 1 m terracing, written as Int16 in steps of `heightmap.unitM` metres (default 0.1, decimetres). Sea (nodata or ≤ 0 m) becomes −15 m.
   IGN offers no `25831` coverage, so Castejón, Àger and Organyà (all in zone 31) use zone 30 extended
   east: < 0.2 % scale error, and grid north sits ~3° off true north there.
   **Int16 decimetres stop at 3276.7 m**, and `fetch-terrain` refuses anything higher rather than
-  let it wrap; Castejón's bbox stops south of Aneto and Posets for that reason (its top is 3046 m).
+  let it wrap. Tenerife sets `unitM: 0.2` (up to 6553 m) for Teide's 3715 m; the DEM is whole metres
+  anyway, so nothing is lost. Castejón's bbox stops south of Aneto and Posets (its top is 3046 m).
 - **Orthophoto**: IGN WMS `pnoa-ma`, 4096² JPEG over the same bbox.
 - **Detail tiles** (`detail` in `site.json`): the bbox cut into `tileM` squares; a tile is fetched
   if it has ≥ 1 % land and its centre is within `radiusM` (per axis) of a launch. Each gets the DEM

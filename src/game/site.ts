@@ -29,7 +29,8 @@ export interface SiteSpec {
   bbox: [number, number, number, number];
   /** Inland regions: height (m) of the flat land assumed beyond the bbox. Omitted = open sea. */
   plainM?: number;
-  heightmap: { file: string; size: number };
+  /** `unitM`: metres per stored step, omitted = 0.1. Int16 decimetres stop at 3276 m, so Teide needs 0.2. */
+  heightmap: { file: string; size: number; unitM?: number };
   ortho: { file: string; size: number };
   /** Native-resolution tiles near the launches, written by scripts/fetch-terrain.ts. */
   detail?: { dir: string; tileM: number; orthoSize: number; radiusM: number };
@@ -81,9 +82,10 @@ export async function loadSite(id: string, spec: SiteSpec): Promise<Site> {
   const base = siteBase(id);
   const buffer = await (await fetch(`${base}${spec.heightmap.file}`)).arrayBuffer();
   const [x0, y0, x1] = spec.bbox;
-  const terrain = Heightmap.fromInt16Dm(buffer, spec.heightmap.size, x1 - x0);
+  const unitM = spec.heightmap.unitM ?? 0.1;
+  const terrain = Heightmap.fromInt16(buffer, spec.heightmap.size, x1 - x0, unitM);
   if (spec.plainM !== undefined) terrain.outside = spec.plainM;
-  const detailTiles = spec.detail ? await loadDetail(terrain, `${base}${spec.detail.dir}/`, spec.detail.tileM) : [];
+  const detailTiles = spec.detail ? await loadDetail(terrain, `${base}${spec.detail.dir}/`, spec.detail.tileM, unitM) : [];
   const proj = proj4('EPSG:4326', spec.proj4);
 
   const launches = spec.launches.map((l): Launch => {
@@ -115,11 +117,11 @@ export async function loadSite(id: string, spec: SiteSpec): Promise<Site> {
 }
 
 /** Fetches every detail heightmap up front (they are small) so physics always has them. */
-async function loadDetail(terrain: Heightmap, dir: string, tileM: number): Promise<DetailTile[]> {
+async function loadDetail(terrain: Heightmap, dir: string, tileM: number, unitM: number): Promise<DetailTile[]> {
   const index = (await (await fetch(`${dir}tiles.json`)).json()) as { size: number; tiles: [number, number][] };
   return Promise.all(index.tiles.map(async ([col, row]): Promise<DetailTile> => {
     const buffer = await (await fetch(`${dir}${col}_${row}.bin`)).arrayBuffer();
-    terrain.addDetail(tileM, col, row, Heightmap.fromInt16Dm(buffer, index.size, tileM, col * tileM, row * tileM));
+    terrain.addDetail(tileM, col, row, Heightmap.fromInt16(buffer, index.size, tileM, unitM, col * tileM, row * tileM));
     return { col, row, orthoUrl: `${dir}${col}_${row}.jpg` };
   }));
 }

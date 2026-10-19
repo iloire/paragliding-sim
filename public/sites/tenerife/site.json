@@ -1,0 +1,26 @@
+{
+  "name": "Tenerife",
+  "country": "Spain",
+  "proj4": "+proj=utm +zone=28 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs",
+  "crs": "EPSG:4083",
+  "bbox": [311000, 3097000, 377000, 3163000],
+  "heightmap": { "file": "height.bin", "size": 2048, "unitM": 0.2 },
+  "ortho": { "file": "ortho.jpg", "size": 4096 },
+  "detail": { "dir": "detail", "tileM": 3000, "orthoSize": 2048, "radiusM": 5000 },
+  "launches": [
+    { "id": "la-corona", "name": "La Corona", "lat": 28.3785, "lon": -16.6005 },
+    { "id": "izana-nw", "name": "Izaña NW", "lat": 28.3289, "lon": -16.4914 },
+    { "id": "izana-se", "name": "Izaña SE", "lat": 28.3224, "lon": -16.4916 },
+    { "id": "guimar", "name": "Ladera de Güímar", "lat": 28.2915, "lon": -16.4182, "headingDeg": 80 },
+    { "id": "ifonche", "name": "Ifonche", "lat": 28.1256, "lon": -16.6922, "headingDeg": 200 },
+    { "id": "taucho", "name": "Taucho", "lat": 28.1449, "lon": -16.7359 },
+    { "id": "los-gigantes", "name": "Los Gigantes", "lat": 28.249, "lon": -16.8179 }
+  ],
+  "weather": {
+    "windSpeedKmh": 20,
+    "windFromDeg": 30,
+    "inversionM": 1400,
+    "thermalStrength": 1.2,
+    "turbulence": 0.3
+  }
+}

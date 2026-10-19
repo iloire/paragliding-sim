@@ -36,6 +36,7 @@ It runs in a desktop browser, or on a phone held sideways. Nothing to install.
 | **Àger** | Sant Alís, Àger |
 | **Organyà** | Organyà, Santa Fe, Prats, Narieda |
 | **Gran Canaria** | Los Giles, La Isleta |
+| **Tenerife** | La Corona, Izaña NW, Izaña SE, Ladera de Güímar, Ifonche, Taucho, Los Gigantes |
 
 **M** opens the site picker. **N** goes to the next launch in the region.
 
