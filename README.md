@@ -53,18 +53,28 @@ You start in the air above the launch, facing into the wind.
 
 | Key | Does |
 |---|---|
-| **A / D** | Left / right brake |
+| **W / ↑** | Run on the ground, speed bar in the air |
+| **A / D** or **← / →** | Left / right brake |
+| **S / ↓** | Both brakes |
 | **Shift + A / D** | Deep brake: hold it for a spiral dive, longer to wind it tighter |
+| **Space** | Full brakes: flare |
 | **Q / E** | Weight shift (with A/D in rhythm = wingovers) |
-| **W** | Run on the ground, speed bar in the air |
 | **R** | Restart, in the air above the launch |
-| **C** · **L** | Camera (orbit, chase, pilot) · lift map |
-| **M** · **N** | Site picker · next launch |
+| **N** · **M** | Next launch · site picker (↑ ↓ to choose, Esc or M to close) |
+| **C** | Camera: orbit (drag the mouse), chase, pilot |
+| **L** | Lift map |
 | **T** | Time warp: 1× · 2× · 4× · 8× |
-| **H** | All controls |
+| **I** | Instrument: full · minimal · hidden |
+| **V** · **P** · **H** | Mute the vario · pause · show/hide the controls |
 
-A gamepad works too (the triggers are the brakes). So does a phone held sideways: drag a thumb on
-either half of the screen.
+**Gamepad** (standard mapping): left/right trigger = brakes, left stick = weight shift,
+A = run / speed bar, RB = speed bar, Y = camera, Back = restart, Start = pause.
+
+**Phone or tablet**, held sideways: one thumb per half of the screen, resting wherever it lands.
+Pull it down to brake that side, push it up to run (speed bar in the air), slide it sideways to
+shift weight. Both thumbs down is both brakes, both all the way down a flare, one deep a spiral.
+A second finger on the same half drags the camera round. The buttons along the top are camera,
+restart, sites, instrument and pause.
 
 The panel on the right sets wind, inversion, thermals, time of day, wing and solo/tandem, all live.
 
