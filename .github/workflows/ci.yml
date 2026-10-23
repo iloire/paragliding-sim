@@ -19,6 +19,9 @@ jobs:
       - run: npm run lint
       # GitHub Pages serves the site from /<repo>/, so the bundle and the terrain URLs need that base.
       - run: npm run build -- --base=/${{ github.event.repository.name }}/
+        # The GA4 measurement ID is a repo variable; without it the build ships no GA.
+        env:
+          VITE_GA_ID: ${{ vars.GA_MEASUREMENT_ID }}
       - if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@v3
         with:

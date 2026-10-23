@@ -163,6 +163,13 @@ referrer. Flights are events, counted as paths:
 
 The GoatCounter account (code `paragliding-sim`) was created by hand on goatcounter.com.
 
+Google Analytics 4 runs alongside it, only in builds with a measurement ID: CI passes the repo
+variable `GA_MEASUREMENT_ID` as `VITE_GA_ID` (`gh variable set GA_MEASUREMENT_ID --body G-XXXX`).
+Consent Mode starts with every storage denied, and a one-line "Anonymous play stats? OK / No" chip
+asks once (kept in `localStorage`). GA gets the same flights as events: `takeoff` (region, launch,
+wing, crew) and `landed` / `crashed` / `water` (region, launch, seconds). GA adds engagement time,
+returning players and traffic sources, but only for players who tapped OK.
+
 ## Terrain data
 
 `npm run fetch-terrain -- lanzarote` reads `public/sites/lanzarote/site.json` and downloads:

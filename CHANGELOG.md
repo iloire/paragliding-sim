@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-23 15:16 UTC — Google Analytics
+
+- Google Analytics 4 alongside GoatCounter: takeoffs (region, launch, wing, crew) and how flights end
+  (landed, crashed, water, with the length in seconds), plus GA's engagement time and returning
+  players. Consent Mode starts denied; a one-line OK / No chip asks once. The ID comes from the
+  `GA_MEASUREMENT_ID` repo variable at build time, so builds without it load no GA.
+
 ## 2026-10-19 08:46 UTC — Tenerife
 
 - New region: **Tenerife**, with seven launches: La Corona (north-coast soaring above Los Realejos), Izaña NW and Izaña SE (2200 m, the highest launches in Spain), Ladera de Güímar, Ifonche and Taucho (the southern classics above Adeje) and Los Gigantes. The 66 km bbox (IGN MDT05 + PNOA) takes in Teide, Teno and La Laguna, with 5 m detail tiles around every launch. It starts in a 20 km/h NNE trade wind under a 1400 m inversion. `?region=tenerife&launch=izana-se`.

@@ -1,7 +1,7 @@
 import './style.css';
 import GUI from 'lil-gui';
 import * as THREE from 'three';
-import { durationBucket, startAnalytics, track as count } from './game/analytics';
+import { durationBucket, gaEvent, startAnalytics, track as count } from './game/analytics';
 import { FlightAudio } from './game/audio';
 import { CameraRig } from './game/camera';
 import { CloudLayer } from './game/clouds';
@@ -368,12 +368,15 @@ async function boot(): Promise<void> {
     renderer.render(scene, camera);
   });
 
-  /** Takeoffs and how flights end, for the GoatCounter dashboard. */
+  /** Takeoffs and how flights end, for the GoatCounter dashboard and GA. */
   function countFlight(event: string): void {
-    if (event === 'takeoff') count(`flight/${region.id}/${launch.spec.id}`, `${settings.wing} ${settings.crew}`);
-    else if (airborne && (event === 'landed' || event === 'crashed' || event === 'water')) {
+    if (event === 'takeoff') {
+      count(`flight/${region.id}/${launch.spec.id}`, `${settings.wing} ${settings.crew}`);
+      gaEvent('takeoff', { region: region.id, launch: launch.spec.id, wing: settings.wing, crew: settings.crew });
+    } else if (airborne && (event === 'landed' || event === 'crashed' || event === 'water')) {
       airborne = false;
       count(`${event}/${durationBucket(flightTime)}`);
+      gaEvent(event, { region: region.id, launch: launch.spec.id, seconds: Math.round(flightTime) });
     }
   }
 

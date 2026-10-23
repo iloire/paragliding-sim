@@ -125,6 +125,8 @@ so a green badge means that commit is live.
 ## Analytics
 
 [GoatCounter](https://www.goatcounter.com) counts plays and flights, with no cookies and no banner.
+Google Analytics 4 runs alongside, with the same takeoff and landing events, once a player taps
+OK on a one-line chip (the build gets the ID from the `GA_MEASUREMENT_ID` repo variable).
 See [docs/architecture.md](docs/architecture.md#analytics-srcgameanalyticsts).
 
 ## Licence

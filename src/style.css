@@ -270,3 +270,13 @@ html, body {
   #instrument :is(.readouts, #thermal, .footer) { display: none; }
   #help { display: none; }
 }
+
+#stats-chip {
+  position: fixed; right: 12px; bottom: 26px; z-index: 8; font-size: 11px; color: var(--ink-dim);
+  background: var(--panel); border: 1px solid var(--edge); border-radius: 6px; padding: 4px 6px 4px 10px; backdrop-filter: blur(6px);
+}
+#stats-chip button {
+  margin-left: 6px; border: 1px solid var(--edge); border-radius: 4px; background: none; color: var(--ink);
+  font: inherit; padding: 1px 8px; cursor: pointer;
+}
+#stats-chip button[data-on] { background: var(--accent); border-color: var(--accent); color: #10161c; }
