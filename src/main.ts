@@ -12,7 +12,7 @@ import { clockTime, loadCatalog, parseStart, startQuery } from './game/catalog';
 import { SitePicker } from './game/picker';
 import { loadSite, type Launch } from './game/site';
 import { createGlider as createGliderModel, type Crew } from './game/wing';
-import { DEFAULT_PRESET, PRESETS as WING_PRESETS, RANGES, WingCard, polarFor, presetChoice, type WingChoice } from './game/wing-setup';
+import { DEFAULT_PRESET, PRESETS as WING_PRESETS, RANGES, WingCard, polarFor, presetChoice, shapeFor, type WingChoice } from './game/wing-setup';
 import { TerrainView } from './game/terrain-view';
 import { createLiftMap, createSurround, Sunlight, toScene } from './game/world';
 import { glideTo, TurnTrack } from './sim/instruments';
@@ -86,7 +86,7 @@ async function boot(): Promise<void> {
   const clouds = new CloudLayer(extent);
   scene.add(clouds.group);
 
-  const model = createGliderModel();
+  let model = createGliderModel();
   scene.add(model.group);
   const rig = new CameraRig(camera, canvas);
   const audio = new FlightAudio();
@@ -265,8 +265,18 @@ async function boot(): Promise<void> {
   function setWing(): void {
     polar = polarFor(wing);
     card.update(wing, polar);
+    // A new size, aspect ratio or class is a different canopy: draw it afresh.
+    scene.remove(model.group);
+    model.group.traverse((o) => {
+      if (!(o instanceof THREE.Mesh || o instanceof THREE.LineSegments)) return;
+      o.geometry.dispose();
+      for (const m of [o.material].flat()) m.dispose();
+    });
+    model = createGliderModel(shapeFor(wing, polar));
+    model.setCrew(settings.crew);
+    scene.add(model.group);
   }
-  card.update(wing, polar);
+  setWing();
   fl.add(settings, 'crew', { Solo: 'solo', Tandem: 'tandem' }).name('Pilot').onChange((c: Crew) => model.setCrew(c));
   fl.add(settings, 'liftMap').name('Lift map (L)').onChange(toggleLiftMap);
   fl.add({ warp: () => onAction('warp') }, 'warp').name('Time warp (T)');

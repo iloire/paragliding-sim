@@ -311,6 +311,12 @@ function bodyOf(polar: Polar): Body {
   };
 }
 
+/** The canopy's span, chord, line length and arc over the reference wing's, for drawing it. */
+export function canopyProportions(polar: Polar): { span: number; chord: number; lines: number; arc: number } {
+  const body = bodyOf(polar);
+  return { span: body.span / SPAN, chord: body.chord / CHORD, lines: body.lineLength / LINE_LENGTH, arc: arcAngle(polar) / ARC };
+}
+
 /** Centre of mass above the pilot on the reference wing: where a glider starts before it's trimmed. */
 const REFERENCE_CG_HEIGHT = ((CANOPY_MASS + CANOPY_AIR) * LINE_LENGTH) / (REFERENCE_ALL_UP + CANOPY_AIR);
 

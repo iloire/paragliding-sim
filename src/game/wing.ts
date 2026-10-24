@@ -18,18 +18,40 @@ import type { Controls, GliderState } from '../sim/glider';
 import { Gait, loft as loftSections, sec, solveArm, span, type Arm, type Section } from './body';
 import { createTandem } from './tandem';
 
-const CELLS = 48;
 const SUB = 3; // spanwise vertices per cell: rib, two inside the cell
-const STATIONS = CELLS * SUB + 1;
 const CHORD_SAMPLES = 16;
-const ARC_DEG = 62;
-const ARC_RADIUS = 5.6;
-const ROOT_CHORD = 2.75;
-const TIP_CHORD = 0.45;
 const THICKNESS = 0.15;
 const CARABINER_Y = 1.2;
-const CANOPY_TOP = CARABINER_Y + 7.4;
 const PILLOW = 0.035;
+
+/**
+ * The canopy's shape, as the flight model's body sees it (src/game/wing-setup.ts): span, chord
+ * and line length over the reference wing's, the arc's angle over the reference's, and the cells.
+ */
+export interface CanopyShape {
+  cells: number;
+  span: number;
+  chord: number;
+  lines: number;
+  arc: number;
+}
+
+export const REFERENCE_SHAPE: CanopyShape = { cells: 48, span: 1, chord: 1, lines: 1, arc: 1 };
+
+/** The reference canopy's dimensions, scaled by a shape. */
+function dimensions(shape: CanopyShape) {
+  const arcDeg = 62 * shape.arc;
+  return {
+    stations: shape.cells * SUB + 1,
+    arcDeg,
+    // The arc's length goes with the span, so a deeper arc is a tighter one.
+    arcRadius: (5.6 * shape.span) / shape.arc,
+    rootChord: 2.75 * shape.chord,
+    tipChord: 0.45 * shape.chord,
+    /** Carabiners to the top of the canopy. */
+    lineHeight: 7.4 * shape.lines,
+  };
+}
 
 const COLOURS = {
   top: new THREE.Color(0xd21f2b),
@@ -70,26 +92,28 @@ function chordSample(k: number): number {
   return (1 - Math.cos((k / (CHORD_SAMPLES - 1)) * Math.PI)) / 2; // cosine spacing: fine at the nose
 }
 
-function buildStations(): Station[] {
+function buildStations(dim: ReturnType<typeof dimensions>, chordScale: number): Station[] {
   const out: Station[] = [];
-  for (let i = 0; i < STATIONS; i++) {
-    const t = (i / (STATIONS - 1)) * 2 - 1;
+  for (let i = 0; i < dim.stations; i++) {
+    const t = (i / (dim.stations - 1)) * 2 - 1;
     const sub = i % SUB;
-    const chord = TIP_CHORD + (ROOT_CHORD - TIP_CHORD) * Math.sqrt(Math.max(1 - t * t, 0));
+    const chord = dim.tipChord + (dim.rootChord - dim.tipChord) * Math.sqrt(Math.max(1 - t * t, 0));
     out.push({
       t,
-      angle: Math.sign(t) * THREE.MathUtils.degToRad(ARC_DEG) * Math.abs(t) ** 1.3,
+      angle: Math.sign(t) * THREE.MathUtils.degToRad(dim.arcDeg) * Math.abs(t) ** 1.3,
       chord,
       // Nearly straight trailing edge, so the leading edge does the sweeping back to the tips.
       // The pilot hangs just behind the 30 % chord point, so the root's leading edge sits well ahead.
-      leZ: 1.7 - 0.25 * t * t - chord,
+      leZ: (1.7 - 0.25 * t * t) * chordScale - chord,
       cellFrac: Math.sin((sub / SUB) * Math.PI),
     });
   }
   return out;
 }
 
-export function createGlider(): GliderModel {
+export function createGlider(shape: CanopyShape = REFERENCE_SHAPE): GliderModel {
+  const dim = dimensions(shape);
+  const STATIONS = dim.stations;
   const group = new THREE.Group();
   group.rotation.order = 'YXZ';
 
@@ -100,7 +124,7 @@ export function createGlider(): GliderModel {
   group.add(canopyPivot);
 
   // ---------- canopy ----------
-  const stations = buildStations();
+  const stations = buildStations(dim, shape.chord);
   const perStation = CHORD_SAMPLES * 2; // top row then bottom row
   const vertexCount = STATIONS * perStation;
   const base = new Float32Array(vertexCount * 3);
@@ -109,8 +133,8 @@ export function createGlider(): GliderModel {
 
   stations.forEach((st, si) => {
     const nx = Math.sin(st.angle), ny = Math.cos(st.angle);
-    const cx = ARC_RADIUS * nx;
-    const cy = CANOPY_TOP - CARABINER_Y - ARC_RADIUS * (1 - ny);
+    const cx = dim.arcRadius * nx;
+    const cy = dim.lineHeight - dim.arcRadius * (1 - ny);
     for (let side = 0; side < 2; side++) {
       for (let k = 0; k < CHORD_SAMPLES; k++) {
         const u = chordSample(k);
@@ -415,9 +439,9 @@ export function createGlider(): GliderModel {
       const f0 = 0.4;
       const d = Math.max((Math.abs(st.t) - f0) / (1 - f0), 0);
       const foldAngle = fold * 2.7 * d ** 0.7;
-      const pivotAngle = side * THREE.MathUtils.degToRad(ARC_DEG) * f0 ** 1.3;
-      const px = ARC_RADIUS * Math.sin(pivotAngle);
-      const py = CANOPY_TOP - CARABINER_Y - ARC_RADIUS * (1 - Math.cos(pivotAngle));
+      const pivotAngle = side * THREE.MathUtils.degToRad(dim.arcDeg) * f0 ** 1.3;
+      const px = dim.arcRadius * Math.sin(pivotAngle);
+      const py = dim.lineHeight - dim.arcRadius * (1 - Math.cos(pivotAngle));
       const ca = Math.cos(-side * foldAngle), sa = Math.sin(-side * foldAngle);
       for (let n = 0; n < perStation; n++) {
         const k = n % CHORD_SAMPLES;

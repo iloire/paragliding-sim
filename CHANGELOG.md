@@ -11,6 +11,8 @@
   90 kg glides 7.3; span, chord, lines, canopy mass and the collapse threshold scale with the setup.
   Turns and spirals follow from the body: a light wing needs weight shift to spiral, a heavy or
   small one drops in sooner. The default (Intermediate, 24 m², 95 kg) flies exactly as before.
+- The 3D canopy follows the setup: span, chord, line length and arc from the flight model's body,
+  cells from the class (EN-A 38, EN-B 48, EN-C 60) scaled by the aspect ratio, rebuilt on change.
 - Takeoff events to GA carry the wing's size and all-up weight.
 
 ## 2026-10-23 15:16 UTC — Google Analytics

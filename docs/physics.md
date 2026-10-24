@@ -187,6 +187,10 @@ card showing the resulting polar over the class reference. `Polar` takes the set
   also with the aspect ratio): canopy weight goes with the area, its trapped air with the area
   and chord. The pilot's drag area stays 0.5 m², so it's a bigger share of a small wing's drag: a
   16 m² mini at the reference loading glides 8.3, at 90 kg 7.3.
+- **What you see.** The 3D canopy (`src/game/wing.ts`) is drawn from the same proportions
+  (`canopyProportions`: span, chord, lines and arc over the reference's) and rebuilt when the
+  setup changes; its cells come from the class (`cells` in `wings.json`: 38, 48, 60) scaled by
+  the aspect ratio.
 - **Collapses.** Lines go slack at 0.3 G on the reference; the threshold rises with the aspect
   ratio and falls with the loading (a faster wing holds more pressure in its cells).
 

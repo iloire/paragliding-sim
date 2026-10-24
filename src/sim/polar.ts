@@ -26,6 +26,8 @@ export interface WingSpec {
   rollAuthority: number;
   /** Flat aspect ratio of the reference wing the numbers above are for. */
   aspectRatio: number;
+  /** Cells on the reference wing (drawn only): more on a higher aspect ratio. */
+  cells: number;
 }
 
 /** What a pilot picks off a manufacturer's sheet: the size, its flat aspect ratio, the all-up weight. */

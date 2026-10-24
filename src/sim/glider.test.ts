@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createGlider, stepGlider, type Controls, type Environment } from './glider';
+import { canopyProportions, createGlider, stepGlider, type Controls, type Environment } from './glider';
 import { Polar, WINGS } from './polar';
 
 const polar = new Polar(WINGS['EN-B']);
@@ -243,5 +243,11 @@ describe('glider', () => {
     expect(s.airspeed).toBeCloseTo(p.trim, 0);
     expect(Math.hypot(s.x, s.y) / (3000 - s.z)).toBeCloseTo(p.trim / p.sink(p.trim), 0);
   });
-});
 
+  it('draws the reference canopy for the reference wing, and scales it with the setup', () => {
+    expect(canopyProportions(polar)).toEqual({ span: 1, chord: 1, lines: 1, arc: 1 });
+    const mini = canopyProportions(new Polar(WINGS['EN-B'], { areaM2: 16, aspectRatio: 5.5, allUpKg: 90 }));
+    expect(mini.span).toBeCloseTo(Math.sqrt(16 / 24), 6);
+    expect(mini.lines).toBeCloseTo(Math.sqrt(16 / 24), 6);
+  });
+});

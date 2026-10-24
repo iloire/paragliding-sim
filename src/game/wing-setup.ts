@@ -2,7 +2,9 @@
 // weight off a manufacturer's sheet. Presets live in wing-presets.json; the card shows what a
 // setup does to the polar before you fly it.
 
+import { canopyProportions } from '../sim/glider';
 import { Polar, REFERENCE_ALL_UP, REFERENCE_AREA, WINGS, type WingId, type WingSetup } from '../sim/polar';
+import type { CanopyShape } from './wing';
 import presets from './wing-presets.json';
 
 export interface WingChoice extends WingSetup {
@@ -27,6 +29,11 @@ export function presetChoice(name: string): WingChoice | undefined {
 
 export function polarFor(c: WingChoice): Polar {
   return new Polar(WINGS[c.wing], { areaM2: c.areaM2, aspectRatio: c.aspectRatio, allUpKg: c.allUpKg });
+}
+
+/** How to draw the wing: the flight model's proportions, and the class's cells for its aspect ratio. */
+export function shapeFor(c: WingChoice, p: Polar): CanopyShape {
+  return { ...canopyProportions(p), cells: Math.round(WINGS[c.wing].cells * p.aspect) };
 }
 
 /** What the wing loading means in the air, against the reference's 95 kg on 24 m². */
