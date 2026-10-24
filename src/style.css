@@ -103,9 +103,23 @@ html, body {
 
 #thermal { grid-area: thermal; width: 58px; height: 58px; }
 
-.wind { grid-area: wind; display: grid; justify-items: center; align-content: center; gap: 3px; border-left: 1px solid var(--edge); padding-left: 12px; }
-.wind-rose { position: relative; width: 40px; height: 40px; border: 1px solid var(--edge); border-radius: 50%; }
-.wind-rose > div { position: absolute; inset: 0; display: grid; place-items: center; }
+/* The wind readout is also the way into the weather dialog: a card that lights up under the pointer. */
+.wind {
+  grid-area: wind; display: grid; justify-items: center; align-content: center; gap: 3px;
+  padding: 5px 9px 4px; font: inherit; color: inherit; cursor: pointer;
+  background: rgba(244, 239, 228, 0.04); border: 1px solid var(--edge); border-radius: 5px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.wind:hover, .wind:focus-visible { border-color: var(--accent); background: rgba(255, 178, 63, 0.1); outline: none; }
+.wind-cta {
+  display: flex; align-items: center; gap: 4px;
+  font-family: var(--display); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-dim);
+}
+.wind-cta kbd { font: 600 9px var(--mono); padding: 0 3px; border: 1px solid var(--edge); border-radius: 3px; letter-spacing: 0; }
+.wind:hover .wind-cta, .wind:focus-visible .wind-cta { color: var(--accent); }
+.wind-rose { position: relative; display: block; width: 40px; height: 40px; border: 1px solid var(--edge); border-radius: 50%; }
+.wind-text { display: block; }
+.wind-rose > span { position: absolute; inset: 0; display: grid; place-items: center; }
 /* The arrow sits on the upwind rim and points along the flow, past the glider fixed at the centre. */
 #wind-arrow { transition: transform 0.2s; }
 #wind-arrow i { font-style: normal; color: var(--accent); font-size: 11px; line-height: 1; transform: translateY(13px); }

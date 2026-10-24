@@ -41,13 +41,14 @@
         <div class="maneuver"><dt>BANK</dt><dd id="bank">–</dd><span></span></div>
       </dl>
       <canvas id="thermal" width="116" height="116" aria-label="Thermal assistant"></canvas>
-      <div class="wind">
-        <div class="wind-rose">
-          <div id="wind-arrow"><i>▲</i></div>
-          <div class="wind-glider">▲</div>
-        </div>
-        <div class="wind-text"><b id="wind-from">N</b> <span id="wind-speed">0</span><small> km/h</small></div>
-      </div>
+      <button class="wind" id="wind-button" type="button" title="Set the weather (X)">
+        <span class="wind-rose">
+          <span id="wind-arrow"><i>▲</i></span>
+          <span class="wind-glider">▲</span>
+        </span>
+        <span class="wind-text"><b id="wind-from">N</b> <span id="wind-speed">0</span><small> km/h</small></span>
+        <span class="wind-cta">Weather <kbd>X</kbd></span>
+      </button>
       <div class="footer">
         <span class="label">TIME</span> <b id="flighttime">0:00</b>
         <div class="landing" id="landing">
