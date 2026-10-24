@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-24 13:41 UTC — Chase camera by default
+
+- A flight starts in the chase camera, behind and above the pilot; C cycles to the pilot's view, then orbit.
+
 ## 2026-10-24 13:32 UTC — Welcome screen
 
 - The game opens on a menu over the live landscape: the camera circles the launch high and slow

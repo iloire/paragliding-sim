@@ -1,6 +1,6 @@
-// Three camera modes: orbit (mouse-driven around the pilot, the default), chase (behind and
-// above, smoothed), pilot (the view from the harness, rolling with the swing). Behind the
-// welcome screen it circles the pilot wide and slow instead, and blends into the mode on leaving.
+// Three camera modes: chase (behind and above, smoothed, the default), pilot (the view from the
+// harness, rolling with the swing), orbit (mouse-driven around the pilot). Behind the welcome
+// screen it circles the pilot wide and slow instead, and blends into the mode on leaving.
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -17,7 +17,7 @@ const SHOWCASE = { radius: 650, height: 220, rate: 0.03, aimBelow: 150 };
 const BLEND_S = 1.6;
 
 export class CameraRig {
-  mode: CameraMode = 'orbit';
+  mode: CameraMode = 'chase';
   private readonly orbit: OrbitControls;
   private readonly desired = new THREE.Vector3();
   private readonly look = new THREE.Vector3();
@@ -36,7 +36,7 @@ export class CameraRig {
 
   constructor(readonly camera: THREE.PerspectiveCamera, dom: HTMLElement) {
     this.orbit = new OrbitControls(camera, dom);
-    this.orbit.enabled = true;
+    this.orbit.enabled = false;
     this.orbit.enableDamping = true;
     this.orbit.maxDistance = 3000;
   }
