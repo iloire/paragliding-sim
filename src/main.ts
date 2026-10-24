@@ -9,11 +9,12 @@ import { Hud, type HudFrame } from './game/hud';
 import { Input, type Action } from './game/input';
 import { TouchPad } from './game/touch';
 import { clockTime, loadCatalog, parseStart, startQuery } from './game/catalog';
+import { compassPoint, WeatherPanel } from './game/weather-panel';
 import { loadSite, type Launch } from './game/site';
 import { createGlider as createGliderModel, type Crew } from './game/wing';
 import { DEFAULT_PRESET, PRESETS as WING_PRESETS, RANGES, WingCard, classDefaults, polarFor, presetChoice, shapeFor, type WingChoice } from './game/wing-setup';
 import { TerrainView } from './game/terrain-view';
-import { WEATHER_SLIDERS, Welcome, type StartMode } from './game/welcome';
+import { Welcome, type StartMode } from './game/welcome';
 import { createLiftMap, createSurround, Sunlight, toScene } from './game/world';
 import { glideTo, TurnTrack } from './sim/instruments';
 import { createGlider, stepGlider, type Environment, type GliderState } from './sim/glider';
@@ -175,6 +176,7 @@ async function boot(): Promise<void> {
   function refreshWeather(): void {
     wind.setWeather({ ...weather });
     if (settings.liftMap) liftMap.refresh();
+    weatherButton.name(weatherLabel());
     writeUrl();
     refreshMenu();
   }
@@ -209,6 +211,7 @@ async function boot(): Promise<void> {
   function openMenu(tab?: 'help' | 'sites', fromFlight = true): void {
     if (!welcome.isOpen) canResume = fromFlight;
     refreshMenu();
+    weatherPanel.close();
     welcome.open(tab);
     rig.showcase();
   }
@@ -233,6 +236,21 @@ async function boot(): Promise<void> {
       wings: WING_PRESETS.map((p) => p.name), wing: settings.preset,
       wingLine: `${wing.wing} · ${wing.areaM2} m² · trim ${Math.round(polar.trim * 3.6)} km/h · glide ${best.ratio.toFixed(1)}`,
       crew: settings.crew, canResume,
+    });
+  }
+
+  // The weather dialog pauses the flight while open, and leaves it as it found it.
+  let pausedBeforeDialog = false;
+  const weatherPanel = new WeatherPanel(weather, refreshWeather, (open) => {
+    if (open) pausedBeforeDialog = paused;
+    paused = open || pausedBeforeDialog;
+  });
+  function openWeather(): void {
+    weatherPanel.open({
+      launchName: launch.spec.name,
+      launchHeadingDeg: ((launch.heading * 180) / Math.PI + 360) % 360,
+      launchAltM: launch.z,
+      siteWeather: site.spec.weather,
     });
   }
 
@@ -268,6 +286,7 @@ async function boot(): Promise<void> {
       case 'layout': hud.say(`Instrument: ${hud.cycleLayout()}`, 1.5); break;
       case 'lift': toggleLiftMap(!settings.liftMap); break;
       case 'menu': openMenu(); break;
+      case 'weather': if (weatherPanel.isOpen) weatherPanel.close(); else openWeather(); break;
       case 'nextLaunch': {
         const i = site.launches.indexOf(launch);
         setLaunch(site.launches[(i + 1) % site.launches.length].spec.id);
@@ -296,12 +315,9 @@ async function boot(): Promise<void> {
   });
   tm.add(sky, 'hour', hours.first, hours.last, 0.05).name('Solar time h').onChange(() => { sky.preset = ''; setTime(); });
   tm.add(sky, 'info').name('Sun').disable();
-  const wx = gui.addFolder('Weather');
-  for (const d of WEATHER_SLIDERS) {
-    const c = wx.add(weather, d.key, d.min, d.max, d.step).name(d.label);
-    if (d.live) c.onChange(refreshWeather);
-    else c.onFinishChange(refreshWeather);
-  }
+  // The weather dialog is the one place to set the air; this row says what it is and opens it.
+  const weatherLabel = () => `Weather · ${Math.round(weather.windSpeedKmh)} km/h ${compassPoint(weather.windFromDeg)} (X)`;
+  const weatherButton = gui.add({ weather: openWeather }, 'weather').name(weatherLabel());
   const fl = gui.addFolder('Flight');
   // The picker is the one place to choose a launch; this row says where you are and opens it.
   const siteLabel = () => `${region.spec.name} · ${launch.spec.name} (M)`;

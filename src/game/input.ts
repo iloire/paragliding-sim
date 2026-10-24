@@ -10,11 +10,11 @@ const TURN_BRAKE = 0.7;
 const DEEP_RAMP = 0.15;
 const BOTH_BRAKES = 0.55;
 
-export type Action = 'reset' | 'camera' | 'mute' | 'pause' | 'help' | 'lift' | 'nextLaunch' | 'layout' | 'menu' | 'warp';
+export type Action = 'reset' | 'camera' | 'mute' | 'pause' | 'help' | 'lift' | 'nextLaunch' | 'layout' | 'menu' | 'warp' | 'weather';
 
 const ACTION_KEYS: Record<string, Action> = {
   KeyR: 'reset', KeyC: 'camera', KeyV: 'mute',
-  KeyP: 'pause', KeyH: 'help', KeyL: 'lift', KeyN: 'nextLaunch', KeyI: 'layout', KeyM: 'menu', Escape: 'menu', KeyT: 'warp',
+  KeyP: 'pause', KeyH: 'help', KeyL: 'lift', KeyN: 'nextLaunch', KeyI: 'layout', KeyM: 'menu', Escape: 'menu', KeyT: 'warp', KeyX: 'weather',
 };
 // Standard-mapping gamepad buttons.
 const PAD = { A: 0, B: 1, X: 2, Y: 3, RB: 5, LT: 6, RT: 7, BACK: 8, START: 9 };
@@ -36,6 +36,7 @@ export class Input {
   constructor(private readonly onAction: (a: Action) => void) {
     window.addEventListener('keydown', (e) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+      if (e.target instanceof Element && e.target.closest('#weather')) return; // the dialog reads its own keys
       if (!e.repeat && ACTION_KEYS[e.code]) onAction(ACTION_KEYS[e.code]);
       this.keys.add(e.code);
       if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();

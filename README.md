@@ -67,6 +67,7 @@ facing into the wind.
 | **Q / E** | Weight shift (with A/D in rhythm = wingovers) |
 | **R** | Restart, in the air above the launch |
 | **N** · **M** / **Esc** | Next launch · menu (in it: ← → launch, Enter fly, M / Esc resume) |
+| **X** | Weather: drag the compass for the wind direction, presets, sliders (Esc or X to close) |
 | **C** | Camera: chase (the default), pilot, orbit (drag the mouse) |
 | **L** | Lift map |
 | **T** | Time warp: 1× · 2× · 4× · 8× |

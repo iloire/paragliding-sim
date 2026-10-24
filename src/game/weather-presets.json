@@ -1,0 +1,7 @@
+[
+  { "name": "Glass-off", "note": "Evening calm, smooth air", "windSpeedKmh": 12, "inversionM": 1200, "thermalStrength": 0.3, "turbulence": 0.05 },
+  { "name": "Ridge soaring", "note": "Steady breeze on the face", "windSpeedKmh": 22, "inversionM": 900, "thermalStrength": 1, "turbulence": 0.25 },
+  { "name": "Strong ridge", "note": "Bar on, watch the lee", "windSpeedKmh": 34, "inversionM": 800, "thermalStrength": 0.8, "turbulence": 0.5 },
+  { "name": "Thermic day", "note": "Light wind, high base", "windSpeedKmh": 10, "inversionM": 2200, "thermalStrength": 2.5, "turbulence": 0.35 },
+  { "name": "Booming", "note": "Big climbs, rough air", "windSpeedKmh": 14, "inversionM": 3000, "thermalStrength": 3.6, "turbulence": 0.7 }
+]

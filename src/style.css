@@ -361,3 +361,102 @@ body.in-menu :is(#instrument, #help, #message, #touch, #touch-buttons, .lil-gui.
 .wing-card .now { fill: none; stroke: var(--accent); stroke-width: 2; }
 .wing-card circle { fill: var(--accent); }
 .wing-card-legend { color: var(--ink-dim); font-size: 10px; margin-top: 2px; }
+
+/* Weather (X): the compass on the left, the sliders on the right, presets across the top. */
+#weather {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: min(640px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto;
+  padding: 14px 16px 16px;
+  background: rgba(16, 22, 28, 0.9); border: 1px solid var(--edge); border-radius: 6px;
+  backdrop-filter: blur(8px);
+  z-index: 1500; /* over lil-gui, under the rotate-your-phone cover */
+}
+#weather[hidden] { display: none; }
+#weather header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+#weather h2 { margin: 0; font-family: var(--display); font-size: 20px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+.wx-where { flex: 1; font-size: 11px; color: var(--ink-dim); }
+:where(#weather) button {
+  font: inherit; color: var(--ink); cursor: pointer;
+  background: transparent; border: 1px solid var(--edge); border-radius: 4px;
+}
+:where(#weather) button:is(:hover, :focus-visible) { border-color: var(--accent); outline: none; background: rgba(255, 178, 63, 0.1); }
+.wx-close { padding: 2px 8px; font-size: 11px; color: var(--ink-dim); }
+
+.wx-presets { display: grid; grid-template-columns: repeat(auto-fit, minmax(108px, 1fr)); gap: 6px; margin-bottom: 14px; }
+.wx-presets button { padding: 6px 8px; text-align: left; }
+.wx-presets b { display: block; font-family: var(--display); font-size: 16px; font-weight: 700; letter-spacing: 0.03em; }
+.wx-presets span { display: block; font-size: 10px; color: var(--ink-dim); line-height: 1.3; }
+.wx-presets button[aria-pressed="true"] { border-color: var(--accent); background: rgba(255, 178, 63, 0.14); }
+.wx-presets button[aria-pressed="true"] b { color: var(--accent); }
+
+.wx-body { display: grid; grid-template-columns: 210px 1fr; gap: 18px; align-items: start; }
+.wx-wind { display: grid; justify-items: center; gap: 4px; text-align: center; }
+.wx-dial { width: 210px; height: 210px; cursor: grab; touch-action: none; outline: none; border-radius: 50%; }
+.wx-dial:active { cursor: grabbing; }
+.wx-dial:focus-visible .face { stroke: var(--accent); }
+.wx-dial .face { fill: rgba(255, 255, 255, 0.03); stroke: var(--edge); }
+.wx-dial .sectors .cross { fill: rgba(127, 224, 138, 0.1); }
+.wx-dial .sectors .on { fill: rgba(127, 224, 138, 0.22); }
+.wx-dial .ticks path { stroke: var(--ink-dim); stroke-width: 1; opacity: 0.6; }
+.wx-dial .ticks path.major { stroke: var(--ink); stroke-width: 1.5; opacity: 1; }
+.wx-dial .labels text { fill: var(--ink-dim); font: 600 11px var(--mono); text-anchor: middle; dominant-baseline: central; }
+.wx-dial .launch path { fill: var(--lift); }
+.wx-dial .launch line { stroke: var(--lift); stroke-width: 1; stroke-dasharray: 2 3; opacity: 0.6; }
+.wx-dial .shaft { stroke: var(--accent); stroke-width: 3; stroke-linecap: round; }
+.wx-dial .flow { stroke: #fff; stroke-width: 1.5; stroke-dasharray: 3 11; stroke-linecap: round; opacity: 0.7; animation: wx-flow 1s linear infinite; }
+.wx-dial .head { fill: var(--accent); }
+.wx-dial .grip { fill: #10161c; stroke: var(--accent); stroke-width: 2; }
+.wx-dial .speed { fill: var(--ink); font: 700 34px var(--display); text-anchor: middle; }
+.wx-dial .unit { fill: var(--ink-dim); font: 10px var(--mono); text-anchor: middle; letter-spacing: 0.1em; }
+@keyframes wx-flow { to { stroke-dashoffset: -14; } }
+@media (prefers-reduced-motion: reduce) { .wx-dial .flow { animation: none; } }
+
+.wx-from { font-size: 12px; color: var(--ink-dim); }
+.wx-from b { font-family: var(--display); font-size: 20px; color: var(--ink); letter-spacing: 0.04em; }
+.wx-verdict { min-height: 2.6em; font-size: 11px; line-height: 1.3; padding: 0 6px; }
+.wx-verdict[data-tone="good"] { color: var(--lift); }
+.wx-verdict[data-tone="warn"] { color: var(--accent); }
+.wx-verdict[data-tone="bad"] { color: var(--sink); }
+.wx-actions { display: flex; gap: 6px; }
+.wx-actions button { padding: 4px 9px; font-size: 11px; }
+
+.wx-sliders { display: grid; gap: 14px; padding-top: 4px; }
+.wx-row { display: grid; grid-template-columns: 1fr auto auto; align-items: baseline; column-gap: 5px; row-gap: 4px; }
+.wx-name { font-family: var(--display); font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); }
+.wx-row output { font-family: var(--display); font-size: 24px; font-weight: 700; line-height: 1; }
+.wx-unit { font-size: 10px; color: var(--ink-dim); min-width: 28px; }
+.wx-note { grid-column: 1 / -1; font-size: 10px; color: var(--ink-dim); }
+.wx-row input {
+  grid-column: 1 / -1; width: 100%; height: 22px; margin: 0;
+  -webkit-appearance: none; appearance: none; background: transparent; cursor: pointer;
+  --track: linear-gradient(to right, var(--accent) var(--fill), rgba(244, 239, 228, 0.14) var(--fill));
+}
+/* Wind's track shows its zones: light, soarable, strong, blown out (12 · 30 · 38 of 45 km/h). */
+.wx-row[data-key="windSpeedKmh"] input {
+  --track: linear-gradient(to right, rgba(244, 239, 228, 0.22) 0 26.7%, rgba(127, 224, 138, 0.55) 26.7% 66.7%,
+    rgba(255, 178, 63, 0.6) 66.7% 84.4%, rgba(255, 122, 89, 0.65) 84.4%);
+}
+.wx-row input::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: var(--track); }
+.wx-row input::-moz-range-track { height: 4px; border-radius: 2px; background: var(--track); }
+.wx-row input::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px; border-radius: 50%;
+  background: #10161c; border: 2px solid var(--accent);
+}
+.wx-row input::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: #10161c; border: 2px solid var(--accent); }
+.wx-row input:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(255, 178, 63, 0.3); }
+
+/* Narrow screens stack the compass over the sliders; landscape phones keep them side by side, smaller. */
+@media (max-width: 560px) {
+  .wx-body { grid-template-columns: 1fr; }
+}
+@media (pointer: coarse), (max-height: 500px) {
+  #weather { padding: 8px 12px 12px; width: min(720px, calc(100vw - 24px)); max-height: calc(100dvh - 16px); }
+  #weather header { margin-bottom: 6px; }
+  .wx-presets { margin-bottom: 8px; grid-template-columns: repeat(5, 1fr); }
+  .wx-presets span { display: none; }
+  .wx-presets button { min-height: 34px; }
+  .wx-body { grid-template-columns: 160px 1fr; gap: 14px; }
+  .wx-dial { width: 160px; height: 160px; }
+  .wx-sliders { gap: 8px; }
+  .wx-close { min-height: 32px; padding: 0 12px; }
+}

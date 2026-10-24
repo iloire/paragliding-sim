@@ -154,6 +154,15 @@ terrain, wind field and lift map are all built for one region. The Flight folder
 the loaded region and launch and opens the menu on that tab. lil-gui is hidden under the menu. The roadmap (wind wedges, map
 picker, sites outside Spain) is in [plan-sites.md](plan-sites.md).
 
+The weather dialog (**X**, `src/game/weather-panel.ts`) is the one place to set the air: a compass
+you drag for the wind direction, shaded with the current launch's flyable sector (±20° straight
+in, ±45° cross), with a one-line verdict on what that wind does there; sliders for speed,
+inversion, thermals and turbulence that say what each value means; and presets from
+`src/game/weather-presets.json` (name, note, speed, inversion, thermals, turbulence; they leave
+the direction alone). The direction and the inversion apply on release, since they re-lay the
+ridge lift; the rest apply as they move. Like the picker, it pauses the flight while open, and a
+row under Time of day shows the wind and opens it.
+
 ## Analytics (`src/game/analytics.ts`)
 
 [GoatCounter](https://paragliding-sim.goatcounter.com) counts who plays. It sets no cookies and
