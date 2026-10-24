@@ -51,13 +51,13 @@ running, so there is no cut. Esc / M pauses, and the camera eases back out into 
 ## Build
 
 1. ~~Worktree `welcome-screen`~~ ✅
-2. **`src/game/welcome.ts`** — DOM overlay in the style of `picker.ts`: render, keyboard
+2. ~~**`src/game/welcome.ts`** — DOM overlay in the style of `picker.ts`: render, keyboard
    (arrows, Enter = FLY, Tab between rows), callbacks `onLaunch`, `onTime`, `onWing`, `onCrew`,
-   `onRegion`, `onFly(mode)`. Absorbs `picker.ts` (Sites tab) and the `#help` table.
-3. **`CameraRig` showcase mode** — orbit around a target at radius/height/rate, `glideTo(target)`
-   for launch changes, and a blend into chase for the hand-off. Mouse drag still nudges it.
-4. **`main.ts` menu state** — `mode: 'menu' | 'flying'`; in menu the sim is paused (step 1) or
-   flown by the autopilot (step 5), input goes to the menu, HUD hidden.
+   `onRegion`, `onFly(mode)`. Absorbs `picker.ts` (Sites tab) and the `#help` table.~~ ✅ (plus a Weather tab, with *Change weather* / *All sites* buttons)
+3. ~~**`CameraRig` showcase mode** — orbit around a target at radius/height/rate, `glideTo(target)`
+   for launch changes, and a blend into the flight camera for the hand-off.~~ ✅
+4. ~~**`main.ts` menu state** — `mode: 'menu' | 'flying'`; in menu the sim is paused (step 1) or
+   flown by the autopilot (step 5), input goes to the menu, HUD hidden.~~ ✅
 5. **Autopilot** — steer figure-eights along the ridge in the lift band: a target heading that
    flips at the beat ends, brakes from heading error. Pure function in `src/sim/`, unit tested
    (stays airborne over N minutes at Famara in the default weather).

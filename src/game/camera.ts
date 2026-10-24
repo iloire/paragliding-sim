@@ -1,5 +1,6 @@
 // Three camera modes: orbit (mouse-driven around the pilot, the default), chase (behind and
-// above, smoothed), pilot (the view from the harness, rolling with the swing).
+// above, smoothed), pilot (the view from the harness, rolling with the swing). Behind the
+// welcome screen it circles the pilot wide and slow instead, and blends into the mode on leaving.
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -7,6 +8,13 @@ import type { GliderState } from '../sim/glider';
 
 export type CameraMode = 'chase' | 'pilot' | 'orbit';
 const MODES: CameraMode[] = ['chase', 'pilot', 'orbit'];
+/**
+ * The menu's circle: metres out, metres above the pilot, radians per second, and how far below
+ * the pilot it aims, so the hill under the wing fills the frame rather than the sky.
+ */
+const SHOWCASE = { radius: 650, height: 220, rate: 0.03, aimBelow: 150 };
+/** Seconds to blend between the showcase and a flight camera. */
+const BLEND_S = 1.6;
 
 export class CameraRig {
   mode: CameraMode = 'orbit';
@@ -16,12 +24,53 @@ export class CameraRig {
   private readonly lastTarget = new THREE.Vector3();
   private roll = 0;
   private lastHeading = 0;
+  private showing = false;
+  private readonly center = new THREE.Vector3();
+  private angle = 0;
+  /** While blending, the camera shows a mix of `from` and the pose its mode wants (`true*`). */
+  private blend = 0;
+  private readonly fromPos = new THREE.Vector3();
+  private readonly fromQuat = new THREE.Quaternion();
+  private readonly truePos = new THREE.Vector3();
+  private readonly trueQuat = new THREE.Quaternion();
 
   constructor(readonly camera: THREE.PerspectiveCamera, dom: HTMLElement) {
     this.orbit = new OrbitControls(camera, dom);
     this.orbit.enabled = true;
     this.orbit.enableDamping = true;
     this.orbit.maxDistance = 3000;
+  }
+
+  /**
+   * Circles the pilot for the welcome screen, easing out from wherever the camera is. It starts
+   * out ahead of the pilot and a little to the side: facing into the wind is facing off the hill,
+   * so the first view is of the slope and the wing in front of it.
+   */
+  showcase(): void {
+    this.showing = true;
+    this.orbit.enabled = false;
+    this.center.copy(this.lastTarget);
+    this.angle = Math.atan2(Math.sin(this.lastHeading), -Math.cos(this.lastHeading)) + 0.5;
+    this.startBlend();
+  }
+
+  /** Leaves the showcase for the current mode, sweeping in over BLEND_S. */
+  fly(): void {
+    if (!this.showing) return;
+    this.showing = false;
+    this.startBlend();
+    this.orbit.enabled = this.mode === 'orbit';
+    if (this.mode === 'orbit') this.placeOrbit(); // chase and pilot find their own pose on the next update
+    this.truePos.copy(this.camera.position);
+    this.trueQuat.copy(this.camera.quaternion);
+  }
+
+  private startBlend(): void {
+    this.fromPos.copy(this.camera.position);
+    this.fromQuat.copy(this.camera.quaternion);
+    this.truePos.copy(this.fromPos);
+    this.trueQuat.copy(this.fromQuat);
+    this.blend = BLEND_S;
   }
 
   next(): CameraMode {
@@ -48,6 +97,7 @@ export class CameraRig {
   snap(pilot: THREE.Vector3, s: GliderState): void {
     this.lastTarget.copy(pilot);
     this.lastHeading = s.heading;
+    if (this.showing) return; // the circle glides over to the new spot by itself
     if (this.mode === 'orbit') {
       this.placeOrbit();
       return;
@@ -75,7 +125,21 @@ export class CameraRig {
 
   update(dt: number, pilot: THREE.Vector3, s: GliderState, groundY: number): void {
     const cam = this.camera;
-    if (this.mode === 'orbit') {
+    if (this.blend > 0) {
+      cam.position.copy(this.truePos);
+      cam.quaternion.copy(this.trueQuat);
+    }
+    if (this.showing) {
+      this.center.lerp(pilot, 1 - Math.exp(-dt * 1.2));
+      this.angle += SHOWCASE.rate * dt;
+      cam.position.set(
+        this.center.x + Math.sin(this.angle) * SHOWCASE.radius,
+        Math.max(this.center.y + SHOWCASE.height, groundY + 30),
+        this.center.z + Math.cos(this.angle) * SHOWCASE.radius,
+      );
+      cam.up.set(0, 1, 0);
+      cam.lookAt(this.center.x, this.center.y - SHOWCASE.aimBelow, this.center.z);
+    } else if (this.mode === 'orbit') {
       // Carry the camera along with the pilot, keep the user's angle.
       cam.position.add(new THREE.Vector3().subVectors(pilot, this.lastTarget));
       this.orbit.target.copy(pilot);
@@ -95,5 +159,13 @@ export class CameraRig {
     }
     this.lastTarget.copy(pilot);
     this.lastHeading = s.heading;
+    if (this.blend > 0) {
+      this.truePos.copy(cam.position);
+      this.trueQuat.copy(cam.quaternion);
+      this.blend = Math.max(0, this.blend - dt);
+      const t = THREE.MathUtils.smootherstep(1 - this.blend / BLEND_S, 0, 1);
+      cam.position.lerpVectors(this.fromPos, this.truePos, t);
+      cam.quaternion.slerpQuaternions(this.fromQuat, this.trueQuat, t);
+    }
   }
 }

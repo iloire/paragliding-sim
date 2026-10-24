@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-24 13:32 UTC — Welcome screen
+
+- The game opens on a menu over the live landscape: the camera circles the launch high and slow
+  while you pick the launch (← →), the time of day, the wing preset and solo or tandem. A
+  conditions line reads the day (wind, thermals, inversion); *Change weather* and *All sites*
+  open those tabs beside the controls. **Fly** starts in the air, **Take off** on the hill, and
+  the camera sweeps from its circle into the flight view.
+- **M** / **Esc** in flight pause and bring the menu back with **Resume**. It replaces the site
+  picker; on phones the Fly tap is what unlocks sound, fullscreen and the landscape lock.
+- Weather sliders are defined once and shared by the menu and lil-gui. The in-flight controls
+  card starts collapsed. lil-gui's own styling (`.lil-gui.lil-root`) applies again: lil-gui
+  0.21 renamed the class.
+
 ## 2026-10-24 13:02 UTC — Wing setup
 
 - The wing is now an EN class flown at a size, aspect ratio and all-up weight: a *Wing* preset

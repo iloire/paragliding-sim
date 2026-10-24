@@ -144,10 +144,14 @@ fall back to the first region and launch, so an old link still flies. The game k
 step with the current launch and wind (`history.replaceState`), so the address bar is always a
 link to the setup.
 
-The site picker (**M**, `src/game/picker.ts`) lists Country › Region › Launch. A launch in the
-loaded region switches in place; one in another region sets the URL and reloads, since the
-terrain, wind field and lift map are all built for one region. It is the only launch selector:
-the Flight folder's top row names the loaded region and launch and opens it. The roadmap (wind wedges, map
+The welcome screen (`src/game/welcome.ts`) is the launch selector. It opens on boot and on **M** /
+**Esc**, laid over the live scene: the sim holds still (thermals and clouds keep cycling) while
+`CameraRig.showcase()` circles the pilot wide and high, and `rig.fly()` blends from that circle
+into the flight camera. It picks the launch, time of day, weather (`WEATHER_SLIDERS`, shared
+with lil-gui), wing preset and crew; its Sites tab lists Country › Region › Launch. A launch in
+the loaded region switches in place; one in another region sets the URL and reloads, since the
+terrain, wind field and lift map are all built for one region. The Flight folder's top row names
+the loaded region and launch and opens the menu on that tab. lil-gui is hidden under the menu. The roadmap (wind wedges, map
 picker, sites outside Spain) is in [plan-sites.md](plan-sites.md).
 
 ## Analytics (`src/game/analytics.ts`)

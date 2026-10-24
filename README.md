@@ -12,6 +12,8 @@ and the lift model cheaply first.
 
 It runs in a desktop browser, or on a phone held sideways. Nothing to install.
 
+![The welcome screen over Famara: launch, conditions, time of day, wing and pilot on the left, controls on the right](docs/screenshots/welcome.png)
+
 
 ## What's in it
 
@@ -38,7 +40,10 @@ It runs in a desktop browser, or on a phone held sideways. Nothing to install.
 | **Gran Canaria** | Los Giles, La Isleta |
 | **Tenerife** | La Corona, Izaña NW, Izaña SE, Ladera de Güímar, Ifonche, Taucho, Los Gigantes |
 
-**M** opens the site picker. **N** goes to the next launch in the region.
+The game opens on a welcome screen over the live landscape: the camera circles the launch while
+you pick it (← →, or *All sites* for every region), the time of day, the weather, the wing and
+solo or tandem. **Fly** starts in the air, **Take off** on the hill. **M** or **Esc** in flight
+brings the menu back, with **Resume**. **N** goes to the next launch in the region.
 
 ## Run it
 
@@ -47,7 +52,8 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-You start in the air above the launch, facing into the wind.
+Pick a launch on the welcome screen and press **Fly** (or Enter) to start in the air above it,
+facing into the wind.
 
 ### Controls
 
@@ -60,7 +66,7 @@ You start in the air above the launch, facing into the wind.
 | **Space** | Full brakes: flare |
 | **Q / E** | Weight shift (with A/D in rhythm = wingovers) |
 | **R** | Restart, in the air above the launch |
-| **N** · **M** | Next launch · site picker (↑ ↓ to choose, Esc or M to close) |
+| **N** · **M** / **Esc** | Next launch · menu (in it: ← → launch, Enter fly, M / Esc resume) |
 | **C** | Camera: orbit (drag the mouse), chase, pilot |
 | **L** | Lift map |
 | **T** | Time warp: 1× · 2× · 4× · 8× |

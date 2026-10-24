@@ -155,11 +155,11 @@ html, body {
 #help.collapsed { padding: 6px 10px; }
 #help.collapsed #help-body { display: none; }
 #help.collapsed #help-toggle::after { content: '▸'; }
-#help table { border-collapse: collapse; }
-#help td { padding: 2px 10px 2px 0; vertical-align: top; }
-#help td:first-child { color: var(--ink); white-space: nowrap; font-weight: 600; }
-#help td:last-child, #help p { color: var(--ink-dim); }
-#help p { margin: 8px 0 0; }
+#help table, .wl-help table { border-collapse: collapse; }
+#help td, .wl-help td { padding: 2px 10px 2px 0; vertical-align: top; }
+#help td:first-child, .wl-help td:first-child { color: var(--ink); white-space: nowrap; font-weight: 600; }
+#help td:last-child, #help p, .wl-help td:last-child, .wl-help p { color: var(--ink-dim); }
+#help p, .wl-help p { margin: 8px 0 0; }
 
 #credits {
   position: fixed; bottom: 8px; right: 12px;
@@ -169,33 +169,112 @@ html, body {
 #sha { margin-left: 8px; opacity: 0.7; }
 .credit-short { display: none; }
 
-#picker {
-  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  width: min(460px, calc(100vw - 32px)); max-height: calc(100vh - 64px); overflow-y: auto;
-  padding: 14px 16px 16px;
-  background: rgba(16, 22, 28, 0.88); border: 1px solid var(--edge); border-radius: 6px;
-  backdrop-filter: blur(8px);
-  z-index: 5;
+/* The welcome screen: the live scene shows through; a scrim from the bottom-left corner keeps
+   the type readable over bright terrain. Under it the flight HUD is hidden. */
+#welcome {
+  position: fixed; inset: 0; z-index: 6;
+  display: grid; grid-template-columns: minmax(0, 720px) 1fr minmax(300px, 380px); grid-template-rows: minmax(0, 1fr); align-items: end; gap: 24px;
+  padding: max(28px, env(safe-area-inset-top)) max(32px, env(safe-area-inset-right)) max(36px, env(safe-area-inset-bottom)) max(32px, env(safe-area-inset-left));
+  background: radial-gradient(ellipse 80% 100% at 0% 100%, rgba(8, 14, 19, 0.82), rgba(8, 14, 19, 0.4) 55%, transparent 85%);
+  pointer-events: none;
+  animation: wl-in 0.9s ease-out both;
 }
-#picker[hidden] { display: none; }
-#picker header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-#picker h2, #picker h3 { margin: 0; font-family: var(--display); letter-spacing: 0.12em; text-transform: uppercase; }
-#picker h2 { font-size: 20px; color: var(--accent); }
-#picker h3 { font-size: 13px; color: var(--ink-dim); margin-top: 14px; border-bottom: 1px solid var(--edge); padding-bottom: 4px; }
-#picker h4 { margin: 10px 0 6px; font-family: var(--display); font-size: 22px; font-weight: 700; letter-spacing: 0.04em; }
-#picker h4 span { margin-left: 10px; font-family: var(--mono); font-size: 11px; font-weight: 400; color: var(--ink-dim); letter-spacing: 0; }
-#picker ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
-#picker button {
-  font: inherit; color: var(--ink); cursor: pointer;
-  background: transparent; border: 1px solid var(--edge); border-radius: 4px;
-}
-#picker li button { width: 100%; padding: 7px 10px; text-align: left; font-size: 13px; }
-#picker li button:hover, #picker li button:focus-visible { border-color: var(--accent); outline: none; background: rgba(255, 178, 63, 0.1); }
-#picker li button[aria-current="true"] { color: var(--accent); border-color: rgba(255, 178, 63, 0.5); }
-#picker li button[aria-current="true"]::after { content: ' ●'; font-size: 9px; vertical-align: middle; }
-.picker-close { padding: 2px 8px; font-size: 11px; color: var(--ink-dim); }
+#welcome[hidden] { display: none; }
+#welcome > * { pointer-events: auto; }
+@keyframes wl-in { from { opacity: 0; } }
+body.in-menu :is(#instrument, #help, #message, #touch, #touch-buttons, .lil-gui.lil-root) { display: none; }
 
-.lil-gui.root { --background-color: rgba(16, 22, 28, 0.85); --font-family: var(--mono); top: 16px; right: 16px; }
+.wl-main { display: grid; gap: 14px; justify-items: start; max-height: 100%; overflow-y: auto; }
+.wl-place {
+  margin: 0; display: flex; align-items: center; gap: 10px;
+  font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+}
+.wl-place::before { content: ''; width: 28px; height: 2px; background: var(--accent); }
+.wl-title {
+  margin: -6px 0 -4px; font-family: var(--display); font-weight: 700; text-transform: uppercase;
+  font-size: clamp(56px, min(10.5vw, 15vh), 150px); line-height: 0.84; letter-spacing: -0.005em;
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.35);
+}
+.wl-title span { color: var(--accent); }
+
+#welcome button { font: inherit; color: var(--ink); cursor: pointer; background: transparent; border: 1px solid var(--edge); border-radius: 4px; }
+#welcome button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#welcome button:hover { border-color: rgba(255, 178, 63, 0.6); }
+
+.wl-launch { display: flex; align-items: center; gap: 12px; }
+.wl-launch h2 { margin: 0; min-width: 7ch; font-family: var(--display); font-weight: 700; font-size: 34px; letter-spacing: 0.04em; text-transform: uppercase; }
+.wl-arrow { width: 36px; height: 36px; font-size: 20px !important; line-height: 1; background: var(--panel) !important; border-radius: 50% !important; }
+.wl-arrow.small { width: 28px; height: 28px; font-size: 16px !important; }
+.wl-count { margin-right: 4px; font-size: 11px; color: var(--ink-dim); letter-spacing: 0.1em; }
+
+.wl-brief { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.wl-brief li:not(:has(button)) { padding: 5px 9px; font-size: 12px; background: var(--panel); border: 1px solid var(--edge); border-radius: 4px; }
+
+.wl-wx { padding: 5px 9px; font-size: 12px !important; color: var(--accent) !important; border-color: rgba(255, 178, 63, 0.45) !important; background: rgba(255, 178, 63, 0.1) !important; }
+.wl-weather { display: grid; gap: 10px; padding-top: 4px; }
+.wl-weather label { display: grid; grid-template-columns: 9ch 1fr 10ch; align-items: center; gap: 10px; }
+.wl-weather span { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); }
+.wl-weather input { width: 100%; accent-color: var(--accent); }
+.wl-weather input:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.wl-weather output { text-align: right; font-variant-numeric: tabular-nums; }
+.wl-weather p { margin: 4px 0 0; color: var(--ink-dim); font-size: 11px; }
+.wl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.wl-label { width: 5ch; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-dim); }
+.wl-chip { padding: 6px 11px; font-size: 11px !important; letter-spacing: 0.1em; text-transform: uppercase; background: var(--panel) !important; }
+.wl-chip[aria-pressed="true"] { color: var(--accent) !important; border-color: var(--accent) !important; background: rgba(255, 178, 63, 0.14) !important; }
+.wl-wing b { min-width: 12ch; text-align: center; font-family: var(--display); font-size: 20px; letter-spacing: 0.06em; text-transform: uppercase; }
+.wl-wing-line { margin-left: 6px; font-size: 11px; color: var(--ink-dim); }
+
+.wl-go { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+.wl-go:has([data-resume]) .wl-btn { padding-inline: 16px; font-size: 22px !important; }
+.wl-btn {
+  display: grid; justify-items: start; padding: 9px 20px 10px;
+  font-family: var(--display) !important; font-weight: 700; font-size: 26px !important; letter-spacing: 0.08em; text-transform: uppercase;
+  background: var(--panel) !important;
+}
+.wl-btn small { font-family: var(--mono); font-weight: 400; font-size: 10px; letter-spacing: 0.04em; text-transform: none; color: var(--ink-dim); }
+.wl-btn.primary { color: #10161c !important; background: var(--accent) !important; border-color: var(--accent) !important; }
+.wl-btn.primary small { color: rgba(16, 22, 28, 0.7); }
+.wl-btn.primary:hover { filter: brightness(1.08); }
+
+.wl-side {
+  grid-column: 3; display: flex; flex-direction: column; max-height: min(560px, 100%); min-height: 0;
+  background: rgba(16, 22, 28, 0.8); border: 1px solid var(--edge); border-radius: 6px; backdrop-filter: blur(8px);
+  font-size: 12px; line-height: 1.5;
+}
+.wl-side nav { display: flex; gap: 18px; padding: 12px 16px 0; border-bottom: 1px solid var(--edge); }
+.wl-side nav button {
+  padding: 0 0 8px; border: 0 !important; border-bottom: 2px solid transparent !important; border-radius: 0 !important;
+  font-family: var(--display) !important; font-size: 15px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-dim) !important;
+}
+.wl-side nav button[aria-selected="true"] { color: var(--accent) !important; border-bottom-color: var(--accent) !important; }
+.wl-tab { overflow-y: auto; padding: 10px 16px 14px; }
+.wl-sites h3 { margin: 10px 0 0; font-family: var(--display); font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); border-bottom: 1px solid var(--edge); padding-bottom: 4px; }
+.wl-sites h4 { margin: 10px 0 6px; font-family: var(--display); font-size: 20px; font-weight: 700; letter-spacing: 0.04em; }
+.wl-sites h4 span { margin-left: 10px; font-family: var(--mono); font-size: 11px; font-weight: 400; color: var(--ink-dim); letter-spacing: 0; }
+.wl-sites ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+.wl-sites li button { width: 100%; padding: 6px 10px; text-align: left; font-size: 12px; }
+.wl-sites li button[aria-current="true"] { color: var(--accent); border-color: rgba(255, 178, 63, 0.5); }
+.wl-sites li button[aria-current="true"]::after { content: ' ●'; font-size: 9px; vertical-align: middle; }
+
+/* Short screens (a phone on its side): tighter, and the panel scrolls beside the menu. */
+@media (max-height: 560px) {
+  #welcome { gap: 16px; padding-top: max(12px, env(safe-area-inset-top)); padding-bottom: max(14px, env(safe-area-inset-bottom)); grid-template-columns: minmax(0, 1fr) minmax(240px, 320px); }
+  .wl-side { grid-column: 2; max-height: 100%; }
+  .wl-main { gap: 8px; }
+  .wl-title { font-size: clamp(44px, 9vh, 64px); }
+  .wl-launch h2 { font-size: 24px; }
+  .wl-btn { font-size: 20px !important; padding: 6px 14px; }
+  .wl-btn small, .wl-wing-line { display: none; }
+}
+@media (max-width: 760px) and (min-height: 561px) {
+  #welcome { grid-template-columns: 1fr; align-content: end; padding: 16px; }
+  .wl-side { grid-column: 1; max-height: 34vh; }
+}
+@media (prefers-reduced-motion: reduce) { #welcome { animation: none; } }
+
+.lil-gui.lil-root { --background-color: rgba(16, 22, 28, 0.85); --font-family: var(--mono); top: 16px; right: 16px; }
 
 /* Touch: a thumb pad over each half of the view. The ring marks where the thumb landed and the
    track the full brake travel below it; the knob follows the thumb. */
@@ -238,23 +317,10 @@ html, body {
   .credit-long { display: none; }
   .credit-short { display: inline; }
 }
-/* Phones fly in landscape, so the picker is short on height: spread the regions across the width
-   in two columns, with launches as wrapping chips under a small region name. */
-@media (pointer: coarse), (max-height: 500px) {
-  #picker {
-    width: min(760px, calc(100vw - 24px)); max-height: calc(100dvh - 16px);
-    padding: 8px 12px 12px;
-  }
-  #picker h2 { font-size: 16px; }
-  #picker h3 { font-size: 11px; margin-top: 6px; }
-  #picker section { columns: 2 260px; column-gap: 16px; }
-  #picker section h3 { column-span: all; }
-  #picker .picker-region { break-inside: avoid; padding-bottom: 2px; }
-  #picker h4 { margin: 6px 0 4px; font-size: 15px; }
-  #picker h4 span { margin-left: 8px; font-size: 10px; }
-  #picker ul { display: flex; flex-wrap: wrap; gap: 4px; }
-  #picker li button { width: auto; min-height: 34px; padding: 4px 9px; font-size: 12px; }
-  .picker-close { min-height: 32px; padding: 0 12px; }
+/* Phones: the site list's launches wrap as chips, big enough for a thumb. */
+@media (pointer: coarse) {
+  .wl-sites ul { display: flex; flex-wrap: wrap; gap: 4px; }
+  .wl-sites li button { width: auto; min-height: 34px; padding: 4px 9px; }
 }
 @media (pointer: coarse) and (orientation: portrait) {
   #rotate {

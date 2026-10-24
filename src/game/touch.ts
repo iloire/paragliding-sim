@@ -35,7 +35,7 @@ export function thumbControls(left: Thumb | null, right: Thumb | null): Controls
 }
 
 const BUTTONS: [Action, string][] = [
-  ['camera', 'CAM'], ['reset', 'RESET'], ['sites', 'SITES'], ['layout', 'INST'], ['pause', 'II'],
+  ['camera', 'CAM'], ['reset', 'RESET'], ['menu', 'MENU'], ['layout', 'INST'], ['pause', 'II'],
 ];
 
 interface Touch { id: number; x0: number; y0: number; x: number; y: number; ring: HTMLElement; knob: HTMLElement }

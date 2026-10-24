@@ -71,7 +71,7 @@ export class Hud {
     this.layout = this.layouts[0];
     this.applyLayout();
     el('sha').textContent = commitSha ? `· ${commitSha}` : '';
-    let collapsed = false; // open on a first visit, so a new pilot sees the keys
+    let collapsed = true; // the welcome screen teaches the keys; the card is there to look one up
     try { collapsed = localStorage.getItem(HELP_KEY) === '1'; } catch { /* storage blocked */ }
     this.setHelp(collapsed);
     this.helpToggle.addEventListener('click', () => {

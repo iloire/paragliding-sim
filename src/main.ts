@@ -9,11 +9,11 @@ import { Hud, type HudFrame } from './game/hud';
 import { Input, type Action } from './game/input';
 import { TouchPad } from './game/touch';
 import { clockTime, loadCatalog, parseStart, startQuery } from './game/catalog';
-import { SitePicker } from './game/picker';
 import { loadSite, type Launch } from './game/site';
 import { createGlider as createGliderModel, type Crew } from './game/wing';
 import { DEFAULT_PRESET, PRESETS as WING_PRESETS, RANGES, WingCard, classDefaults, polarFor, presetChoice, shapeFor, type WingChoice } from './game/wing-setup';
 import { TerrainView } from './game/terrain-view';
+import { WEATHER_SLIDERS, Welcome, type StartMode } from './game/welcome';
 import { createLiftMap, createSurround, Sunlight, toScene } from './game/world';
 import { glideTo, TurnTrack } from './sim/instruments';
 import { createGlider, stepGlider, type Environment, type GliderState } from './sim/glider';
@@ -124,11 +124,16 @@ async function boot(): Promise<void> {
   const startDate = Date.now();
   const pilotPos = new THREE.Vector3();
 
-  /** The one way to start a flight: above the launch, pointed into the wind, already flying. */
-  function reset(): void {
+  /** The one way to start a flight: above the launch, pointed into the wind, already flying — or standing on it. */
+  function reset(mode: StartMode = 'air'): void {
     const into = ((weather.windFromDeg * Math.PI) / 180);
-    state = createGlider(launch.x, launch.y, launch.z + START_HEIGHT, into, 'flying', polar.trim);
-    hud.say(`Over ${launch.spec.name}, facing into the wind`);
+    if (mode === 'air') {
+      state = createGlider(launch.x, launch.y, launch.z + START_HEIGHT, into, 'flying', polar.trim);
+      hud.say(`Over ${launch.spec.name}, facing into the wind`);
+    } else {
+      state = createGlider(launch.x, launch.y, launch.z, launch.heading);
+      hud.say(`On ${launch.spec.name} — ${KEY.run} to run`);
+    }
     climb = 0;
     flightTime = 0;
     airborne = false;
@@ -145,6 +150,8 @@ async function boot(): Promise<void> {
     siteButton.name(siteLabel());
     writeUrl();
     reset();
+    canResume = false; // the paused flight was somewhere else
+    refreshMenu();
   }
 
   /** Keeps the address bar a link to the current setup. */
@@ -162,12 +169,14 @@ async function boot(): Promise<void> {
     sky.info = `${clockTime(sky.hour)} · heating ${Math.round(heat * 100)} %`;
     gui.controllersRecursive().forEach((c) => c.updateDisplay());
     writeUrl();
+    refreshMenu();
   }
 
   function refreshWeather(): void {
     wind.setWeather({ ...weather });
     if (settings.liftMap) liftMap.refresh();
     writeUrl();
+    refreshMenu();
   }
 
   function pickSite(regionId: string, launchId: string): void {
@@ -175,11 +184,57 @@ async function boot(): Promise<void> {
     else location.search = startQuery(regionId, launchId, undefined, undefined, sky.hour); // new terrain: reload, with that region's own weather
   }
 
-  let pausedBeforePicker = false;
-  const picker = new SitePicker(regions, pickSite, (open) => {
-    if (open) pausedBeforePicker = paused;
-    paused = open || pausedBeforePicker;
-  });
+  // The welcome screen: the sim holds still under it, and the camera circles the pilot.
+  let canResume = false;
+  const welcome = new Welcome(regions, {
+    launch: setLaunch,
+    site: pickSite,
+    time: (name) => { sky.hour = PRESETS[name]; sky.preset = name; setTime(); },
+    wing: (name) => { settings.preset = name; applyPreset(name); },
+    crew: (c) => { settings.crew = c; model.setCrew(c); gui.controllersRecursive().forEach((k) => k.updateDisplay()); refreshMenu(); },
+    fly: (mode) => {
+      reset(mode);
+      gaEvent('start', { region: region.id, launch: launch.spec.id, mode });
+      leaveMenu();
+    },
+    resume: leaveMenu,
+    weather: (key, value) => {
+      weather[key] = value;
+      gui.controllersRecursive().forEach((c) => c.updateDisplay());
+      refreshWeather();
+    },
+  }, document.getElementById('help-body')?.innerHTML ?? '');
+
+  /** From a flight the menu offers to carry on; on boot there is nothing to carry on. */
+  function openMenu(tab?: 'help' | 'sites', fromFlight = true): void {
+    if (!welcome.isOpen) canResume = fromFlight;
+    refreshMenu();
+    welcome.open(tab);
+    rig.showcase();
+  }
+
+  function leaveMenu(): void {
+    audio.start();
+    if (TOUCH) {
+      // Phones only unlock sound, fullscreen and the orientation lock from a tap: this is the tap.
+      void document.documentElement.requestFullscreen?.().catch(() => {});
+      const orientation = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
+      void orientation.lock?.('landscape').catch(() => {}); // Android in fullscreen only
+    }
+    welcome.close();
+    rig.fly();
+  }
+
+  function refreshMenu(): void {
+    const best = polar.bestGlide();
+    welcome.render({
+      region, launchId: launch.spec.id, weather,
+      times: Object.keys(PRESETS), time: Object.keys(PRESETS).find((k) => Math.abs(PRESETS[k] - sky.hour) < 0.01) ?? '',
+      wings: WING_PRESETS.map((p) => p.name), wing: settings.preset,
+      wingLine: `${wing.wing} · ${wing.areaM2} m² · trim ${Math.round(polar.trim * 3.6)} km/h · glide ${best.ratio.toFixed(1)}`,
+      crew: settings.crew, canResume,
+    });
+  }
 
   function downloadIgc(): void {
     if (fixes.length === 0) { hud.say('No flight recorded yet'); return; }
@@ -198,6 +253,11 @@ async function boot(): Promise<void> {
 
   function onAction(a: Action): void {
     audio.start();
+    if (welcome.isOpen) {
+      // Under the menu only M / Esc (back to the flight) and mute mean anything.
+      if (a === 'menu' && canResume) leaveMenu();
+      if (a !== 'mute') return;
+    }
     switch (a) {
       case 'reset': reset(); break;
       case 'camera': hud.say(`Camera: ${rig.next()}`, 1.5); break;
@@ -207,7 +267,7 @@ async function boot(): Promise<void> {
       case 'warp': setWarp(WARPS[(WARPS.indexOf(warp) + 1) % WARPS.length]); hud.say(`Time ×${warp}`, 1.5); break;
       case 'layout': hud.say(`Instrument: ${hud.cycleLayout()}`, 1.5); break;
       case 'lift': toggleLiftMap(!settings.liftMap); break;
-      case 'sites': if (picker.isOpen) picker.close(); else picker.open(region.id, launch.spec.id); break;
+      case 'menu': openMenu(); break;
       case 'nextLaunch': {
         const i = site.launches.indexOf(launch);
         setLaunch(site.launches[(i + 1) % site.launches.length].spec.id);
@@ -237,22 +297,23 @@ async function boot(): Promise<void> {
   tm.add(sky, 'hour', hours.first, hours.last, 0.05).name('Solar time h').onChange(() => { sky.preset = ''; setTime(); });
   tm.add(sky, 'info').name('Sun').disable();
   const wx = gui.addFolder('Weather');
-  wx.add(weather, 'windSpeedKmh', 0, 45, 1).name('Wind km/h').onChange(refreshWeather);
-  wx.add(weather, 'windFromDeg', 0, 359, 5).name('Wind from °').onFinishChange(refreshWeather);
-  wx.add(weather, 'inversionM', 300, 4000, 50).name('Inversion m').onFinishChange(refreshWeather);
-  wx.add(weather, 'thermalStrength', 0, 4, 0.1).name('Thermals m/s').onChange(refreshWeather);
-  wx.add(weather, 'turbulence', 0, 1, 0.05).name('Wind turbulence').onChange(refreshWeather);
+  for (const d of WEATHER_SLIDERS) {
+    const c = wx.add(weather, d.key, d.min, d.max, d.step).name(d.label);
+    if (d.live) c.onChange(refreshWeather);
+    else c.onFinishChange(refreshWeather);
+  }
   const fl = gui.addFolder('Flight');
   // The picker is the one place to choose a launch; this row says where you are and opens it.
   const siteLabel = () => `${region.spec.name} · ${launch.spec.name} (M)`;
-  const siteButton = fl.add({ sites: () => picker.open(region.id, launch.spec.id) }, 'sites').name(siteLabel());
-  fl.add(settings, 'preset', [...WING_PRESETS.map((p) => p.name), 'Custom']).name('Wing').onChange((name: string) => {
+  const siteButton = fl.add({ sites: () => openMenu('sites') }, 'sites').name(siteLabel());
+  fl.add(settings, 'preset', [...WING_PRESETS.map((p) => p.name), 'Custom']).name('Wing').onChange(applyPreset);
+  function applyPreset(name: string): void {
     const p = presetChoice(name);
     if (!p) return;
     Object.assign(wing, p);
-    ws.controllers.forEach((c) => c.updateDisplay());
+    gui.controllersRecursive().forEach((c) => c.updateDisplay());
     setWing();
-  });
+  }
   // Changes take effect at once, in the air too: the polar and the body under the pilot are rebuilt.
   const ws = fl.addFolder('Wing setup').close();
   const card = new WingCard();
@@ -279,6 +340,7 @@ async function boot(): Promise<void> {
     model = createGliderModel(shapeFor(wing, polar));
     model.setCrew(settings.crew);
     scene.add(model.group);
+    refreshMenu();
   }
   setWing();
   fl.add(settings, 'crew', { Solo: 'solo', Tandem: 'tandem' }).name('Pilot').onChange((c: Crew) => model.setCrew(c));
@@ -315,23 +377,8 @@ async function boot(): Promise<void> {
 
   setTime();
   reset();
-  if (TOUCH) tapToFly();
-  else hud.ready();
-
-  /** Phones only unlock sound, fullscreen and the orientation lock from a tap, so ask for one. */
-  function tapToFly(): void {
-    const loading = document.getElementById('loading');
-    const line = loading?.querySelector('.loading-line');
-    if (!loading || !line) { hud.ready(); return; }
-    line.textContent = 'Tap to fly — pull a thumb down to brake, push up to run, slide sideways to shift weight';
-    loading.addEventListener('click', () => {
-      audio.start();
-      void document.documentElement.requestFullscreen?.().catch(() => {});
-      const orientation = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> };
-      void orientation.lock?.('landscape').catch(() => {}); // Android in fullscreen only
-      hud.ready();
-    }, { once: true });
-  }
+  openMenu('help', false);
+  hud.ready();
 
   let last = performance.now();
   let acc = 0;
@@ -341,7 +388,11 @@ async function boot(): Promise<void> {
     last = now;
     input.update(dt);
 
-    if (!paused) {
+    if (welcome.isOpen) {
+      // Frozen pilot, living sky: the thermals cycle and the clouds drift behind the menu.
+      clock += dt;
+      wind.thermals.update(clock, weather.thermalStrength);
+    } else if (!paused) {
       // Warp runs more fixed steps per frame; the flight's own clocks (time, track, averages, IGC) follow it.
       const simDt = dt * warp;
       acc += simDt;
