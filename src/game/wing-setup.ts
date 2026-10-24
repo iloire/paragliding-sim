@@ -31,6 +31,16 @@ export function polarFor(c: WingChoice): Polar {
   return new Polar(WINGS[c.wing], { areaM2: c.areaM2, aspectRatio: c.aspectRatio, allUpKg: c.allUpKg });
 }
 
+/**
+ * A class picked afresh: its typical aspect ratio, in the size that puts this all-up weight at
+ * the reference's mid-range loading, the way a pilot picks a size. The weight is the pilot's, so it stays.
+ */
+export function classDefaults(wing: WingId, allUpKg: number): Pick<WingChoice, 'areaM2' | 'aspectRatio'> {
+  const [min, max, step] = RANGES.areaM2;
+  const area = Math.round((allUpKg * REFERENCE_AREA) / REFERENCE_ALL_UP / step) * step;
+  return { areaM2: Math.min(Math.max(area, min), max), aspectRatio: WINGS[wing].aspectRatio };
+}
+
 /** How to draw the wing: the flight model's proportions, and the class's cells for its aspect ratio. */
 export function shapeFor(c: WingChoice, p: Polar): CanopyShape {
   return { ...canopyProportions(p), cells: Math.round(WINGS[c.wing].cells * p.aspect) };

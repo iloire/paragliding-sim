@@ -12,7 +12,7 @@ import { clockTime, loadCatalog, parseStart, startQuery } from './game/catalog';
 import { SitePicker } from './game/picker';
 import { loadSite, type Launch } from './game/site';
 import { createGlider as createGliderModel, type Crew } from './game/wing';
-import { DEFAULT_PRESET, PRESETS as WING_PRESETS, RANGES, WingCard, polarFor, presetChoice, shapeFor, type WingChoice } from './game/wing-setup';
+import { DEFAULT_PRESET, PRESETS as WING_PRESETS, RANGES, WingCard, classDefaults, polarFor, presetChoice, shapeFor, type WingChoice } from './game/wing-setup';
 import { TerrainView } from './game/terrain-view';
 import { createLiftMap, createSurround, Sunlight, toScene } from './game/world';
 import { glideTo, TurnTrack } from './sim/instruments';
@@ -257,7 +257,11 @@ async function boot(): Promise<void> {
   const ws = fl.addFolder('Wing setup').close();
   const card = new WingCard();
   const custom = () => { settings.preset = 'Custom'; fl.controllers.forEach((c) => c.updateDisplay()); setWing(); };
-  ws.add(wing, 'wing', Object.fromEntries(Object.entries(WINGS).map(([id, w]) => [w.label, id]))).name('Class').onChange(custom);
+  ws.add(wing, 'wing', Object.fromEntries(Object.entries(WINGS).map(([id, w]) => [w.label, id]))).name('Class').onChange(() => {
+    Object.assign(wing, classDefaults(wing.wing, wing.allUpKg));
+    ws.controllers.forEach((c) => c.updateDisplay());
+    custom();
+  });
   ws.add(wing, 'areaM2', ...RANGES.areaM2).name('Flat area m²').onChange(custom);
   ws.add(wing, 'aspectRatio', ...RANGES.aspectRatio).name('Aspect ratio').onChange(custom);
   ws.add(wing, 'allUpKg', ...RANGES.allUpKg).name('All-up weight kg').onChange(custom);

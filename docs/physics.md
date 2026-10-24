@@ -174,7 +174,9 @@ Each class's numbers are for one reference wing: **24 m² flat, at the class's o
 ratio** (EN-A 5.0, EN-B 5.5, EN-C 6.2, `aspectRatio` in `wings.json`), **flown at 95 kg
 all-up**. In the Flight panel, *Wing* picks a preset (`src/game/wing-presets.json`: name, class,
 `areaM2`, `aspectRatio`, `allUpKg`) and *Wing setup* sets the same four values by hand, with a
-card showing the resulting polar over the class reference. `Polar` takes the setup and
+card showing the resulting polar over the class reference. Picking a class resets the aspect ratio
+to the class's and the area to the size that puts the all-up weight at the reference loading
+(`classDefaults`); the weight stays. `Polar` takes the setup and
 `glider.ts` builds the body from it (`bodyOf`):
 
 - **Wing loading.** Every speed and sink scales with √(loading / reference loading), so the glide

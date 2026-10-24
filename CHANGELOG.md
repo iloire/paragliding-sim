@@ -13,6 +13,8 @@
   small one drops in sooner. The default (Intermediate, 24 m², 95 kg) flies exactly as before.
 - The 3D canopy follows the setup: span, chord, line length and arc from the flight model's body,
   cells from the class (EN-A 38, EN-B 48, EN-C 60) scaled by the aspect ratio, rebuilt on change.
+- Picking a class resets the aspect ratio to the class's and the area to the size for your all-up
+  weight (95 kg → 24 m²), so a class change never keeps a leftover shape; the weight stays.
 - Takeoff events to GA carry the wing's size and all-up weight.
 
 ## 2026-10-23 15:16 UTC — Google Analytics
