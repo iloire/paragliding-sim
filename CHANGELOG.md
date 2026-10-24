@@ -3,7 +3,7 @@
 ## 2026-10-24 15:30 UTC — Weather dialog
 
 - X (or the Weather row in the panel, or WX on a phone) opens a weather dialog in place of the Weather sliders: drag a compass to set the wind direction against the launch's flyable sector, with a verdict on what that wind does there; speed, inversion, thermals and turbulence sliders that say what each value means; presets (glass-off, ridge soaring, strong ridge, thermic day, booming) from `weather-presets.json`; Into launch and Site default.
-- The wind card in the flight instrument is a button too ("Weather X"): click the wind you're flying in to change it.
+- A Weather button floats just right of the flight instrument (desktop; phones use WX).
 
 ## 2026-10-24 13:41 UTC — Chase camera by default
 

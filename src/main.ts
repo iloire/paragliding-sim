@@ -303,9 +303,9 @@ async function boot(): Promise<void> {
   }
 
   const input = new Input(onAction);
-  const windButton = document.getElementById('wind-button');
-  windButton?.addEventListener('click', () => {
-    windButton.blur(); // or Space (full brakes) would click it again
+  const weatherOpener = document.getElementById('weather-button');
+  weatherOpener?.addEventListener('click', () => {
+    weatherOpener.blur(); // or Space (full brakes) would click it again
     onAction('weather');
   });
   canvas.addEventListener('pointerdown', () => audio.start());

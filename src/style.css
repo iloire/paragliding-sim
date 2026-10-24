@@ -103,23 +103,9 @@ html, body {
 
 #thermal { grid-area: thermal; width: 58px; height: 58px; }
 
-/* The wind readout is also the way into the weather dialog: a card that lights up under the pointer. */
-.wind {
-  grid-area: wind; display: grid; justify-items: center; align-content: center; gap: 3px;
-  padding: 5px 9px 4px; font: inherit; color: inherit; cursor: pointer;
-  background: rgba(244, 239, 228, 0.04); border: 1px solid var(--edge); border-radius: 5px;
-  transition: border-color 0.15s, background 0.15s;
-}
-.wind:hover, .wind:focus-visible { border-color: var(--accent); background: rgba(255, 178, 63, 0.1); outline: none; }
-.wind-cta {
-  display: flex; align-items: center; gap: 4px;
-  font-family: var(--display); font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-dim);
-}
-.wind-cta kbd { font: 600 9px var(--mono); padding: 0 3px; border: 1px solid var(--edge); border-radius: 3px; letter-spacing: 0; }
-.wind:hover .wind-cta, .wind:focus-visible .wind-cta { color: var(--accent); }
-.wind-rose { position: relative; display: block; width: 40px; height: 40px; border: 1px solid var(--edge); border-radius: 50%; }
-.wind-text { display: block; }
-.wind-rose > span { position: absolute; inset: 0; display: grid; place-items: center; }
+.wind { grid-area: wind; display: grid; justify-items: center; align-content: center; gap: 3px; border-left: 1px solid var(--edge); padding-left: 12px; }
+.wind-rose { position: relative; width: 40px; height: 40px; border: 1px solid var(--edge); border-radius: 50%; }
+.wind-rose > div { position: absolute; inset: 0; display: grid; place-items: center; }
 /* The arrow sits on the upwind rim and points along the flow, past the glider fixed at the centre. */
 #wind-arrow { transition: transform 0.2s; }
 #wind-arrow i { font-style: normal; color: var(--accent); font-size: 11px; line-height: 1; transform: translateY(13px); }
@@ -127,6 +113,18 @@ html, body {
 .wind-text { text-align: center; font-size: 11px; white-space: nowrap; }
 .wind-text b { color: var(--accent); }
 .wind-text small { color: var(--ink-dim); font-size: 10px; letter-spacing: 0.1em; }
+/* The way into the weather dialog: floats just right of the instrument, so it follows its width. */
+#weather-button {
+  position: absolute; left: calc(100% + 8px); top: 0;
+  display: flex; align-items: center; gap: 7px; padding: 7px 10px 7px 8px;
+  font: 600 13px var(--display); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink); cursor: pointer;
+  background: var(--panel); border: 1px solid var(--edge); border-radius: 6px; backdrop-filter: blur(6px);
+  transition: border-color 0.15s, background 0.15s;
+}
+#weather-button:hover, #weather-button:focus-visible { border-color: var(--accent); background: rgba(40, 32, 18, 0.7); color: var(--accent); outline: none; }
+#weather-button svg { width: 20px; height: 20px; fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; }
+#weather-button svg .cloud { fill: rgba(16, 22, 28, 0.9); stroke: var(--ink); }
+#weather-button kbd { font: 600 9px var(--mono); padding: 1px 4px; color: var(--ink-dim); border: 1px solid var(--edge); border-radius: 3px; letter-spacing: 0; }
 
 .footer { grid-area: footer; display: flex; gap: 10px; align-items: baseline; margin-top: 7px; padding-top: 5px; border-top: 1px solid var(--edge); font-size: 11px; color: var(--ink-dim); }
 .footer > b { color: var(--ink); font-size: 12px; font-variant-numeric: tabular-nums; }
@@ -320,7 +318,7 @@ body.in-menu :is(#instrument, #help, #message, #touch, #touch-buttons, .lil-gui.
 @media (pointer: coarse) {
   /* Zoomed rather than restyled, so the full layout shrinks the same way as the minimal one. */
   #instrument { top: max(8px, env(safe-area-inset-top)); left: max(8px, env(safe-area-inset-left)); z-index: 2; pointer-events: none; zoom: 0.72; }
-  #help { display: none; }
+  #help, #weather-button { display: none; } /* phones have the WX thumb button */
   #message { top: 36%; font-size: 20px; }
   /* Shortened into the bottom-right corner, beside the action buttons. Taps go through to the
      thumb pad under it, so braking in that corner can't open the IGN site mid-flight. */
