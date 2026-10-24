@@ -57,6 +57,7 @@ pilot together, with a full attitude (a quaternion) and angular velocity:
 |---|---|
 | The pilot | A point of 89 kg at the bottom of the lines, with his own drag (0.5 m²) |
 | The canopy | 6 kg (its weight) plus ~5 kg of air in its cells (inertia only), 7.5 m above the pilot |
+| A different wing setup | All of these are the reference wing's, 24 m² at 95 kg all-up; another size, aspect ratio or weight scales them (§4, "Wing setup") |
 | The canopy's aerodynamics | **Six strips** along an arched span (11 m of arc, 24 m², ~108° of arc on the EN-B). Each has its own position, tilt and brake |
 | Mass and inertia | 100 kg inertial, 95 kg weight; centre of mass 0.8 m above the pilot; inertia from where the masses sit |
 | Wing class (EN-A/B/C) | The speed polar (§4), plus spiral tendency (how deep the arc is) and roll authority (how far a brake curls the tip) |
@@ -166,6 +167,43 @@ Worked numbers at trim, from the code:
 | EN-C | 40 km/h | 0.524 | 0.0495 | 1.05 m/s | 10.6 | 1.46 | 2.55 m/s |
 
 Best glide falls at about trim speed for all three, as it does on most real wings.
+
+### Wing setup: size, aspect ratio and weight
+
+Each class's numbers are for one reference wing: **24 m² flat, at the class's own flat aspect
+ratio** (EN-A 5.0, EN-B 5.5, EN-C 6.2, `aspectRatio` in `wings.json`), **flown at 95 kg
+all-up**. In the Flight panel, *Wing* picks a preset (`src/game/wing-presets.json`: name, class,
+`areaM2`, `aspectRatio`, `allUpKg`) and *Wing setup* sets the same four values by hand, with a
+card showing the resulting polar over the class reference. `Polar` takes the setup and
+`glider.ts` builds the body from it (`bodyOf`):
+
+- **Wing loading.** Every speed and sink scales with √(loading / reference loading), so the glide
+  is unchanged and CL at each point of the polar is too: 21 % more weight flies 10 % faster and
+  sinks 10 % more. `LIFT_K = ½ρS/m` is per wing now (`Polar.liftK`).
+- **Aspect ratio.** Induced drag CL²/(π·e·AR) with e = 0.85 on a projected aspect ratio 0.76 of
+  the flat one; the polar takes the difference from the reference. On the EN-B, AR 6.5 glides
+  10.4 instead of 9.6, AR 4.6 glides 8.7.
+- **Size.** Span, chord and line length are the reference's scaled as one shape (span and chord
+  also with the aspect ratio): canopy weight goes with the area, its trapped air with the area
+  and chord. The pilot's drag area stays 0.5 m², so it's a bigger share of a small wing's drag: a
+  16 m² mini at the reference loading glides 8.3, at 90 kg 7.3.
+- **Collapses.** Lines go slack at 0.3 G on the reference; the threshold rises with the aspect
+  ratio and falls with the loading (a faster wing holds more pressure in its cells).
+
+Turns and spirals aren't scaled by hand: they come out of the body. Flown with one brake and no
+weight shift, from the sim:
+
+| EN-B setup | kg/m² | 50 % brake | Steep turn (> 40°) | Spiral (> 70°) |
+|---|---|---|---|---|
+| 24 m², 80 kg (bottom of the range) | 3.3 | 13° bank | — | 80 % with weight shift |
+| 24 m², 95 kg (reference) | 4.0 | 17° | 80 % | 80 % |
+| 24 m², 105 kg | 4.4 | 19° | 70 % | 80 % |
+| 21 m², 95 kg | 4.5 | 21° | 60 % | 80 % |
+| 41 m², 190 kg (tandem size) | 4.6 | 15° | — | 80 % with weight shift |
+
+A light wing is softer and needs a committed entry; a heavy or small one drops into a spiral
+readily. The tandem-sized wing turns like a solo one because its lines are longer in proportion.
+(The tandem crew is still drawn only: its drag is one pilot's, so the 41 m² wing glides too well.)
 
 ---
 

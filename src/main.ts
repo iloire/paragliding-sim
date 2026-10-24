@@ -12,12 +12,13 @@ import { clockTime, loadCatalog, parseStart, startQuery } from './game/catalog';
 import { SitePicker } from './game/picker';
 import { loadSite, type Launch } from './game/site';
 import { createGlider as createGliderModel, type Crew } from './game/wing';
+import { DEFAULT_PRESET, PRESETS as WING_PRESETS, RANGES, WingCard, polarFor, presetChoice, type WingChoice } from './game/wing-setup';
 import { TerrainView } from './game/terrain-view';
 import { createLiftMap, createSurround, Sunlight, toScene } from './game/world';
 import { glideTo, TurnTrack } from './sim/instruments';
 import { createGlider, stepGlider, type Environment, type GliderState } from './sim/glider';
 import { buildIgc, type Fix } from './sim/igc';
-import { Polar, WINGS, type WingId } from './sim/polar';
+import { WINGS } from './sim/polar';
 import { dayOfYear, flyingHours, heating, sunPosition } from './sim/sun';
 import { WindField, type Weather } from './sim/wind';
 
@@ -98,7 +99,8 @@ async function boot(): Promise<void> {
   };
 
   let launch: Launch = site.launches.find((l) => l.spec.id === start.launchId) ?? site.launches[0];
-  const settings = { wing: 'EN-B' as WingId, crew: 'solo' as Crew, liftMap: false };
+  const settings = { preset: DEFAULT_PRESET, crew: 'solo' as Crew, liftMap: false };
+  const wing: WingChoice = presetChoice(DEFAULT_PRESET) ?? presetChoice(WING_PRESETS[0].name)!;
   const lat = site.toLatLon(extent / 2, extent / 2)[0];
   const day = dayOfYear(new Date());
   const hours = flyingHours(lat, day); // no flying in the dark, whatever ?time= says
@@ -106,7 +108,7 @@ async function boot(): Promise<void> {
   const PRESETS: Record<string, number> = {
     Sunrise: hours.first, Morning: 10, Midday: 13, Afternoon: 15.5, Sunset: hours.last,
   };
-  let polar = new Polar(WINGS[settings.wing]);
+  let polar = polarFor(wing);
   let state: GliderState = createGlider(launch.x, launch.y, launch.z, launch.heading);
   let paused = false;
   let warp = 1;
@@ -244,9 +246,27 @@ async function boot(): Promise<void> {
   // The picker is the one place to choose a launch; this row says where you are and opens it.
   const siteLabel = () => `${region.spec.name} · ${launch.spec.name} (M)`;
   const siteButton = fl.add({ sites: () => picker.open(region.id, launch.spec.id) }, 'sites').name(siteLabel());
-  fl.add(settings, 'wing', Object.fromEntries(Object.entries(WINGS).map(([id, w]) => [w.label, id]))).name('Wing').onChange((id: WingId) => {
-    polar = new Polar(WINGS[id]);
+  fl.add(settings, 'preset', [...WING_PRESETS.map((p) => p.name), 'Custom']).name('Wing').onChange((name: string) => {
+    const p = presetChoice(name);
+    if (!p) return;
+    Object.assign(wing, p);
+    ws.controllers.forEach((c) => c.updateDisplay());
+    setWing();
   });
+  // Changes take effect at once, in the air too: the polar and the body under the pilot are rebuilt.
+  const ws = fl.addFolder('Wing setup').close();
+  const card = new WingCard();
+  const custom = () => { settings.preset = 'Custom'; fl.controllers.forEach((c) => c.updateDisplay()); setWing(); };
+  ws.add(wing, 'wing', Object.fromEntries(Object.entries(WINGS).map(([id, w]) => [w.label, id]))).name('Class').onChange(custom);
+  ws.add(wing, 'areaM2', ...RANGES.areaM2).name('Flat area m²').onChange(custom);
+  ws.add(wing, 'aspectRatio', ...RANGES.aspectRatio).name('Aspect ratio').onChange(custom);
+  ws.add(wing, 'allUpKg', ...RANGES.allUpKg).name('All-up weight kg').onChange(custom);
+  ws.$children.appendChild(card.element);
+  function setWing(): void {
+    polar = polarFor(wing);
+    card.update(wing, polar);
+  }
+  card.update(wing, polar);
   fl.add(settings, 'crew', { Solo: 'solo', Tandem: 'tandem' }).name('Pilot').onChange((c: Crew) => model.setCrew(c));
   fl.add(settings, 'liftMap').name('Lift map (L)').onChange(toggleLiftMap);
   fl.add({ warp: () => onAction('warp') }, 'warp').name('Time warp (T)');
@@ -371,8 +391,8 @@ async function boot(): Promise<void> {
   /** Takeoffs and how flights end, for the GoatCounter dashboard and GA. */
   function countFlight(event: string): void {
     if (event === 'takeoff') {
-      count(`flight/${region.id}/${launch.spec.id}`, `${settings.wing} ${settings.crew}`);
-      gaEvent('takeoff', { region: region.id, launch: launch.spec.id, wing: settings.wing, crew: settings.crew });
+      count(`flight/${region.id}/${launch.spec.id}`, `${wing.wing} ${settings.crew}`);
+      gaEvent('takeoff', { region: region.id, launch: launch.spec.id, wing: wing.wing, size: wing.areaM2, load: Math.round(wing.allUpKg), crew: settings.crew });
     } else if (airborne && (event === 'landed' || event === 'crashed' || event === 'water')) {
       airborne = false;
       count(`${event}/${durationBucket(flightTime)}`);

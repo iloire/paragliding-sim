@@ -280,3 +280,18 @@ html, body {
   font: inherit; padding: 1px 8px; cursor: pointer;
 }
 #stats-chip button[data-on] { background: var(--accent); border-color: var(--accent); color: #10161c; }
+
+/* Wing setup: the spec card under the sliders in the Flight panel. */
+.wing-card { padding: 6px 8px 8px; font-family: var(--mono); font-size: 11px; color: var(--ink); line-height: 1.4; }
+.wing-card-loading { color: var(--ink-dim); margin-bottom: 4px; }
+.wing-card-loading b { color: var(--accent); font-weight: 600; margin-right: 4px; }
+.wing-card dl { display: grid; grid-template-columns: auto 1fr; gap: 0 8px; margin: 0 0 4px; }
+.wing-card dt { color: var(--ink-dim); }
+.wing-card dd { margin: 0; }
+.wing-card svg { display: block; width: 100%; height: auto; }
+.wing-card .grid line { stroke: var(--edge); stroke-width: 1; }
+.wing-card .grid text { fill: var(--ink-dim); font-size: 8px; }
+.wing-card .ref { fill: none; stroke: var(--ink-dim); stroke-width: 1; stroke-dasharray: 3 3; }
+.wing-card .now { fill: none; stroke: var(--accent); stroke-width: 2; }
+.wing-card circle { fill: var(--accent); }
+.wing-card-legend { color: var(--ink-dim); font-size: 10px; margin-top: 2px; }

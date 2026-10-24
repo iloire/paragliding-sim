@@ -17,7 +17,7 @@
 // canopy's rigging angle for each brake/bar setting is solved so the body hangs in pitch balance
 // and flies straight at the polar's speed (`Rig`).
 
-import { G, LIFT_K, type Polar } from './polar';
+import { G, HALF_RHO, PILOT_CDA, REFERENCE_ALL_UP, REFERENCE_AREA, type Polar } from './polar';
 import type { AirSample } from './wind';
 
 export { G };
@@ -107,27 +107,18 @@ export interface Environment {
 // ---------------------------------------------------------------- the body
 // Body axes: x forward along the chord, y to the left, z up the lines.
 
-const PILOT_MASS = 89;
+// The reference wing (24 m² at 95 kg all-up, see polar.ts); `Body` scales it to a wing's setup.
+/** The canopy's weight, and the air trapped in its cells, which it carries along too. */
 const CANOPY_MASS = 6;
-/** The canopy plus the air trapped in its cells: what its inertia is made of (its weight is CANOPY_MASS). */
-const CANOPY_INERTIAL = 11;
-const MASS = PILOT_MASS + CANOPY_INERTIAL;
+const CANOPY_AIR = 5;
 /** Pilot's centre of mass to the canopy's (m). */
 const LINE_LENGTH = 7.5;
-/** Centre of mass above the pilot. */
-const CG_HEIGHT = (CANOPY_INERTIAL * LINE_LENGTH) / MASS;
-const AREA = 24;
 /** Length of the canopy's arc along the span (m), and its chord. */
 const SPAN = 11;
 const CHORD = 2.4;
 const STRIPS = 6;
 /** How far weight shift moves the pilot sideways (m). */
 const WEIGHT_SHIFT_M = 0.15;
-/** ½ρ (kg/m³): LIFT_K × all-up mass = ½ρ·S. */
-const HALF_RHO = (LIFT_K * (PILOT_MASS + CANOPY_MASS)) / AREA;
-/** Pilot and harness drag area (m²). */
-const PILOT_CDA = 0.5;
-const CD_PILOT = PILOT_CDA / AREA;
 /** Drag of air flowing along the span across the arched canopy: its fin effect. */
 const CD_CROSS = 0.047;
 /** Pitch damping (per rad of q·c/2V): the chord's front and back meet the air differently as it rotates. */
@@ -205,7 +196,11 @@ const BAR_ZOOM = 0.1;
 
 // ---------------------------------------------------------------- events
 const SUBSTEPS = 4;
-/** Load below which the lines are slack enough that a side folds. */
+/**
+ * Load below which the lines are slack enough that a side folds, on the reference wing. A more
+ * loaded wing flies faster, so its cells hold more pressure and it folds later; a higher aspect
+ * ratio folds sooner.
+ */
 const COLLAPSE_LOAD = 0.3;
 const COLLAPSE_SECONDS = 2.5;
 const SPIRAL_LOAD = 2.2;
@@ -278,6 +273,47 @@ interface Strip {
 
 interface Geometry { strips: Strip[]; pilot: Vec; canopy: Vec }
 
+/** The reference wing scaled to a setup: canopy mass and air with its area and chord, span and chord with the aspect ratio. */
+interface Body {
+  pilotMass: number;
+  canopyMass: number;
+  /** Pilot to canopy (m): the lines grow with the canopy, so a size is the same wing scaled. */
+  lineLength: number;
+  /** The canopy plus the air trapped in its cells: what its inertia is made of. */
+  canopyInertial: number;
+  mass: number;
+  /** Centre of mass above the pilot. */
+  cgHeight: number;
+  area: number;
+  span: number;
+  chord: number;
+  /** The pilot's drag as a share of the wing's. */
+  cdPilot: number;
+  collapseLoad: number;
+}
+
+function bodyOf(polar: Polar): Body {
+  const size = polar.setup.areaM2 / REFERENCE_AREA;
+  const chord = CHORD * Math.sqrt(size / polar.aspect);
+  const canopyMass = CANOPY_MASS * size;
+  const pilotMass = polar.setup.allUpKg - canopyMass;
+  const canopyInertial = canopyMass + CANOPY_AIR * size * (chord / CHORD);
+  const mass = pilotMass + canopyInertial;
+  const lineLength = LINE_LENGTH * Math.sqrt(size);
+  return {
+    pilotMass, canopyMass, lineLength, canopyInertial, mass,
+    cgHeight: (canopyInertial * lineLength) / mass,
+    area: polar.setup.areaM2,
+    span: SPAN * Math.sqrt(size * polar.aspect),
+    chord,
+    cdPilot: PILOT_CDA / polar.setup.areaM2,
+    collapseLoad: (COLLAPSE_LOAD * polar.aspect) / polar.loading,
+  };
+}
+
+/** Centre of mass above the pilot on the reference wing: where a glider starts before it's trimmed. */
+const REFERENCE_CG_HEIGHT = ((CANOPY_MASS + CANOPY_AIR) * LINE_LENGTH) / (REFERENCE_ALL_UP + CANOPY_AIR);
+
 /** The angle the canopy's arc spans (rad) on the EN-B, less for a wing more willing to spiral (less dihedral). */
 const ARC = 1.879;
 const ARC_PER_SPIRAL_TENDENCY = 0.15;
@@ -292,9 +328,9 @@ function arcAngle(polar: Polar): number {
   return ARC - ARC_PER_SPIRAL_TENDENCY * (polar.spiralTendency - REFERENCE_SPIRAL_TENDENCY);
 }
 
-function geometry(arc: number, shift: number): Geometry {
-  const radius = SPAN / arc;
-  const canopy: Vec = [0, 0, LINE_LENGTH - CG_HEIGHT];
+function geometry(body: Body, arc: number, shift: number): Geometry {
+  const radius = body.span / arc;
+  const canopy: Vec = [0, 0, body.lineLength - body.cgHeight];
   const strips: Strip[] = [];
   for (let k = 0; k < STRIPS; k++) {
     const f = (k + 0.5) / STRIPS - 0.5;
@@ -307,19 +343,19 @@ function geometry(arc: number, shift: number): Geometry {
       out: Math.floor(Math.abs(f) * STRIPS),
     });
   }
-  return { strips, pilot: [0, -shift * WEIGHT_SHIFT_M, -CG_HEIGHT], canopy };
+  return { strips, pilot: [0, -shift * WEIGHT_SHIFT_M, -body.cgHeight], canopy };
 }
 
 /** Inertia about the centre of mass, body axes (diagonal: the body is symmetric). */
-function inertia(geo: Geometry): Vec {
-  const p = geo.pilot;
-  let ixx = PILOT_MASS * (p[1] ** 2 + p[2] ** 2), iyy = PILOT_MASS * p[2] ** 2, izz = PILOT_MASS * p[1] ** 2 + 10;
-  const m = CANOPY_INERTIAL / STRIPS;
+function inertia(body: Body, geo: Geometry): Vec {
+  const p = geo.pilot, pm = body.pilotMass, c2 = body.chord * body.chord;
+  let ixx = pm * (p[1] ** 2 + p[2] ** 2), iyy = pm * p[2] ** 2, izz = pm * p[1] ** 2 + 10;
+  const m = body.canopyInertial / STRIPS;
   for (const st of geo.strips) {
     const [, y, z] = st.r;
     ixx += m * (y * y + z * z);
-    iyy += m * (z * z + (CHORD * CHORD) / 12);
-    izz += m * (y * y + (CHORD * CHORD) / 12);
+    iyy += m * (z * z + c2 / 12);
+    izz += m * (y * y + c2 / 12);
   }
   return [ixx, iyy, izz];
 }
@@ -332,6 +368,7 @@ function inertia(geo: Geometry): Vec {
  * stall angle), and the rigging for that brake tilts the chord.
  */
 class Rig {
+  readonly body: Body;
   readonly clMax: number;
   readonly geo: Geometry;
   /** How far a full brake curls its tip down (rad): more on a wing with more roll authority. */
@@ -349,8 +386,9 @@ class Rig {
   private readonly cache = new Map<number, { rig: number; tilt: number; along: number }>();
 
   constructor(private readonly polar: Polar, readonly arc: number) {
+    this.body = bodyOf(polar);
     this.clMax = polar.clMax * STRIP_CL_MAX;
-    this.geo = geometry(arc, 0);
+    this.geo = geometry(this.body, arc, 0);
     this.tipTilt = (TIP_TILT * polar.rollAuthority) / REFERENCE_ROLL_AUTHORITY;
     this.brakeScale = (polar.clMax - polar.clFor(polar.trim)) / REFERENCE_LIFT_RANGE;
     this.clTrim = polar.clFor(polar.trim);
@@ -367,7 +405,7 @@ class Rig {
     let fa = this.solve(0, bar).along;
     set(b);
     let fb = this.solve(0, bar).along;
-    for (let i = 0; i < 20 && Math.abs(fb) > 0.01; i++) {
+    for (let i = 0; i < 20 && Math.abs(fb) > 0.01 && fb !== fa; i++) {
       const c = b - (fb * (b - a)) / (fb - fa);
       a = b; fa = fb; b = c;
       set(b); fb = this.solve(0, bar).along;
@@ -392,7 +430,7 @@ class Rig {
     const cl = Math.min(Math.max(LIFT_SLOPE * alpha + CAMBER_CL * this.brakeScale * brake, 0.05), this.polar.clMax);
     const toBar = Math.min(Math.max((this.clTrim - cl) / (this.clTrim - this.clTop), 0), 1);
     const scale = this.dragScale + (this.dragScaleBar - this.dragScale) * toBar;
-    const clean = Math.max(scale * this.polar.cdFor(cl) - CD_PILOT, 0.01);
+    const clean = Math.max(scale * this.polar.cdFor(cl) - this.body.cdPilot, 0.01);
     const stall = this.alphaStall(brake);
     const k = smoothstep(stall, stall + STALL_WIDTH, alpha);
     const attached = clean + BRAKE_CD * brake * brake + (alpha < 0 ? -alpha * 0.3 : 0);
@@ -438,7 +476,7 @@ class Rig {
       const pd = scale(air, -HALF_RHO * PILOT_CDA * v);
       const th = g + tilt;
       const down: Vec = [-Math.sin(th), 0, -Math.cos(th)];
-      const wp = scale(down, PILOT_MASS * G), wc = scale(down, CANOPY_MASS * G);
+      const wp = scale(down, this.body.pilotMass * G), wc = scale(down, this.body.canopyMass * G);
       F = add(add(add(F, pd), wp), wc);
       M = add(add(add(M, cross(pilot, pd)), cross(pilot, wp)), cross(canopy, wc));
       along = dot(F, [Math.cos(tilt), 0, -Math.sin(tilt)]);
@@ -495,7 +533,7 @@ function stripForce(rig: Rig, strip: Strip, air: Vec, rigAngle: number, brake: n
   let cl = rig.cl(alpha, brake, deep), cd = rig.cd(alpha, brake);
   if (folded) { cl *= FOLD_LIFT; cd += FOLD_CD; }
   if (deflation > 0) { cl *= 1 - (1 - DEFLATED_LIFT) * deflation; cd *= 1 - (1 - DEFLATED_DRAG) * deflation; }
-  const qs = HALF_RHO * (AREA / STRIPS);
+  const qs = HALF_RHO * (rig.body.area / STRIPS);
   // In the strip's plane (chord and normal): lift across the flow towards the normal, drag against it.
   const along = qs * vp * (cl * -w - cd * u); // × x̂ / vp · vp²
   const normal = qs * vp * (cl * u - cd * w); // × n̂
@@ -527,7 +565,7 @@ export function createGlider(x: number, y: number, z: number, heading: number, p
     phase, stalled: false, stallTimer: 0, deepTimer: 0, deflation: 0, bar: 0,
     collapse: 0, collapseTimer: 0, unloadTimer: 0, inSpiral: false,
     time: 0, takeoffAt: -Infinity, event: null,
-    cg: [x, y, z + CG_HEIGHT], vel: [0, 0, 0], q: [1, 0, 0, 0], omega: [0, 0, 0],
+    cg: [x, y, z + REFERENCE_CG_HEIGHT], vel: [0, 0, 0], q: [1, 0, 0, 0], omega: [0, 0, 0],
     trimPending: phase === 'flying',
   };
 }
@@ -551,7 +589,7 @@ function trim(s: GliderState, polar: Polar, air: AirSample): void {
   s.q = fromAxes(xb, cross(zb, xb), zb);
   s.omega = [0, 0, 0];
   s.vel = [path[0] * v + air.u, path[1] * v + air.v, path[2] * v + air.w];
-  s.cg = add([s.x, s.y, s.z], toWorld(s.q, [0, 0, CG_HEIGHT]));
+  s.cg = add([s.x, s.y, s.z], toWorld(s.q, [0, 0, rigFor(polar).body.cgHeight]));
   s.airspeed = v;
   s.bar = 0;
   s.trimPending = false;
@@ -561,16 +599,17 @@ function trim(s: GliderState, polar: Polar, air: AirSample): void {
 
 function fly(s: GliderState, c: Controls, polar: Polar, env: Environment, dt: number): void {
   const rig = rigFor(polar);
+  const { body } = rig;
   const launching = s.time - s.takeoffAt < LAUNCH_GRACE;
   const airP = env.air(s.x, s.y, s.z, s.time);
   if (s.trimPending) trim(s, polar, airP);
-  const top = add(s.cg, toWorld(s.q, [0, 0, LINE_LENGTH - CG_HEIGHT]));
+  const top = add(s.cg, toWorld(s.q, [0, 0, body.lineLength - body.cgHeight]));
   const airC = env.air(top[0], top[1], top[2], s.time);
   const windC: Vec = [airC.u, airC.v, airC.w], windP: Vec = [airP.u, airP.v, airP.w];
 
-  const geo = geometry(arcAngle(polar), c.weightShift);
+  const geo = geometry(body, arcAngle(polar), c.weightShift);
   const { strips, pilot, canopy } = geo;
-  const I = inertia(geo);
+  const I = inertia(body, geo);
   const sideBrake = (st: Strip) => (st.side > 0 ? c.brakeLeft : c.brakeRight);
   const brakes = strips.map((st) => stripBrake(sideBrake(st), st));
   const deep = strips.map((st) => Math.max((sideBrake(st) - DEEP_BRAKE) / (1 - DEEP_BRAKE), 0));
@@ -613,7 +652,7 @@ function fly(s: GliderState, c: Controls, polar: Polar, env: Environment, dt: nu
       // (A crumpled canopy has no profile: its drag acts about its middle.)
       const shift = (1 - s.deflation) * (CP_ALPHA * (a0 - trimAlpha[i] - BRAKE_INCIDENCE * rig.brakeScale * brakes[i] - deepStall)
         + CP_STALL * (1 - deepStall / DEEP_STALL_INCIDENCE) * smoothstep(stall, stall + 0.2, a0));
-      const at: Vec = [st.r[0] - CHORD * Math.min(Math.max(shift, -CP_LIMITS[1]), -CP_LIMITS[0]), st.r[1], st.r[2]];
+      const at: Vec = [st.r[0] - body.chord * Math.min(Math.max(shift, -CP_LIMITS[1]), -CP_LIMITS[0]), st.r[1], st.r[2]];
       const f = stripForce(rig, st, sub(add(velB, cross(w, at)), windCB), rigging, brakes[i], folded[i], s.deflation, deep[i]);
       F = add(F, f.force);
       M = add(M, cross(at, f.force));
@@ -625,19 +664,19 @@ function fly(s: GliderState, c: Controls, polar: Polar, env: Environment, dt: nu
     const airPilot = sub(add(velB, cross(w, pilot)), windPB);
     const pd = scale(airPilot, -HALF_RHO * PILOT_CDA * len(airPilot));
     const down = toBody(q, [0, 0, -G]);
-    const wp = scale(down, PILOT_MASS), wc = scale(down, CANOPY_MASS);
+    const wp = scale(down, body.pilotMass), wc = scale(down, body.canopyMass);
     F = add(add(add(F, pd), wp), wc);
     M = add(add(add(M, cross(pilot, pd)), cross(pilot, wp)), cross(canopy, wc));
 
     // Pitch damping: resists the canopy pitching relative to its airflow. In a steady turn or a
     // pull-up the flight path rotates too, and the airflow with it, so only the difference counts.
-    const accB = scale(F, 1 / MASS);
+    const accB = scale(F, 1 / body.mass);
     const airB = sub(velB, windCB);
     // (Bounded: a path can't swing faster than a couple of radians a second.)
     const pathTurn = scale(cross(airB, accB), 1 / Math.max(dot(airB, airB), 1)).map((v) => Math.max(-2, Math.min(2, v))) as Vec;
     const vTop = Math.max(len(sub(add(velB, cross(w, canopy)), windCB)), 1);
     // (A crumpled canopy doesn't weathervane into its airflow: only its rotation is damped.)
-    M[1] -= HALF_RHO * vTop * vTop * AREA * CHORD * CM_Q * (((w[1] - (1 - s.deflation) * pathTurn[1]) * CHORD) / (2 * vTop));
+    M[1] -= HALF_RHO * vTop * vTop * body.area * body.chord * CM_Q * (((w[1] - (1 - s.deflation) * pathTurn[1]) * body.chord) / (2 * vTop));
 
     // Rigid body: Newton for the centre of mass, Euler's equations for the rotation.
     const gyro = cross(w, [I[0] * w[0], I[1] * w[1], I[2] * w[2]]);
@@ -662,8 +701,8 @@ function fly(s: GliderState, c: Controls, polar: Polar, env: Environment, dt: nu
       // The force the lines put on the pilot is what his acceleration needs beyond his weight
       // and drag; along the lines, over his weight, it's the load he feels.
       const aPilot = add(add(accB, cross(dw, pilot)), cross(w, cross(w, pilot)));
-      const lineForce = sub(sub(scale(aPilot, PILOT_MASS), wp), pd);
-      s.load = dot(lineForce, unit(sub(canopy, pilot))) / (PILOT_MASS * G);
+      const lineForce = sub(sub(scale(aPilot, body.pilotMass), wp), pd);
+      s.load = dot(lineForce, unit(sub(canopy, pilot))) / (body.pilotMass * G);
     }
   }
 
@@ -702,7 +741,7 @@ function fly(s: GliderState, c: Controls, polar: Polar, env: Environment, dt: nu
   if (s.stalled && stalled < 0.2) { s.stalled = false; s.stallTimer = 0; s.event = 'recovered'; }
 
   // Slack lines (over the top of a slow wingover, a sharp down-gust) fold the high side.
-  s.unloadTimer = s.load < COLLAPSE_LOAD && !s.stalled && !launching ? s.unloadTimer + dt : 0;
+  s.unloadTimer = s.load < body.collapseLoad && !s.stalled && !launching ? s.unloadTimer + dt : 0;
   if (s.collapse === 0 && s.unloadTimer > 0.15) {
     s.collapse = s.bank >= 0 ? -1 : 1;
     s.collapseTimer = COLLAPSE_SECONDS;

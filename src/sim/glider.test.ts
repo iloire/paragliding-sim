@@ -231,4 +231,17 @@ describe('glider', () => {
     expect(s.collapse).toBe(0);
     expect(s.event).not.toBe('collapse');
   });
+
+  it.each([
+    ['a mini', 15, 5.5, 90],
+    ['a heavy wing', 22, 5.5, 115],
+    ['a big light wing', 30, 4.8, 70],
+  ])('flies %s at its own polar', (_name, areaM2, aspectRatio, allUpKg) => {
+    const p = new Polar(WINGS['EN-B'], { areaM2, aspectRatio, allUpKg });
+    const s = createGlider(0, 0, 3000, 0, 'flying', p.trim);
+    for (let i = 0; i < 60 * 120; i++) stepGlider(s, hands, p, flatWorld(), 1 / 120);
+    expect(s.airspeed).toBeCloseTo(p.trim, 0);
+    expect(Math.hypot(s.x, s.y) / (3000 - s.z)).toBeCloseTo(p.trim / p.sink(p.trim), 0);
+  });
 });
+

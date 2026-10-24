@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-24 13:02 UTC — Wing setup
+
+- The wing is now an EN class flown at a size, aspect ratio and all-up weight: a *Wing* preset
+  (school, intermediate, high-B, sport two-liner, mini; `src/game/wing-presets.json`) or your own
+  values under *Wing setup*, live in the air. A card shows the wing loading, trim/top/stall, min
+  sink, best glide and the sink polar over the class reference.
+- Wing loading scales every speed and sink by its square root (same glide); a higher aspect ratio
+  has less induced drag; on a small wing the pilot's drag is a bigger share, so a 16 m² mini at
+  90 kg glides 7.3; span, chord, lines, canopy mass and the collapse threshold scale with the setup.
+  Turns and spirals follow from the body: a light wing needs weight shift to spiral, a heavy or
+  small one drops in sooner. The default (Intermediate, 24 m², 95 kg) flies exactly as before.
+- Takeoff events to GA carry the wing's size and all-up weight.
+
 ## 2026-10-23 15:16 UTC — Google Analytics
 
 - Google Analytics 4 alongside GoatCounter: takeoffs (region, launch, wing, crew) and how flights end

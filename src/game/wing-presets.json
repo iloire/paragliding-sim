@@ -1,0 +1,7 @@
+[
+  { "name": "School", "wing": "EN-A", "areaM2": 26, "aspectRatio": 4.9, "allUpKg": 90 },
+  { "name": "Intermediate", "wing": "EN-B", "areaM2": 24, "aspectRatio": 5.5, "allUpKg": 95 },
+  { "name": "High-B", "wing": "EN-B", "areaM2": 23, "aspectRatio": 6.1, "allUpKg": 95 },
+  { "name": "Sport two-liner", "wing": "EN-C", "areaM2": 22, "aspectRatio": 6.6, "allUpKg": 95 },
+  { "name": "Mini", "wing": "EN-B", "areaM2": 18, "aspectRatio": 5.0, "allUpKg": 90 }
+]

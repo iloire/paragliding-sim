@@ -77,6 +77,8 @@ A second finger on the same half drags the camera round. The buttons along the t
 restart, sites, instrument and pause.
 
 The panel on the right sets wind, inversion, thermals, time of day, wing and solo/tandem, all live.
+The wing is a preset or your own setup: EN class, flat area, aspect ratio and all-up weight, with
+a card that shows the resulting polar (see [docs/physics.md](docs/physics.md#wing-setup-size-aspect-ratio-and-weight)).
 
 ### Share a start
 
