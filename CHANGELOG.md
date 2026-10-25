@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-25 10:48 UTC — Feature ideas
+
+- `docs/ideas-maybe-one-day.md`: educational features that could build on real data (launch wind roses, real weather days, airspace, OSM hazards, speed-to-fly, ghost replays), none planned yet.
+
 ## 2026-10-24 15:30 UTC — Weather dialog
 
 - X (or the Weather row in the panel, or WX on a phone) opens a weather dialog in place of the Weather sliders: drag a compass to set the wind direction against the launch's flyable sector, with a verdict on what that wind does there; speed, inversion, thermals and turbulence sliders that say what each value means; presets (glass-off, ridge soaring, strong ridge, thermic day, booming) from `weather-presets.json`; Into launch and Site default.
